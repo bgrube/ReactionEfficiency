@@ -2,7 +2,7 @@ import ROOT
 ROOT.gStyle.SetOptFit(True)
 
 
-_COV_MATRIX_STATUS_CODE = {
+COV_MATRIX_STATUS_CODE = {
   0 : "not calculated",
   1 : "approximated",
   2 : "made positive definite",
@@ -43,7 +43,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   if fitMissingMassSquared:
     if particle == "Proton":
       meanStartVal = 0.9383**2  # (proton mass)^2 [GeV^2]
-      widthStartVal = 1.0       # [GeV^2]
+      widthStartVal = 0.5       # [GeV^2]
     elif particle == "Pi-" or particle == "Pi+":
       meanStartVal = 0.1396**2  # (pion mass)^2 [GeV^2]
       widthStartVal = 0.2       # [GeV^2]
@@ -58,7 +58,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
       widthStartVal = 0.2    # [GeV]
     else:
       raise ValueError(f"code cannot handle particles of type '{particle}'")
-  fitFunc.SetParameter("A", hist.Integral(hist.FindBin(fitRange[0]), hist.FindBin(fitRange[1])))
+  fitFunc.SetParameter("A", hist.Integral(hist.FindBin(fitRange[0]), hist.FindBin(fitRange[1]), "WIDTH"))
   fitFunc.SetParLimits(fitFunc.GetParNumber("A"), 0, 2 * fitFunc.GetParameter("A"))  # ensure positive parameter value
   fitFunc.FixParameter(fitFunc.GetParNumber("r"), 0)
   if forceCommonGaussianMean:
@@ -77,7 +77,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
 
   # second fitting stage: use double Gaussian on top of pol0
   fitFunc.ReleaseParameter(fitFunc.GetParNumber("r"))
-  fitFunc.SetParameter("r", 0.5)  # nudge it, otherwise it does not move from zero
+  fitFunc.SetParameter("r", 0.75)  # nudge it, otherwise it does not move from zero
   if not forceCommonGaussianMean:
     fitFunc.ReleaseParameter(fitFunc.GetParNumber("#mu_{2}"))
   fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{2}"))
@@ -95,7 +95,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   # fit recovery procedure
   maxNmbRefitAttempts = 5
   nmbRefitAttempts = 0
-  while ((not fitResult.IsValid() or _COV_MATRIX_STATUS_CODE[fitResult.CovMatrixStatus()] != "accurate")
+  while ((not fitResult.IsValid() or COV_MATRIX_STATUS_CODE[fitResult.CovMatrixStatus()] != "accurate")
           and nmbRefitAttempts < maxNmbRefitAttempts):
     nmbRefitAttempts += 1
     print(f"Fit did not converge. Performing refit attempt #{nmbRefitAttempts} of {maxNmbRefitAttempts}.")
