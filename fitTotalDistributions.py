@@ -2,30 +2,32 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+import fitFunction
 import ROOT
+
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetHistMinimumZero(True);
-
-import fitFunction
 
 
 # file name : (hist name, output file base name)
 inData = {
-  "../ReactionEfficiency/volatile/batch02/hd_root_030730.root" : ("pippippimpimpmiss__B1_T1_U1_Effic/Custom_RecoilMass_pRecoil/HistRecoilMass", "justin_30730_mm_fit"),
-  "../pmatt/trackeff_Proton_4pi.30370_mm_acc_Pval.root"        : ("MissingMass/MissingMass",                                                    "paul_30730_mm_acc_Pval_fit")}
-rebinFactor = 17
-mmRange = (0, 2)
+  "../ReactionEfficiency/pippimpmiss.30370_acc.root" : ("MissingMassSquared", "justin_Proton_2pi_mm2_30370_acc_fit"),
+  "../pmatt/trackeff_Proton_2pi.30370_acc_Pval.root" : ("MissingMass/MissingMass", "paul_Proton_2pi_mm2_30370_acc_Pval_fit"),
+  "../ReactionEfficiency/pippippimpimpmiss.30370_acc.root" : ("MissingMassSquared", "justin_Proton_4pi_mm2_30370_acc_fit"),
+  "../pmatt/trackeff_Proton_4pi.30370_acc_Pval.root" : ("MissingMass/MissingMass", "paul_Proton_4pi_mm2_30370_acc_Pval_fit")}
+rebinFactor = 20
+fitRange = (-0.5, 4)
 
 inFiles = [ROOT.TFile(inFileName) for inFileName in inData.keys()]
 hists = [inFiles[index].Get(names[0]) for index, names in enumerate(inData.values())]
-print(hists)
 canvs = [ROOT.TCanvas(names[1], names[1], 1470, 891) for names in inData.values()]
-hists[1].Rebin(rebinFactor)
-hists[1].GetXaxis().SetRangeUser(*mmRange)
 for index, hist in enumerate(hists):
+  hist.Rebin(rebinFactor)
+  hist.GetXaxis().SetRangeUser(*fitRange)
   canv = canvs[index]
   canv.cd()
-  fitFunction.fitDistribution(hist, particle = "Proton", fitRange = mmRange, forceCommonGaussianMean = False, fitMissingMassSquared = False)
+  fitFunction.fitDistribution(hist, particle = "Proton", fitRange = fitRange, forceCommonGaussianMean = False, fitMissingMassSquared = True)
   hist.Draw("E")
+  # hist.DrawCopy("HIST E1 SAME")  # ensure points lie above curves
   canv.SaveAs(".pdf")
   print("\n\n")
