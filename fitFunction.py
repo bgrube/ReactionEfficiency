@@ -2,12 +2,36 @@ import ROOT
 ROOT.gStyle.SetOptFit(True)
 
 
+# see https://root.cern/doc/master/Minuit2Minimizer_8h_source.html
+# * minimizer status:
+#   * status = 1 : Covariance was made pos defined
+#   * status = 2 : Hesse is invalid
+#   * status = 3 : Edm is above max
+#   * status = 4 : Reached call limit
+#   * status = 5 : Any other failure
+# * status of the covariance matrix
+#   * status = -1 : not available (inversion failed or Hesse failed)
+#   * status =  0 : available but not positive defined
+#   * status =  1 : covariance only approximate
+#   * status =  2 : full matrix but forced pos def
+#   * status =  3 : full accurate matrix
 COV_MATRIX_STATUS_CODE = {
-  0 : "not calculated",
-  1 : "approximated",
-  2 : "made positive definite",
-  3 : "accurate"
+  -1 : ("failed",           "not available (inversion failed or Hesse failed)"),
+  0  : ("not pos. def.",    "available but not positive definite"),
+  1  : ("approximate",      "covariance only approximate"),
+  2  : ("forced pos. def.", "full matrix but forced pos definite"),
+  3  : ("accurate",         "full accurate matrix")
 }
+# * MINOS status code of last Minos run; minimizerStatus += 10 * minosStatus
+#   * `status & 1 > 0`  : invalid lower error
+#   * `status & 2 > 0`  : invalid upper error
+#   * `status & 4 > 0`  : invalid because maximum number of function calls exceeded
+#   * `status & 8 > 0`  : a new minimum has been found
+#   * `status & 16 > 0` : error is truncated because parameter is at lower/upper limit
+# * HESSE status code; minimizerStatus += 100 * hesseStatus
+#   * status = 1 : hesse failed
+#   * status = 2 : matrix inversion failed
+#   * status = 3 : matrix is not pos defined
 
 
 # define the fit function and the individual components
@@ -95,7 +119,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   # fit recovery procedure
   maxNmbRefitAttempts = 5
   nmbRefitAttempts = 0
-  while ((not fitResult.IsValid() or COV_MATRIX_STATUS_CODE[fitResult.CovMatrixStatus()] != "accurate")
+  while ((not fitResult.IsValid() or COV_MATRIX_STATUS_CODE[fitResult.CovMatrixStatus()][0] != "accurate")
           and nmbRefitAttempts < maxNmbRefitAttempts):
     nmbRefitAttempts += 1
     print(f"Fit did not converge. Performing refit attempt #{nmbRefitAttempts} of {maxNmbRefitAttempts}.")
