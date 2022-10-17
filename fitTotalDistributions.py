@@ -1,12 +1,13 @@
 #!/usr/bin/python3
-# !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
+# !NOTE! only on ifarm this shebang selects the correct Python3 version for ROOT
 
 
-import fitFunction
 import ROOT
 
+import fitFunction
+
 ROOT.gROOT.SetBatch(True)
-ROOT.gStyle.SetHistMinimumZero(True);
+ROOT.gStyle.SetHistMinimumZero(True)
 
 
 # file name : (hist name, output file base name)
