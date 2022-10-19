@@ -142,7 +142,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
 
   # add components of fit model to LoF of histogram
   fitFunc.SetLineColor(ROOT.kRed + 1)
-  fitFunc.SetLineWidth(3)
+  fitFunc.SetLineWidth(2)
   fitFunc.SetNpx(1000)
   hist.GetListOfFunctions().Add(fitFunc)
   signal._forceCommonGaussianMean = forceCommonGaussianMean
@@ -161,7 +161,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   bgFunc.SetLineColor(ROOT.kBlue)
   components = (sigFunc, gauss1Func, gauss2Func, bgFunc)
   for func in components:
-    func.SetLineWidth(2)
+    func.SetLineWidth(1)
     func.SetNpx(1000)
     func.SetParNames(*fitParameters)
     func.SetParameters(fitFunc.GetParameters())
