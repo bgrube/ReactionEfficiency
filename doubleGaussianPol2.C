@@ -9,9 +9,11 @@ struct doubleGaussianPol2 {
 
 	doubleGaussianPol2(
 		const ModelComponent component               = total,
+		const double         binWidth                = 1,
 		const bool           forceCommonGaussianMean = false)
 		: _component(component),
-			_forceCommonGaussianMean(forceCommonGaussianMean)
+		  _binWidth(binWidth),
+		  _forceCommonGaussianMean(forceCommonGaussianMean)
 	{ }
 
 	double posDefPol2 (
@@ -31,7 +33,7 @@ struct doubleGaussianPol2 {
 		const double p0     = pars[0];
 		const double p1     = pars[1];
 		const double p2     = pars[2];
-		const double A      = pars[3];
+		const double A      = pars[3] * _binWidth;  // normalize A to number of events
 		const double r      = sin(pars[4]) * sin(pars[4]);  // ensure [0, 1] range
 		const double sigma1 = pars[5];
 		const double sigma2 = pars[6];
@@ -55,6 +57,7 @@ struct doubleGaussianPol2 {
 	}
 
 	ModelComponent _component;
+	double         _binWidth;
 	bool           _forceCommonGaussianMean;
 
 };

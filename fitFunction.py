@@ -57,11 +57,23 @@ def fixZeroPar(fitFunc, parName):
 # fit function to measured distribution
 def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = False, fitMissingMassSquared = True):
   print(f"Fitting histogram '{hist.GetName()}', '{hist.GetTitle()}'.")
-  # construct fit function and set start parameters
+  # fit fucntions and its components
+  funcs = {
+    "doubleGaussianPol2" : doubleGaussianPol2,
+    "signal" : signal,
+    "gaussian1" : gaussian1,
+    "gaussian2" : gaussian2,
+    "background" : background
+  }
+  # set member variables of functors
+  for func in funcs.values():
+    func._binWidth = hist.GetBinWidth(1)  # used to normalize parameter A to number of events
+    func._forceCommonGaussianMean = forceCommonGaussianMean
+  # construct TF1 objects and set start parameters
   if fitRange is None:
     fitRange = (hist.GetXaxis().GetXmin(), hist.GetXaxis().GetXmax())
-  doubleGaussianPol2._forceCommonGaussianMean = forceCommonGaussianMean
-  fitFunc = ROOT.TF1("doubleGaussianPol2", doubleGaussianPol2, fitRange[0], fitRange[1], 8 if forceCommonGaussianMean else 9)
+  fitFunc = ROOT.TF1("doubleGaussianPol2", funcs["doubleGaussianPol2"], fitRange[0], fitRange[1],
+    8 if funcs["doubleGaussianPol2"]._forceCommonGaussianMean else 9)
   commonParNames = ("p_{0}", "p_{1}", "p_{2}", "A", "r", "#sigma_{1}", "#sigma_{2}")
   fitParameters = ((*commonParNames, "#mu") if forceCommonGaussianMean else (*commonParNames, "#mu_{1}", "#mu_{2}"))
   fitFunc.SetParNames(*fitParameters)
@@ -90,7 +102,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
       widthStartVal = 0.2    # [GeV]
     else:
       raise ValueError(f"code cannot handle particles of type '{particle}'")
-  fitFunc.SetParameter("A", hist.Integral(hist.FindBin(fitRange[0]), hist.FindBin(fitRange[1]), "WIDTH"))
+  fitFunc.SetParameter("A", hist.Integral(hist.FindBin(fitRange[0]), hist.FindBin(fitRange[1])))
   fitFunc.SetParLimits(fitFunc.GetParNumber("A"), 0, 2 * fitFunc.GetParameter("A"))  # ensure positive parameter value
   fitFunc.FixParameter(fitFunc.GetParNumber("r"), 0)
   if forceCommonGaussianMean:
@@ -145,27 +157,19 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   fitFunc.SetLineWidth(2)
   fitFunc.SetNpx(1000)
   hist.GetListOfFunctions().Add(fitFunc)
-  signal._forceCommonGaussianMean = forceCommonGaussianMean
-  sigFunc = ROOT.TF1("signal", signal, fitRange[0], fitRange[1], 9)
-  sigFunc.SetLineColor(ROOT.kGreen + 2)
-  gaussian1._forceCommonGaussianMean = forceCommonGaussianMean
-  gauss1Func = ROOT.TF1("gaussian1", gaussian1, fitRange[0], fitRange[1], 9)
-  gauss1Func.SetLineStyle(ROOT.kDashed)
-  gauss1Func.SetLineColor(ROOT.kGreen + 2)
-  gaussian2._forceCommonGaussianMean = forceCommonGaussianMean
-  gauss2Func = ROOT.TF1("gaussian2", gaussian2, fitRange[0], fitRange[1], 9)
-  gauss2Func.SetLineStyle(ROOT.kDashed)
-  gauss2Func.SetLineColor(ROOT.kGreen + 2)
-  background._forceCommonGaussianMean = forceCommonGaussianMean
-  bgFunc = ROOT.TF1("background", background, fitRange[0], fitRange[1], 9)
-  bgFunc.SetLineColor(ROOT.kBlue)
-  components = (sigFunc, gauss1Func, gauss2Func, bgFunc)
-  for func in components:
-    func.SetLineWidth(1)
-    func.SetNpx(1000)
-    func.SetParNames(*fitParameters)
-    func.SetParameters(fitFunc.GetParameters())
-    hist.GetListOfFunctions().Add(func)
+  fitComponents = {funcName : ROOT.TF1(funcName, funcs[funcName], fitRange[0], fitRange[1], 9) for funcName in funcs.keys() - {"doubleGaussianPol2"}}  # dict_keys are set-like
+  fitComponents["signal"    ].SetLineColor(ROOT.kGreen + 2)
+  fitComponents["gaussian1" ].SetLineStyle(ROOT.kDashed)
+  fitComponents["gaussian1" ].SetLineColor(ROOT.kGreen + 2)
+  fitComponents["gaussian2" ].SetLineStyle(ROOT.kDashed)
+  fitComponents["gaussian2" ].SetLineColor(ROOT.kGreen + 2)
+  fitComponents["background"].SetLineColor(ROOT.kBlue)
+  for fitComponent in fitComponents.values():
+    fitComponent.SetLineWidth(1)
+    fitComponent.SetNpx(1000)
+    fitComponent.SetParNames(*fitParameters)
+    fitComponent.SetParameters(fitFunc.GetParameters())
+    hist.GetListOfFunctions().Add(fitComponent)
 
   fitResult.Print()
   print(f"    reduced chi^2 = {fitResult.Chi2() / fitResult.Ndf()}; P-value = {fitResult.Prob()}")
