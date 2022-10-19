@@ -46,9 +46,17 @@ gaussian2 = ROOT.doubleGaussianPol2(ROOT.doubleGaussianPol2.gaussian2)
 background = ROOT.doubleGaussianPol2(ROOT.doubleGaussianPol2.background)
 
 
+def fixZeroPar(fitFunc, parName, errToValThr = 3):
+  parVal = fitFunc.GetParameter(parName)
+  parErr = fitFunc.GetParError(fitFunc.GetParNumber(parName))
+  if ((parVal == 0) or (parErr / parVal < errToValThr)):
+    print(f"Fixing near-zero parameter '{parName}' = {parVal} +- {parErr} to zero.")
+    fitFunc.FixParameter(fitFunc.GetParNumber(parName), 0)
+
+
 # fit function to measured distribution
 def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = False, fitMissingMassSquared = True):
-  print(f"Fitting histogram '{hist.GetName()}', '{hist.GetTitle()}'")
+  print(f"Fitting histogram '{hist.GetName()}', '{hist.GetTitle()}'.")
   # construct fit function and set start parameters
   if fitRange is None:
     fitRange = (hist.GetXaxis().GetXmin(), hist.GetXaxis().GetXmax())
@@ -126,6 +134,9 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
           and nmbRefitAttempts < maxNmbRefitAttempts):
     nmbRefitAttempts += 1
     print(f"Fit did not converge. Performing refit attempt #{nmbRefitAttempts} of {maxNmbRefitAttempts}.")
+    zeroParNames = ["p_{0}", "p_{1}", "p_{2}"]
+    for parName in zeroParNames:
+      fixZeroPar(fitFunc, parName)
     # fitResult = hist.Fit(fitFunc, "WLRIMSN")
     fitResult = hist.Fit(fitFunc, "REMSN")
 
@@ -157,5 +168,5 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
     hist.GetListOfFunctions().Add(func)
 
   fitResult.Print()
-  print(f"reduced chi^2 = {fitResult.Chi2() / fitResult.Ndf()}; P-value = {fitResult.Prob()}")
+  print(f"    reduced chi^2 = {fitResult.Chi2() / fitResult.Ndf()}; P-value = {fitResult.Prob()}")
   return fitResult
