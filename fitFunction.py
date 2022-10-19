@@ -110,6 +110,9 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   hist.Fit(fitFunc, "RQN")
 
   # third fitting stage: use double Gaussian on top of pol2
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("A"))
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{1}"))
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{2}"))
   fitFunc.ReleaseParameter(fitFunc.GetParNumber("p_{1}"))
   fitFunc.ReleaseParameter(fitFunc.GetParNumber("p_{2}"))
   # fitResult = hist.Fit(fitFunc, "WLRIMSN")
@@ -128,6 +131,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
 
   # add components of fit model to LoF of histogram
   fitFunc.SetLineColor(ROOT.kRed + 1)
+  fitFunc.SetLineWidth(3)
   fitFunc.SetNpx(1000)
   hist.GetListOfFunctions().Add(fitFunc)
   signal._forceCommonGaussianMean = forceCommonGaussianMean
@@ -146,6 +150,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   bgFunc.SetLineColor(ROOT.kBlue)
   components = (sigFunc, gauss1Func, gauss2Func, bgFunc)
   for func in components:
+    func.SetLineWidth(2)
     func.SetNpx(1000)
     func.SetParNames(*fitParameters)
     func.SetParameters(fitFunc.GetParameters())
