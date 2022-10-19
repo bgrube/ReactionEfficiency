@@ -46,10 +46,10 @@ gaussian2 = ROOT.doubleGaussianPol2(ROOT.doubleGaussianPol2.gaussian2)
 background = ROOT.doubleGaussianPol2(ROOT.doubleGaussianPol2.background)
 
 
-def fixZeroPar(fitFunc, parName, errToValThr = 3):
+def fixZeroPar(fitFunc, parName):
   parVal = fitFunc.GetParameter(parName)
   parErr = fitFunc.GetParError(fitFunc.GetParNumber(parName))
-  if ((parVal == 0) or (parErr / parVal < errToValThr)):
+  if ((parVal == 0) or (parVal - parErr < 0 < parVal + parErr)):
     print(f"Fixing near-zero parameter '{parName}' = {parVal} +- {parErr} to zero.")
     fitFunc.FixParameter(fitFunc.GetParNumber(parName), 0)
 
