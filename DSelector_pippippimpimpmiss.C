@@ -37,8 +37,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	// EXAMPLE: Create deque for histogramming particle masses:
 	// // For histogramming the phi mass in phi -> K+ K-
 	// // Be sure to change this and dAnalyzeCutActions to match reaction
-	std::deque<Particle_t> MyPhi;
-	MyPhi.push_back(KPlus); MyPhi.push_back(KMinus);
+	// std::deque<Particle_t> MyPhi;
+	// MyPhi.push_back(KPlus); MyPhi.push_back(KMinus);
 
 	//ANALYSIS ACTIONS: //Executed in order if added to dAnalysisActions
 	//false/true below: use measured/kinfit data
@@ -76,24 +76,26 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	//KINEMATICS
 	dAnalysisActions.push_back(new DHistogramAction_ParticleComboKinematics(dComboWrapper, false));
 
-	// ANALYZE CUT ACTIONS
-	// Change MyPhi to match reaction; code crashes if commented out
-	dAnalyzeCutActions = new DHistogramAction_AnalyzeCutActions(dAnalysisActions, dComboWrapper, false, 0, MyPhi, 1000, 0.9, 2.4, "CutActionEffect");
+	// // ANALYZE CUT ACTIONS
+	// // Change MyPhi to match reaction
+	// dAnalyzeCutActions = new DHistogramAction_AnalyzeCutActions(dAnalysisActions, dComboWrapper, false, 0, MyPhi, 1000, 0.9, 2.4, "CutActionEffect");
 
 	//INITIALIZE ACTIONS
 	//If you create any actions that you want to run manually (i.e. don't add to dAnalysisActions), be sure to initialize them here as well
 	Initialize_Actions();
-	dAnalyzeCutActions->Initialize(); // manual action, must call Initialize()
+	// dAnalyzeCutActions->Initialize(); // manual action, must call Initialize()
 
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
-	dHist_RFWeight                   = new TH1D("RFWeight",                   ";RF Weight",                               1000, -2,    2);
-	dHist_MissingMass                = new TH1D("MissingMass",                ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
-	dHist_MissingMassSideband        = new TH1D("MissingMassSideband",        ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
-	dHist_BeamEnergy                 = new TH1D("BeamEnergy",                 ";Beam Energy (GeV)",                       1000,  2,   12);
-	dHist_MissingParticle_MomVsTheta = new TH2D("MissingParticleMomVsTheta",  ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
-	dHist_MissingParticle_PhiVsTheta = new TH2D("MissingParticlePhiVsTheta",  ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
+	dHist_RFWeight                            = new TH1D("RFWeight",                           ";RF Weight",                               1000, -2,    2);
+	dHist_MissingMass                         = new TH1D("MissingMass",                        ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
+	dHist_MissingMassSideband                 = new TH1D("MissingMassSideband",                ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
+	dHist_BeamEnergy                          = new TH1D("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
+	dHist_MissingParticle_MomVsTheta          = new TH2D("MissingParticleMomVsTheta",          ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
+	dHist_MissingParticle_PhiVsTheta          = new TH2D("MissingParticlePhiVsTheta",          ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
+	dHist_MissingParticle_MomVsTheta_Measured = new TH2D("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
+	dHist_MissingParticle_PhiVsTheta_Measured = new TH2D("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingMassSquared                             = new TH1D("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
@@ -200,7 +202,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 	//ANALYSIS ACTIONS: Reset uniqueness tracking for each action
 	//For any actions that you are executing manually, be sure to call Reset_NewEvent() on them here
 	Reset_Actions_NewEvent();
-	dAnalyzeCutActions->Reset_NewEvent(); // manual action, must call Reset_NewEvent()
+	// dAnalyzeCutActions->Reset_NewEvent(); // manual action, must call Reset_NewEvent()
 
 	//PREVENT-DOUBLE COUNTING WHEN HISTOGRAMMING
 		//Sometimes, some content is the exact same between one combo and the next
@@ -217,6 +219,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		//In general: Multiple PIDs, so multiple sets: Contain within a map
 		//Multiple combos: Contain maps within a set (easier, faster to search)
 	set<map<Particle_t, set<Int_t> > > locUsedSoFar_MissingMass;
+	set<map<Particle_t, set<Int_t> > > locUsedSoFar_UnusedTrack;
 
 	//INSERT USER ANALYSIS UNIQUENESS TRACKING HERE
 
@@ -236,13 +239,12 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 	/************************************************* LOOP OVER COMBOS *************************************************/
 
 	//Loop over combos
-	for(UInt_t loc_i = 0; loc_i < Get_NumCombos(); ++loc_i)
-	{
+	for (UInt_t locComboIndex = 0; locComboIndex < Get_NumCombos(); ++locComboIndex) {
 		//Set branch array indices for combo and all combo particles
-		dComboWrapper->Set_ComboIndex(loc_i);
+		dComboWrapper->Set_ComboIndex(locComboIndex);
 
 		// Is used to indicate when combos have been cut
-		if(dComboWrapper->Get_IsComboCut()) // Is false when tree originally created
+		if (dComboWrapper->Get_IsComboCut()) // Is false when tree originally created
 			continue; // Combo has been cut previously
 
 		/********************************************** GET PARTICLE INDICES *********************************************/
@@ -250,64 +252,75 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		//Used for tracking uniqueness when filling histograms, and for determining unused particles
 
 		//Step 0
-		Int_t locBeamID = dComboBeamWrapper->Get_BeamID();
-		Int_t locPiPlus1TrackID = dPiPlus1Wrapper->Get_TrackID();
-		Int_t locPiPlus2TrackID = dPiPlus2Wrapper->Get_TrackID();
-		Int_t locPiMinus1TrackID = dPiMinus1Wrapper->Get_TrackID();
-		Int_t locPiMinus2TrackID = dPiMinus2Wrapper->Get_TrackID();
+		const Int_t locBeamID          = dComboBeamWrapper->Get_BeamID();
+		const Int_t locPiPlus1TrackID  = dPiPlus1Wrapper->Get_TrackID();
+		const Int_t locPiPlus2TrackID  = dPiPlus2Wrapper->Get_TrackID();
+		const Int_t locPiMinus1TrackID = dPiMinus1Wrapper->Get_TrackID();
+		const Int_t locPiMinus2TrackID = dPiMinus2Wrapper->Get_TrackID();
 
 		/*********************************************** GET FOUR-MOMENTUM **********************************************/
 
 		// Get P4's: is kinfit if kinfit performed, else is measured
 		// dTargetP4 is target p4
 		// Step 0
-		TLorentzVector locBeamP4 = dComboBeamWrapper->Get_P4();
-		TLorentzVector locPiPlus1P4 = dPiPlus1Wrapper->Get_P4();
-		TLorentzVector locPiPlus2P4 = dPiPlus2Wrapper->Get_P4();
-		TLorentzVector locPiMinus1P4 = dPiMinus1Wrapper->Get_P4();
-		TLorentzVector locPiMinus2P4 = dPiMinus2Wrapper->Get_P4();
-		TLorentzVector locMissingProtonP4 = dMissingProtonWrapper->Get_P4();
+		const TLorentzVector locBeamP4          = dComboBeamWrapper->Get_P4();
+		const TLorentzVector locPiPlus1P4       = dPiPlus1Wrapper->Get_P4();
+		const TLorentzVector locPiPlus2P4       = dPiPlus2Wrapper->Get_P4();
+		const TLorentzVector locPiMinus1P4      = dPiMinus1Wrapper->Get_P4();
+		const TLorentzVector locPiMinus2P4      = dPiMinus2Wrapper->Get_P4();
+		const TLorentzVector locMissingProtonP4 = dMissingProtonWrapper->Get_P4();
 
 		// Get Measured P4's:
 		// Step 0
-		TLorentzVector locBeamP4_Measured = dComboBeamWrapper->Get_P4_Measured();
-		TLorentzVector locPiPlus1P4_Measured = dPiPlus1Wrapper->Get_P4_Measured();
-		TLorentzVector locPiPlus2P4_Measured = dPiPlus2Wrapper->Get_P4_Measured();
-		TLorentzVector locPiMinus1P4_Measured = dPiMinus1Wrapper->Get_P4_Measured();
-		TLorentzVector locPiMinus2P4_Measured = dPiMinus2Wrapper->Get_P4_Measured();
+		const TLorentzVector locBeamP4_Measured     = dComboBeamWrapper->Get_P4_Measured();
+		const TLorentzVector locPiPlus1P4_Measured  = dPiPlus1Wrapper->Get_P4_Measured();
+		const TLorentzVector locPiPlus2P4_Measured  = dPiPlus2Wrapper->Get_P4_Measured();
+		const TLorentzVector locPiMinus1P4_Measured = dPiMinus1Wrapper->Get_P4_Measured();
+		const TLorentzVector locPiMinus2P4_Measured = dPiMinus2Wrapper->Get_P4_Measured();
+		const TLorentzVector locMissingProtonP4_Measured
+			= locBeamP4_Measured + dTargetP4 - (locPiPlus1P4_Measured + locPiPlus2P4_Measured + locPiMinus1P4_Measured + locPiMinus2P4_Measured);
 
 		/********************************************* GET COMBO RF TIMING INFO *****************************************/
 
-		TLorentzVector locBeamX4_Measured = dComboBeamWrapper->Get_X4_Measured();
+		const TLorentzVector locBeamX4_Measured = dComboBeamWrapper->Get_X4_Measured();
 		// Double_t locBunchPeriod = dAnalysisUtilities.Get_BeamBunchPeriod(Get_RunNumber());
 		// Double_t locDeltaT_RF = dAnalysisUtilities.Get_DeltaT_RF(Get_RunNumber(), locBeamX4_Measured, dComboWrapper);
-		Int_t locRelBeamBucket = dAnalysisUtilities.Get_RelativeBeamBucket(Get_RunNumber(), locBeamX4_Measured, dComboWrapper); // 0 for in-time events, non-zero integer for out-of-time photons
-		Int_t locNumOutOfTimeBunchesInTree = 1;  // YOU need to specify this number
+		const Int_t locRelBeamBucket = dAnalysisUtilities.Get_RelativeBeamBucket(Get_RunNumber(), locBeamX4_Measured, dComboWrapper); // 0 for in-time events, non-zero integer for out-of-time photons
+		const Int_t locNumOutOfTimeBunchesInTree = 1;  // YOU need to specify this number
 			// Number of out-of-time beam bunches in tree (on a single side, so that total number out-of-time bunches accepted is 2 times this number for left + right bunches)
-		Bool_t locSkipNearestOutOfTimeBunch = false;  // True: skip events from nearest out-of-time bunch on either side (recommended).
+		const Bool_t locSkipNearestOutOfTimeBunch = false;  // True: skip events from nearest out-of-time bunch on either side (recommended).
 		if (locSkipNearestOutOfTimeBunch and abs(locRelBeamBucket) == 1) {  // Skip nearest out-of-time bunch: tails of in-time distribution also leak in
 			dComboWrapper->Set_IsComboCut(true);
 			continue;
 		}
 
-		Int_t locNumOutOfTimeBunchesToUse = (locSkipNearestOutOfTimeBunch) ? locNumOutOfTimeBunchesInTree - 1 : locNumOutOfTimeBunchesInTree;
-		Double_t locAccidentalScalingFactor = dAnalysisUtilities.Get_AccidentalScalingFactor(Get_RunNumber(), locBeamP4.E(), dIsMC);  // Ideal value would be 1, but deviations require added factor, which is different for data and MC.
-		// Double_t locAccidentalScalingFactorError = dAnalysisUtilities.Get_AccidentalScalingFactorError(Get_RunNumber(), locBeamP4.E());  // Ideal value would be 1, but deviations observed, need added factor.
-		Double_t locHistAccidWeightFactor = (dSidebandSubtractAcc) ? ((locRelBeamBucket == 0) ? 1 : -locAccidentalScalingFactor / (2 * locNumOutOfTimeBunchesToUse)) : 1;  // Weight by 1 for in-time events, ScalingFactor*(1/NBunches) for out-of-time
+		const Int_t    locNumOutOfTimeBunchesToUse = (locSkipNearestOutOfTimeBunch) ? locNumOutOfTimeBunchesInTree - 1 : locNumOutOfTimeBunchesInTree;
+		const Double_t locAccidentalScalingFactor  = dAnalysisUtilities.Get_AccidentalScalingFactor(Get_RunNumber(), locBeamP4.E(), dIsMC);  // Ideal value would be 1, but deviations require added factor, which is different for data and MC.
+		// const Double_t locAccidentalScalingFactorError = dAnalysisUtilities.Get_AccidentalScalingFactorError(Get_RunNumber(), locBeamP4.E());  // Ideal value would be 1, but deviations observed, need added factor.
+		const Double_t locHistAccidWeightFactor    = (dSidebandSubtractAcc) ? ((locRelBeamBucket == 0) ? 1 : -locAccidentalScalingFactor / (2 * locNumOutOfTimeBunchesToUse)) : 1;  // Weight by 1 for in-time events, ScalingFactor*(1/NBunches) for out-of-time
 
 		/********************************************* COMBINE FOUR-MOMENTUM ********************************************/
 
 		// DO YOUR STUFF HERE
-
-		// Combine 4-vectors
-		TLorentzVector locMissingP4_Measured = locBeamP4_Measured + dTargetP4;
-		locMissingP4_Measured -= locPiPlus1P4_Measured + locPiPlus2P4_Measured + locPiMinus1P4_Measured + locPiMinus2P4_Measured;
+		// kinematic variables of missing proton
+		// values from kinematic fit
+		const double   locMissingMassSquared = locMissingProtonP4.M2();
+		const TVector3 locMissingProtonP3    = locMissingProtonP4.Vect();
+		const double   locMissingProtonP     = locMissingProtonP3.Mag();
+		const double   locMissingProtonTheta = locMissingProtonP3.Theta() * TMath::RadToDeg();
+		const double   locMissingProtonPhi   = locMissingProtonP3.Phi()   * TMath::RadToDeg();
+		// measured values
+		const double   locMissingMassSquared_Measured = locMissingProtonP4_Measured.M2();
+		const TVector3 locMissingProtonP3_Measured    = locMissingProtonP4_Measured.Vect();
+		const double   locMissingProtonP_Measured     = locMissingProtonP3_Measured.Mag();
+		const double   locMissingProtonTheta_Measured = locMissingProtonP3_Measured.Theta() * TMath::RadToDeg();
+		const double   locMissingProtonPhi_Measured   = locMissingProtonP3_Measured.Phi()   * TMath::RadToDeg();
 
 		/******************************************** EXECUTE ANALYSIS ACTIONS *******************************************/
 
 		// Loop through the analysis actions, executing them in order for the active particle combo
-		dAnalyzeCutActions->Perform_Action(); // Must be executed before Execute_Actions()
-		if(!Execute_Actions()) //if the active combo fails a cut, IsComboCutFlag automatically set
+		// dAnalyzeCutActions->Perform_Action(); // Must be executed before Execute_Actions()
+		if (!Execute_Actions()) //if the active combo fails a cut, IsComboCutFlag automatically set
 			continue;
 
 		//if you manually execute any actions, and it fails a cut, be sure to call:
@@ -320,134 +333,113 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		//for arrays below: 2nd argument is value, 3rd is array index
 		//NOTE: By filling here, AFTER the cuts above, some indices won't be updated (and will be whatever they were from the last event)
 			//So, when you draw the branch, be sure to cut on "IsComboCut" to avoid these.
-		dTreeInterface->Fill_Fundamental<Float_t>("my_combo_array", -2*loc_i, loc_i);
-		dTreeInterface->Fill_TObject<TLorentzVector>("my_p4_array", locMyComboP4, loc_i);
+		dTreeInterface->Fill_Fundamental<Float_t>("my_combo_array", -2 * locComboIndex, locComboIndex);
+		dTreeInterface->Fill_TObject<TLorentzVector>("my_p4_array", locMyComboP4, locComboIndex);
 		*/
 
 		/**************************************** EXAMPLE: HISTOGRAM BEAM ENERGY *****************************************/
 
 		//Histogram beam energy (if haven't already)
-		if(locUsedSoFar_BeamEnergy.find(locBeamID) == locUsedSoFar_BeamEnergy.end())
-		{
-			// dHist_BeamEnergy->Fill(locBeamP4.E()); // Fills in-time and out-of-time beam photon combos
-			dHist_BeamEnergy->Fill(locBeamP4.E(), locHistAccidWeightFactor); // Alternate version with accidental subtraction
+		const double locBeamEnergy = locBeamP4.E();
+		if (locUsedSoFar_BeamEnergy.find(locBeamID) == locUsedSoFar_BeamEnergy.end()) {
+			// dHist_BeamEnergy->Fill(locBeamEnergy); // Fills in-time and out-of-time beam photon combos
+			dHist_BeamEnergy->Fill(locBeamEnergy, locHistAccidWeightFactor); // Alternate version with accidental subtraction
 
 			locUsedSoFar_BeamEnergy.insert(locBeamID);
 		}
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
 
-		//Missing Mass Squared
-		double locMissingMassSquared = locMissingP4_Measured.M2();
-
 		//Uniqueness tracking: Build the map of particles used for the missing mass
 			//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
 		map<Particle_t, set<Int_t> > locUsedThisCombo_MissingMass;
 		locUsedThisCombo_MissingMass[Unknown].insert(locBeamID); //beam
-		locUsedThisCombo_MissingMass[PiPlus].insert(locPiPlus1TrackID);
-		locUsedThisCombo_MissingMass[PiPlus].insert(locPiPlus2TrackID);
+		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlus1TrackID);
+		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlus2TrackID);
 		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinus1TrackID);
 		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinus2TrackID);
-
 		//compare to what's been used so far
-		if(locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end())
-		{
+		if (locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end()) {
 			//unique missing mass combo: histogram it, and register this combo of particles
 			dHist_RFWeight->Fill(locHistAccidWeightFactor);
-			// dHist_MissingMass->Fill(sqrt(locMissingMassSquared)); // Fills in-time and out-of-time beam photon combos
-			dHist_MissingMass->Fill        (sqrt(locMissingMassSquared), locHistAccidWeightFactor); // Alternate version with accidental subtraction
-			dHist_MissingMassSideband->Fill(sqrt(locMissingMassSquared), 1 - locHistAccidWeightFactor); // fill subtracted RF sidebands
-			// dHist_MissingMassSquared->Fill(locMissingMassSquared); // Fills in-time and out-of-time beam photon combos
-			dHist_MissingMassSquared->Fill        (locMissingMassSquared, locHistAccidWeightFactor); // Alternate version with accidental subtraction
-			dHist_MissingMassSquaredSideband->Fill(locMissingMassSquared, 1 - locHistAccidWeightFactor); // fill subtracted RF sidebands
-			const TVector3 locMissingProtonMom = locMissingProtonP4.Vect();
-			dHist_MissingParticle_MomVsTheta->Fill(locMissingProtonMom.Theta() * TMath::RadToDeg(), locMissingProtonMom.Mag(), locHistAccidWeightFactor);
-			dHist_MissingParticle_PhiVsTheta->Fill(locMissingProtonMom.Theta() * TMath::RadToDeg(), locMissingProtonMom.Phi() * TMath::RadToDeg(), locHistAccidWeightFactor);
+			// dHist_MissingMass->Fill(sqrt(locMissingMassSquared));  // Fills in-time and out-of-time beam photon combos
+			dHist_MissingMass->Fill        (sqrt(locMissingMassSquared_Measured), locHistAccidWeightFactor);  // Alternate version with accidental subtraction
+			dHist_MissingMassSideband->Fill(sqrt(locMissingMassSquared_Measured), 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
+			// dHist_MissingMassSquared->Fill(locMissingMassSquared);  // Fills in-time and out-of-time beam photon combos
+			dHist_MissingMassSquared->Fill        (locMissingMassSquared_Measured, locHistAccidWeightFactor);  // Alternate version with accidental subtraction
+			dHist_MissingMassSquaredSideband->Fill(locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
 
-			//TODO do we need to check uniqueness of (MM2, E_beam) combinations?
-			const double locBeamEnergy = locBeamP4.E();
-			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared, locHistAccidWeightFactor);
-			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared, 1 - locHistAccidWeightFactor);
-			bool locTrackFound = false;
-			{ // adapted from Int_t Selector_TrackEff::Fill_ResolutionHists(double locRFWeight, int locBeamEnergyBin) in Selector_TrackEff.C
-				const TVector3 locMissingMom   = locMissingP4_Measured.Vect();
-				const double   locMissingP     = locMissingMom.Mag();
-				const double   locMissingTheta = locMissingMom.Theta() * 180 / TMath::Pi();
-				const double   locMissingPhi   = locMissingMom.Phi()   * 180 / TMath::Pi();
+			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
+			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
-				// deque<DKinematicData*> locChargedTracks = dStep0Wrapper->Get_FinalParticles_ByCharge(true);
-				// cout << "pi+1 = ";
-				// printTrack(*dPiPlus1Wrapper);
-				// cout << "pi+2 = ";
-				// printTrack(*dPiPlus2Wrapper);
-				// cout << "pi-1 = ";
-				// printTrack(*dPiMinus1Wrapper);
-				// cout << "pi-2 = ";
-				// printTrack(*dPiMinus2Wrapper);
-				// cout << "!!! " << locChargedTracks.size() << ": " << endl;
-				// assert(locChargedTracks.size() == 5);  // 4 measured tracks + 1 missing track
-				// const vector<Int_t>     locMeasuredTrackIDs = {locPiPlus1TrackID, locPiPlus2TrackID, locPiMinus1TrackID, locPiMinus2TrackID};
-				// vector<DKinematicData*> locUnusedTracks;
-				// for (const auto& locTrack : locChargedTracks) {
-				// 	// printTrack(*track);
-				// 	const Int_t locTrackID  = locTrack->Get_ID();
-				// 	bool locIsMeasuredTrack = false;
-				// 	for (const auto locMeasuredID : locMeasuredTrackIDs) {
-				// 		if (locTrackID == locMeasuredID) {
-				// 			locIsMeasuredTrack = true;
-				// 			break;
-				// 		}
-				// 	}
-				// 	if (not locIsMeasuredTrack) {
-				// 		locUnusedTracks.push_back(locTrack);
-				// 	}
-				// }
-				// assert(locUnusedTracks.size() == 1);
-				// assert(locUnusedTracks[0]->Get_PID() == 14);  // missing proton
-				// cout << endl;
+			dHist_MissingParticle_MomVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonP,            locHistAccidWeightFactor);
+			dHist_MissingParticle_PhiVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonPhi,          locHistAccidWeightFactor);
+			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
+			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
 
-				// cout << "missing p: ";
-				// printTrack(*dMissingProtonWrapper);
-				// cout << "missing track: ";
-				// printTrack(*locUnusedTracks[0]);
+			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
+		}
 
-				// get 3-Vector of unused track
-				// const TVector3 locUnusedTrackP3       = locUnusedTracks[0]->Get_P4_Measured().Vect();
-				const TVector3 locUnusedTrackP3 = dTreeInterface->Get_TObject<TVector3>("SumP3_UnusedTracks", loc_i);
-				// cout << "!!! " << dComboWrapper->Get_Fundamental<Float_t>("SumPMag_UnusedTracks") << ":" << endl
-				//      << "     " << locUnusedTrackMom.Px() << ", " << locUnusedTrackMom.Py() << ", " << locUnusedTrackMom.Pz() << " = " << locUnusedTrackMom.Mag() << endl
-				//      << " vs. " << locMissingMom.Px() << ", " << locMissingMom.Py() << ", " << locMissingMom.Pz() << endl
-				//      << endl;
-				const double   locUnusedP     = locUnusedTrackP3.Mag();
-				const double   locUnusedTheta = locUnusedTrackP3.Theta() * 180 / TMath::Pi();
-				const double   locUnusedPhi   = locUnusedTrackP3.Phi()   * 180 / TMath::Pi();
+		// adapted from https://github.com/jrstevenjlab/wm_gluex/blob/master/analysis/omega_misspi/selector/DSelector_omega_misspi.C#L481
+		// Loop over charged-track hypotheses and find unused track
+		for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumChargedHypos(); ++locTrackIndex) {
+			// Set branch array indices corresponding to this charged-track hypothesis
+			dChargedHypoWrapper->Set_ArrayIndex(locTrackIndex);
+			// Make sure it is the unused track
+			if ((dChargedHypoWrapper->Get_PID() != Proton)
+			    or (dChargedHypoWrapper->Get_TrackID() == locPiPlus1TrackID)  or (dChargedHypoWrapper->Get_TrackID() == locPiPlus2TrackID)
+			    or (dChargedHypoWrapper->Get_TrackID() == locPiMinus1TrackID) or (dChargedHypoWrapper->Get_TrackID() == locPiMinus2TrackID)) {
+				continue;
+			}
 
+			//Uniqueness tracking: Build the map of particles used for the unused track
+			map<Particle_t, set<Int_t> > locUsedThisCombo_UnusedTrack;
+			locUsedThisCombo_UnusedTrack[Unknown].insert(locBeamID); //beam
+			locUsedThisCombo_UnusedTrack[PiPlus ].insert(locPiPlus1TrackID);
+			locUsedThisCombo_UnusedTrack[PiPlus ].insert(locPiPlus2TrackID);
+			locUsedThisCombo_UnusedTrack[PiMinus].insert(locPiMinus1TrackID);
+			locUsedThisCombo_UnusedTrack[PiMinus].insert(locPiMinus2TrackID);
+			locUsedThisCombo_UnusedTrack[Proton ].insert(dChargedHypoWrapper->Get_TrackID());
+			//compare to what's been used so far
+			if (locUsedSoFar_UnusedTrack.find(locUsedThisCombo_UnusedTrack) == locUsedSoFar_UnusedTrack.end()) {
+				// kinematic variables of unused track
+				const TLorentzVector locMissingProtonP4_Unused    = dChargedHypoWrapper->Get_P4_Measured();
+				const TVector3       locMissingProtonP3_Unused    = locMissingProtonP4_Unused.Vect();
+				const double         locMissingProtonP_Unused     = locMissingProtonP3_Unused.Mag();
+				const double         locMissingProtonTheta_Unused = locMissingProtonP3_Unused.Theta() * TMath::RadToDeg();
+				const double         locMissingProtonPhi_Unused   = locMissingProtonP3_Unused.Phi()   * TMath::RadToDeg();
 				// calculate deviation in spherical coordinates
-				const double locDeltaP      = locUnusedP - locMissingP;
-				const double locDeltaPOverP = locDeltaP / locMissingP;
-				const double locDeltaTheta  = locUnusedTheta - locMissingTheta;
-				double       locDeltaPhi    = locUnusedPhi - locMissingPhi;
+				//TODO use values from kinematic fit or measured values?
+				// const double locDeltaP      = locMissingProtonP_Unused - locMissingProtonP_Measured;
+				// const double locDeltaPOverP = locDeltaP / locMissingProtonP_Measured;
+				// const double locDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta_Measured;
+				// double       locDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi_Measured;
+				const double locDeltaP      = locMissingProtonP_Unused - locMissingProtonP;
+				const double locDeltaPOverP = locDeltaP / locMissingProtonP;
+				const double locDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta;
+				double       locDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi;
 				while (locDeltaPhi > 180) {
 					locDeltaPhi -= 360;
 				}
 				while (locDeltaPhi < -180) {
 					locDeltaPhi += 360;
 				}
-
-				const bool locPassDeltaPhiCutFlag    = (locMissingTheta < 5) ? true : (fabs(locDeltaPhi) <= 30);
+				// define matching track
+				//TODO use values from kinematic fit or measured values?
+				// const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta_Measured < 5) ? true : (fabs(locDeltaPhi) <= 30);
+				const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta < 5) ? true : (fabs(locDeltaPhi) <= 30);
 				const bool locPassDeltaThetaCutFlag  = (fabs(locDeltaTheta) <= 30);
 				const bool locPassDeltaPOverPCutFlag = (fabs(locDeltaPOverP) <= 0.6);
-				locTrackFound = locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag;
-			}
-			if (locTrackFound) {
-				dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared, locHistAccidWeightFactor);
-				dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared, 1 - locHistAccidWeightFactor);
-			} else {
-				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared, locHistAccidWeightFactor);
-				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared, 1 - locHistAccidWeightFactor);
-			}
+				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
+					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
+					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+				} else {
+					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
+					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+				}
 
-			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
+				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
+			}
 		}
 
 		//E.g. Cut

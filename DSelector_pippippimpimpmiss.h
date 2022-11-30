@@ -62,6 +62,8 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1D* dHist_BeamEnergy;
 		TH2D* dHist_MissingParticle_MomVsTheta;
 		TH2D* dHist_MissingParticle_PhiVsTheta;
+		TH2D* dHist_MissingParticle_MomVsTheta_Measured;
+		TH2D* dHist_MissingParticle_PhiVsTheta_Measured;
 
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy_Found;
