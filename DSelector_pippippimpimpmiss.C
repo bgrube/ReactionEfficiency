@@ -359,38 +359,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
 
-		//Uniqueness tracking: Build the map of particles used for the missing mass
-			//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
-		map<Particle_t, set<Int_t> > locUsedThisCombo_MissingMass;
-		locUsedThisCombo_MissingMass[Unknown].insert(locBeamID); //beam
-		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlus1TrackID);
-		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlus2TrackID);
-		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinus1TrackID);
-		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinus2TrackID);
-		//compare to what's been used so far
-		if (locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end()) {
-			//unique missing mass combo: histogram it, and register this combo of particles
-			dHist_RFWeight->Fill(locHistAccidWeightFactor);
-			// dHist_MissingMass->Fill(sqrt(locMissingMassSquared));  // Fills in-time and out-of-time beam photon combos
-			dHist_MissingMass->Fill        (sqrt(locMissingMassSquared_Measured), locHistAccidWeightFactor);  // Alternate version with accidental subtraction
-			dHist_MissingMassSideband->Fill(sqrt(locMissingMassSquared_Measured), 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
-			// dHist_MissingMassSquared->Fill(locMissingMassSquared);  // Fills in-time and out-of-time beam photon combos
-			dHist_MissingMassSquared->Fill        (locMissingMassSquared_Measured, locHistAccidWeightFactor);  // Alternate version with accidental subtraction
-			dHist_MissingMassSquaredSideband->Fill(locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
-
-			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
-			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
-
-			dHist_MissingParticle_MomVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonP,            locHistAccidWeightFactor);
-			dHist_MissingParticle_PhiVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonPhi,          locHistAccidWeightFactor);
-			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
-			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
-
-			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
-		}
-
 		// adapted from https://github.com/jrstevenjlab/wm_gluex/blob/master/analysis/omega_misspi/selector/DSelector_omega_misspi.C#L481
 		// Loop over charged-track hypotheses and find unused track
+		bool trackExists = false;
 		for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumChargedHypos(); ++locTrackIndex) {
 			// Set branch array indices corresponding to this charged-track hypothesis
 			dChargedHypoWrapper->Set_ArrayIndex(locTrackIndex);
@@ -400,8 +371,10 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			    or (dChargedHypoWrapper->Get_TrackID() == locPiMinus1TrackID) or (dChargedHypoWrapper->Get_TrackID() == locPiMinus2TrackID)) {
 				continue;
 			}
+			trackExists = true;
 
 			//Uniqueness tracking: Build the map of particles used for the unused track
+				//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
 			map<Particle_t, set<Int_t> > locUsedThisCombo_UnusedTrack;
 			locUsedThisCombo_UnusedTrack[Unknown].insert(locBeamID); //beam
 			locUsedThisCombo_UnusedTrack[PiPlus ].insert(locPiPlus1TrackID);
@@ -447,9 +420,11 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				const bool locPassDeltaThetaCutFlag  = (fabs(locMissingDeltaTheta) <= 30);
 				const bool locPassDeltaPOverPCutFlag = (fabs(locMissingDeltaPOverP) <= 0.6);
 				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
+					// found track
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 				} else {
+					// track exists but does not match
 					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 				}
@@ -457,6 +432,43 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
 			}
 		}
+
+		//Uniqueness tracking: Build the map of particles used for the missing mass
+			//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
+		map<Particle_t, set<Int_t> > locUsedThisCombo_MissingMass;
+		locUsedThisCombo_MissingMass[Unknown].insert(locBeamID); //beam
+		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlus1TrackID);
+		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlus2TrackID);
+		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinus1TrackID);
+		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinus2TrackID);
+		//compare to what's been used so far
+		if (locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end()) {
+			//unique missing mass combo: histogram it, and register this combo of particles
+			dHist_RFWeight->Fill(locHistAccidWeightFactor);
+			// dHist_MissingMass->Fill(sqrt(locMissingMassSquared));  // Fills in-time and out-of-time beam photon combos
+			dHist_MissingMass->Fill        (sqrt(locMissingMassSquared_Measured), locHistAccidWeightFactor);  // Alternate version with accidental subtraction
+			dHist_MissingMassSideband->Fill(sqrt(locMissingMassSquared_Measured), 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
+			// dHist_MissingMassSquared->Fill(locMissingMassSquared);  // Fills in-time and out-of-time beam photon combos
+			dHist_MissingMassSquared->Fill        (locMissingMassSquared_Measured, locHistAccidWeightFactor);  // Alternate version with accidental subtraction
+			dHist_MissingMassSquaredSideband->Fill(locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
+
+			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
+			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+
+			dHist_MissingParticle_MomVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonP,            locHistAccidWeightFactor);
+			dHist_MissingParticle_PhiVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonPhi,          locHistAccidWeightFactor);
+			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
+			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
+
+			if (not trackExists) {
+				// there was no track
+				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
+				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+			}
+
+			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
+		}
+
 
 		//E.g. Cut
 		//if((locMissingMassSquared < -0.04) || (locMissingMassSquared > 0.04))
