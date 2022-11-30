@@ -4,7 +4,6 @@
 *.log
 *.pdf
 *.root
-*.root.weight
 *_dictUmbrella.h
 *_dictContent.h
 
@@ -20,6 +19,7 @@
 # Precompiled Headers
 *.gch
 *.pch
+*.pcm
 
 # Compiled Dynamic libraries
 *.so
