@@ -88,14 +88,23 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
+	dHist_BeamEnergy                          = new TH1D("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
 	dHist_RFWeight                            = new TH1D("RFWeight",                           ";RF Weight",                               1000, -2,    2);
 	dHist_MissingMass                         = new TH1D("MissingMass",                        ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
 	dHist_MissingMassSideband                 = new TH1D("MissingMassSideband",                ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
-	dHist_BeamEnergy                          = new TH1D("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
 	dHist_MissingParticle_MomVsTheta          = new TH2D("MissingParticleMomVsTheta",          ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
 	dHist_MissingParticle_PhiVsTheta          = new TH2D("MissingParticlePhiVsTheta",          ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
 	dHist_MissingParticle_MomVsTheta_Measured = new TH2D("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
 	dHist_MissingParticle_PhiVsTheta_Measured = new TH2D("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
+
+	dHist_locMissingDeltaP                     = new TH1D("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      800, -9, 9);
+	dHist_locMissingDeltaPOverP                = new TH1D("MissingDeltaPOverP",                ";(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", 500, -2, 2);
+	dHist_locMissingDeltaTheta                 = new TH1D("MissingDeltaTheta",                 ";#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              360, -180, 180);
+	dHist_locMissingDeltaPhi                   = new TH1D("MissingDeltaPhi",                   ";#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  360, -180, 180);
+	dHist_locMissingProtonP_kinFitVsUnused     = new TH2D("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
+	dHist_locMissingProtonTheta_kinFitVsUnused = new TH2D("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
+	dHist_locMissingProtonPhi_kinFitVsUnused   = new TH2D("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
+
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingMassSquared                             = new TH1D("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
@@ -410,26 +419,33 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				const double         locMissingProtonPhi_Unused   = locMissingProtonP3_Unused.Phi()   * TMath::RadToDeg();
 				// calculate deviation in spherical coordinates
 				//TODO use values from kinematic fit or measured values?
-				// const double locDeltaP      = locMissingProtonP_Unused - locMissingProtonP_Measured;
-				// const double locDeltaPOverP = locDeltaP / locMissingProtonP_Measured;
-				// const double locDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta_Measured;
-				// double       locDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi_Measured;
-				const double locDeltaP      = locMissingProtonP_Unused - locMissingProtonP;
-				const double locDeltaPOverP = locDeltaP / locMissingProtonP;
-				const double locDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta;
-				double       locDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi;
-				while (locDeltaPhi > 180) {
-					locDeltaPhi -= 360;
+				// const double locMissingDeltaP      = locMissingProtonP_Unused - locMissingProtonP_Measured;
+				// const double locMissingDeltaPOverP = locMissingDeltaP / locMissingProtonP_Measured;
+				// const double locMissingDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta_Measured;
+				// double       locMissingDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi_Measured;
+				const double locMissingDeltaP      = locMissingProtonP_Unused - locMissingProtonP;
+				const double locMissingDeltaPOverP = locMissingDeltaP / locMissingProtonP;
+				const double locMissingDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta;
+				double       locMissingDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi;
+				while (locMissingDeltaPhi > 180) {
+					locMissingDeltaPhi -= 360;
 				}
-				while (locDeltaPhi < -180) {
-					locDeltaPhi += 360;
+				while (locMissingDeltaPhi < -180) {
+					locMissingDeltaPhi += 360;
 				}
+				dHist_locMissingDeltaP->Fill     (locMissingDeltaP);
+				dHist_locMissingDeltaPOverP->Fill(locMissingDeltaPOverP);
+				dHist_locMissingDeltaTheta->Fill (locMissingDeltaTheta);
+				dHist_locMissingDeltaPhi->Fill   (locMissingDeltaPhi);
+				dHist_locMissingProtonP_kinFitVsUnused->Fill    (locMissingProtonP_Unused,     locMissingProtonP);
+				dHist_locMissingProtonTheta_kinFitVsUnused->Fill(locMissingProtonTheta_Unused, locMissingProtonTheta);
+				dHist_locMissingProtonPhi_kinFitVsUnused->Fill  (locMissingProtonPhi_Unused,   locMissingProtonPhi);
 				// define matching track
 				//TODO use values from kinematic fit or measured values?
-				// const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta_Measured < 5) ? true : (fabs(locDeltaPhi) <= 30);
-				const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta < 5) ? true : (fabs(locDeltaPhi) <= 30);
-				const bool locPassDeltaThetaCutFlag  = (fabs(locDeltaTheta) <= 30);
-				const bool locPassDeltaPOverPCutFlag = (fabs(locDeltaPOverP) <= 0.6);
+				// const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta_Measured < 5) ? true : (fabs(locMissingDeltaPhi) <= 30);
+				const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta < 5) ? true : (fabs(locMissingDeltaPhi) <= 30);
+				const bool locPassDeltaThetaCutFlag  = (fabs(locMissingDeltaTheta) <= 30);
+				const bool locPassDeltaPOverPCutFlag = (fabs(locMissingDeltaPOverP) <= 0.6);
 				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);

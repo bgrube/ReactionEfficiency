@@ -54,17 +54,25 @@ class DSelector_pippippimpimpmiss : public DSelector
 
 		// DEFINE YOUR HISTOGRAMS HERE
 		// EXAMPLES:
+		TH1D* dHist_BeamEnergy;
 		TH1D* dHist_RFWeight;
 		TH1D* dHist_MissingMass;
 		TH1D* dHist_MissingMassSideband;
-		TH1D* dHist_MissingMassSquared;
-		TH1D* dHist_MissingMassSquaredSideband;
-		TH1D* dHist_BeamEnergy;
 		TH2D* dHist_MissingParticle_MomVsTheta;
 		TH2D* dHist_MissingParticle_PhiVsTheta;
 		TH2D* dHist_MissingParticle_MomVsTheta_Measured;
 		TH2D* dHist_MissingParticle_PhiVsTheta_Measured;
 
+		TH1D* dHist_locMissingDeltaP;
+		TH1D* dHist_locMissingDeltaPOverP;
+		TH1D* dHist_locMissingDeltaTheta;
+		TH1D* dHist_locMissingDeltaPhi;
+		TH2D* dHist_locMissingProtonP_kinFitVsUnused;
+		TH2D* dHist_locMissingProtonTheta_kinFitVsUnused;
+		TH2D* dHist_locMissingProtonPhi_kinFitVsUnused;
+
+		TH1D* dHist_MissingMassSquared;
+		TH1D* dHist_MissingMassSquaredSideband;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy_Found;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy_Missing;
