@@ -1,3 +1,13 @@
+*.code-workspace
+.vscode
+*.bak
+*.log
+*.pdf
+*.root
+*.root.weight
+*_dictUmbrella.h
+*_dictContent.h
+
 # Prerequisites
 *.d
 
