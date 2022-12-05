@@ -115,6 +115,10 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingMassSquaredVsBeamEnergySideband         = new TH2D("MissingMassSquaredVsBeamEnergySideband",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergySideband_Found   = new TH2D("MissingMassSquaredVsBeamEnergySideband_Found",   ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergySideband_Missing = new TH2D("MissingMassSquaredVsBeamEnergySideband_Missing", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	// bggen MC histograms
+	dHist_ThrownTopologies         = new TH1D("ThrownTopologies",         "", 1, 0, 1);
+	dHist_ThrownTopologies_Found   = new TH1D("ThrownTopologies_Found",   "", 1, 0, 1);
+	dHist_ThrownTopologies_Missing = new TH1D("ThrownTopologies_Missing", "", 1, 0, 1);
 	gDirectory->cd("..");
 
 	/************************** EXAMPLE USER INITIALIZATION: CUSTOM OUTPUT BRANCHES - MAIN TREE *************************/
@@ -231,6 +235,10 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 	set<map<Particle_t, set<Int_t> > > locUsedSoFar_UnusedTrack;
 
 	//INSERT USER ANALYSIS UNIQUENESS TRACKING HERE
+
+	/************************************************* PARSE THROWN TOPOLOGY ***************************************/
+
+	const TString locThrownTopology = Get_ThrownTopologyString();
 
 	/**************************************** EXAMPLE: FILL CUSTOM OUTPUT BRANCHES **************************************/
 
@@ -423,10 +431,16 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					// found track
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+
+					// fill histograms for topologies in bggen MC
+					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), 1);
 				} else {
 					// track exists but does not match
 					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+
+					// fill histograms for topologies in bggen MC
+					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), 1);
 				}
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
@@ -460,10 +474,16 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
 			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
 
+			// fill histograms for topologies in bggen MC
+			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), 1);
+
 			if (not trackExists) {
 				// there was no track
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
+
+				// fill histograms for topologies in bggen MC
+				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), 1);
 			}
 
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
@@ -579,6 +599,12 @@ void DSelector_pippippimpimpmiss::Finalize(void)
 		//Besides, it is best-practice to do post-processing (e.g. fitting) separately, in case there is a problem.
 
 	//DO YOUR STUFF HERE
+	dHist_ThrownTopologies->LabelsDeflate();
+	dHist_ThrownTopologies->LabelsOption(">");
+	dHist_ThrownTopologies_Found->LabelsDeflate();
+	dHist_ThrownTopologies_Found->LabelsOption(">");
+	dHist_ThrownTopologies_Missing->LabelsDeflate();
+	dHist_ThrownTopologies_Missing->LabelsOption(">");
 
 	//CALL THIS LAST
 	DSelector::Finalize(); //Saves results to the output file

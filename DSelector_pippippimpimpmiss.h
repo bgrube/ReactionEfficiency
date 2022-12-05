@@ -80,6 +80,14 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
 
+		// bggen MC histograms
+		TH1D* dHist_ThrownTopologies;
+		TH1D* dHist_ThrownTopologies_Found;
+		TH1D* dHist_ThrownTopologies_Missing;
+		// map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology;
+		// map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology_Found;
+		// map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology_Missing;
+
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };
 
