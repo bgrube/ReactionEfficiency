@@ -476,6 +476,15 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			// fill histograms for topologies in bggen MC
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), 1);
+			if (dHist_MissingMassSquared_ThrownTopology.find(locThrownTopology) == dHist_MissingMassSquared_ThrownTopology.end()) {
+				// create new histogram for topology
+				const TString newName = (TString)dHist_MissingMassSquared->GetName() + "__" + locThrownTopology;
+				gDirectory->cd("MissingMassSquared");
+				dHist_MissingMassSquared_ThrownTopology[locThrownTopology] = (TH1D*)dHist_MissingMassSquared->Clone(newName);
+				gDirectory->cd("..");
+				dHist_MissingMassSquared_ThrownTopology.at(locThrownTopology)->SetTitle(locThrownTopology);
+			}
+			dHist_MissingMassSquared_ThrownTopology.at(locThrownTopology)->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 
 			if (not trackExists) {
 				// there was no track
