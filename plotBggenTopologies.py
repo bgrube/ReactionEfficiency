@@ -37,9 +37,8 @@ def plotTopologies(normalize = False):
       hist = hists[case]
       bin[case] = hist.GetBinContent(hist.GetXaxis().FindBin(bin["topology"]))
   # overlay missing and found histograms
-  overlayHists = {case : hists[""].Clone(case) for case in ["Found", "Missing"]}
   for case in ["Found", "Missing"]:
-    hist = overlayHists[case]
+    hist = hists[case] = hists[""].Clone(case)
     for index, bin in enumerate(bins):
       hist.SetBinContent(index + 1, bin[case])
       assert bin["topology"] == hist.GetXaxis().GetBinLabel(index + 1)
