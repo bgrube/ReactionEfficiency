@@ -461,7 +461,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 					// fill histograms for topologies in bggen MC
-					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), 1);
+					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Found, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Found);
 				} else {
 					// track exists but does not match
@@ -470,7 +470,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 					// fill histograms for topologies in bggen MC
-					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), 1);
+					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 				}
 
@@ -506,7 +506,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
 
 			// fill histograms for topologies in bggen MC
-			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), 1);
+			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 			fillTopologyHist(dHist_MissingMassSquared_ThrownTopology, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared);
 
 			if (not trackExists) {
@@ -516,7 +516,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 				// fill histograms for topologies in bggen MC
-				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), 1);
+				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 			}
 
