@@ -104,6 +104,10 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_locMissingProtonP_kinFitVsUnused     = new TH2D("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
 	dHist_locMissingProtonTheta_kinFitVsUnused = new TH2D("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
 	dHist_locMissingProtonPhi_kinFitVsUnused   = new TH2D("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
+	dHist_locTruthDeltaP                       = new TH1D("TruthDeltaP",                       ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
+	dHist_locTruthDeltaPOverP                  = new TH1D("TruthDeltaPOverP",                  ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
+	dHist_locTruthDeltaTheta                   = new TH1D("TruthDeltaTheta",                   ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
+	dHist_locTruthDeltaPhi                     = new TH1D("TruthDeltaPhi",                     ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
 
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
@@ -427,27 +431,27 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				const double         locMissingProtonPhi_Unused   = locMissingProtonP3_Unused.Phi()   * TMath::RadToDeg();
 				// calculate deviation in spherical coordinates
 				//TODO use values from kinematic fit or measured values?
-				// const double locMissingDeltaP      = locMissingProtonP_Unused - locMissingProtonP_Measured;
-				// const double locMissingDeltaPOverP = locMissingDeltaP / locMissingProtonP_Measured;
-				// const double locMissingDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta_Measured;
-				// double       locMissingDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi_Measured;
-				const double locMissingDeltaP      = locMissingProtonP_Unused - locMissingProtonP;
-				const double locMissingDeltaPOverP = locMissingDeltaP / locMissingProtonP;
-				const double locMissingDeltaTheta  = locMissingProtonTheta_Unused - locMissingProtonTheta;
-				double       locMissingDeltaPhi    = locMissingProtonPhi_Unused - locMissingProtonPhi;
+				// const double         locMissingDeltaP             = locMissingProtonP_Unused - locMissingProtonP_Measured;
+				// const double         locMissingDeltaPOverP        = locMissingDeltaP / locMissingProtonP_Measured;
+				// const double         locMissingDeltaTheta         = locMissingProtonTheta_Unused - locMissingProtonTheta_Measured;
+				// double               locMissingDeltaPhi           = locMissingProtonPhi_Unused - locMissingProtonPhi_Measured;
+				const double         locMissingDeltaP             = locMissingProtonP_Unused - locMissingProtonP;
+				const double         locMissingDeltaPOverP        = locMissingDeltaP / locMissingProtonP;
+				const double         locMissingDeltaTheta         = locMissingProtonTheta_Unused - locMissingProtonTheta;
+				double               locMissingDeltaPhi           = locMissingProtonPhi_Unused - locMissingProtonPhi;
 				while (locMissingDeltaPhi > 180) {
 					locMissingDeltaPhi -= 360;
 				}
 				while (locMissingDeltaPhi < -180) {
 					locMissingDeltaPhi += 360;
 				}
-				dHist_locMissingDeltaP->Fill     (locMissingDeltaP);
-				dHist_locMissingDeltaPOverP->Fill(locMissingDeltaPOverP);
-				dHist_locMissingDeltaTheta->Fill (locMissingDeltaTheta);
-				dHist_locMissingDeltaPhi->Fill   (locMissingDeltaPhi);
-				dHist_locMissingProtonP_kinFitVsUnused->Fill    (locMissingProtonP_Unused,     locMissingProtonP);
-				dHist_locMissingProtonTheta_kinFitVsUnused->Fill(locMissingProtonTheta_Unused, locMissingProtonTheta);
-				dHist_locMissingProtonPhi_kinFitVsUnused->Fill  (locMissingProtonPhi_Unused,   locMissingProtonPhi);
+				dHist_locMissingDeltaP->Fill     (locMissingDeltaP,      locHistAccidWeightFactor);
+				dHist_locMissingDeltaPOverP->Fill(locMissingDeltaPOverP, locHistAccidWeightFactor);
+				dHist_locMissingDeltaTheta->Fill (locMissingDeltaTheta,  locHistAccidWeightFactor);
+				dHist_locMissingDeltaPhi->Fill   (locMissingDeltaPhi,    locHistAccidWeightFactor);
+				dHist_locMissingProtonP_kinFitVsUnused->Fill    (locMissingProtonP_Unused,     locMissingProtonP,     locHistAccidWeightFactor);
+				dHist_locMissingProtonTheta_kinFitVsUnused->Fill(locMissingProtonTheta_Unused, locMissingProtonTheta, locHistAccidWeightFactor);
+				dHist_locMissingProtonPhi_kinFitVsUnused->Fill  (locMissingProtonPhi_Unused,   locMissingProtonPhi,   locHistAccidWeightFactor);
 				// define matching track
 				//TODO use values from kinematic fit or measured values?
 				// const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta_Measured < 5) ? true : (fabs(locMissingDeltaPhi) <= 30);
@@ -520,9 +524,39 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 			}
 
+			bool trackTruthExists = false;
+			for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
+				// Set branch array indices corresponding to this charged-track hypothesis
+				dThrownWrapper->Set_ArrayIndex(locTrackIndex);
+				// Make sure it is the unused track
+				if (dThrownWrapper->Get_PID() != Proton) {
+					continue;
+				}
+				trackTruthExists = true;
+
+				const TLorentzVector locMissingProtonP4_Truth    = dThrownWrapper->Get_P4_Measured();
+				const TVector3       locMissingProtonP3_Truth    = locMissingProtonP4_Truth.Vect();
+				const double         locMissingProtonP_Truth     = locMissingProtonP3_Truth.Mag();
+				const double         locMissingProtonTheta_Truth = locMissingProtonP3_Truth.Theta() * TMath::RadToDeg();
+				const double         locMissingProtonPhi_Truth   = locMissingProtonP3_Truth.Phi()   * TMath::RadToDeg();
+				const double         locTruthDeltaP              = locMissingProtonP_Truth - locMissingProtonP;
+				const double         locTruthDeltaPOverP         = locTruthDeltaP / locMissingProtonP;
+				const double         locTruthDeltaTheta          = locMissingProtonTheta_Truth - locMissingProtonTheta;
+				double               locTruthDeltaPhi            = locMissingProtonPhi_Truth - locMissingProtonPhi;
+				while (locTruthDeltaPhi > 180) {
+					locTruthDeltaPhi -= 360;
+				}
+				while (locTruthDeltaPhi < -180) {
+					locTruthDeltaPhi += 360;
+				}
+				dHist_locTruthDeltaP->Fill     (locTruthDeltaP,      locHistAccidWeightFactor);
+				dHist_locTruthDeltaPOverP->Fill(locTruthDeltaPOverP, locHistAccidWeightFactor);
+				dHist_locTruthDeltaTheta->Fill (locTruthDeltaTheta,  locHistAccidWeightFactor);
+				dHist_locTruthDeltaPhi->Fill   (locTruthDeltaPhi,    locHistAccidWeightFactor);
+			}
+
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
 		}
-
 
 		//E.g. Cut
 		//if((locMissingMassSquared < -0.04) || (locMissingMassSquared > 0.04))

@@ -70,6 +70,10 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2D* dHist_locMissingProtonP_kinFitVsUnused;
 		TH2D* dHist_locMissingProtonTheta_kinFitVsUnused;
 		TH2D* dHist_locMissingProtonPhi_kinFitVsUnused;
+		TH1D* dHist_locTruthDeltaP;
+		TH1D* dHist_locTruthDeltaPOverP;
+		TH1D* dHist_locTruthDeltaTheta;
+		TH1D* dHist_locTruthDeltaPhi;
 
 		TH1D* dHist_MissingMassSquared;
 		TH1D* dHist_MissingMassSquared_Found;
