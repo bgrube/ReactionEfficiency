@@ -72,6 +72,8 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2D* dHist_locMissingProtonPhi_kinFitVsUnused;
 
 		TH1D* dHist_MissingMassSquared;
+		TH1D* dHist_MissingMassSquared_Found;
+		TH1D* dHist_MissingMassSquared_Missing;
 		TH1D* dHist_MissingMassSquaredSideband;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergy_Found;

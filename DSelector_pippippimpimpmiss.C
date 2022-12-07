@@ -108,6 +108,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingMassSquared                             = new TH1D("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
+	dHist_MissingMassSquared_Found                       = new TH1D("MissingMassSquared_Found",                       ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
+	dHist_MissingMassSquared_Missing                     = new TH1D("MissingMassSquared_Missing",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
 	dHist_MissingMassSquaredSideband                     = new TH1D("MissingMassSquaredSideband",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
 	dHist_MissingMassSquaredVsBeamEnergy                 = new TH2D("MissingMassSquaredVsBeamEnergy",                 ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergy_Found           = new TH2D("MissingMassSquaredVsBeamEnergy_Found",           ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
@@ -175,6 +177,31 @@ printTrack(const DKinematicData& track)
 	cout << "ID = "  << track.Get_ID() << ", "
 	     << "PID = " << track.Get_PID() << ", "
 	     << "p_z = " << track.Get_P4().Pz() << endl;
+}
+
+
+namespace {
+
+	void
+	fillTopologyHist(
+		map<TString, TH1D*>& histMap,
+		const TString&       topology,
+		const double         value,
+		const double         weight,
+		TH1D&                templateHist,
+		const TString&       subDirPath = "MissingMassSquared")
+	{
+		if (histMap.find(topology) == histMap.end()) {
+			// create new histogram for topology
+			const TString newName = (TString)templateHist.GetName() + "__" + topology;
+			gDirectory->cd(subDirPath);
+			histMap[topology] = (TH1D*)templateHist.Clone(newName);
+			gDirectory->cd("..");
+			histMap.at(topology)->SetTitle(topology);
+		}
+		histMap.at(topology)->Fill(value, weight);
+	}
+
 }
 
 
@@ -429,18 +456,22 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				const bool locPassDeltaPOverPCutFlag = (fabs(locMissingDeltaPOverP) <= 0.6);
 				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
 					// found track
+					dHist_MissingMassSquared_Found->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 					// fill histograms for topologies in bggen MC
 					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), 1);
+					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Found, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Found);
 				} else {
 					// track exists but does not match
+					dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 					// fill histograms for topologies in bggen MC
 					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), 1);
+					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 				}
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
@@ -476,23 +507,17 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			// fill histograms for topologies in bggen MC
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), 1);
-			if (dHist_MissingMassSquared_ThrownTopology.find(locThrownTopology) == dHist_MissingMassSquared_ThrownTopology.end()) {
-				// create new histogram for topology
-				const TString newName = (TString)dHist_MissingMassSquared->GetName() + "__" + locThrownTopology;
-				gDirectory->cd("MissingMassSquared");
-				dHist_MissingMassSquared_ThrownTopology[locThrownTopology] = (TH1D*)dHist_MissingMassSquared->Clone(newName);
-				gDirectory->cd("..");
-				dHist_MissingMassSquared_ThrownTopology.at(locThrownTopology)->SetTitle(locThrownTopology);
-			}
-			dHist_MissingMassSquared_ThrownTopology.at(locThrownTopology)->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
+			fillTopologyHist(dHist_MissingMassSquared_ThrownTopology, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared);
 
 			if (not trackExists) {
 				// there was no track
+				dHist_MissingMassSquared_Found->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 				// fill histograms for topologies in bggen MC
 				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), 1);
+				fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 			}
 
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
