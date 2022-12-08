@@ -74,6 +74,14 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1D* dHist_locTruthDeltaPOverP;
 		TH1D* dHist_locTruthDeltaTheta;
 		TH1D* dHist_locTruthDeltaPhi;
+		TH1D* dHist_locTruthDeltaP_Found;
+		TH1D* dHist_locTruthDeltaPOverP_Found;
+		TH1D* dHist_locTruthDeltaTheta_Found;
+		TH1D* dHist_locTruthDeltaPhi_Found;
+		TH1D* dHist_locTruthDeltaP_Missing;
+		TH1D* dHist_locTruthDeltaPOverP_Missing;
+		TH1D* dHist_locTruthDeltaTheta_Missing;
+		TH1D* dHist_locTruthDeltaPhi_Missing;
 
 		TH1D* dHist_MissingMassSquared;
 		TH1D* dHist_MissingMassSquared_Found;
@@ -93,6 +101,17 @@ class DSelector_pippippimpimpmiss : public DSelector
 		map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology;
 		map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology_Found;
 		map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology_Missing;
+
+	bool
+	fillTruthDeltaHist(
+		const double missingProtonP,
+		const double missingProtonTheta,
+		const double missingProtonPhi,
+		const double histAccidWeightFactor,
+		TH1D*        hTruthDeltaP,
+		TH1D*        hTruthDeltaPOverP,
+		TH1D*        hTruthDeltaTheta,
+		TH1D*        hTruthDeltaPhi);
 
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };
