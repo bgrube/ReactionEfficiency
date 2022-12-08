@@ -198,9 +198,9 @@ namespace {
 		if (histMap.find(topology) == histMap.end()) {
 			// create new histogram for topology
 			const TString newName = (TString)templateHist.GetName() + "__" + topology;
-			gDirectory->cd(subDirPath);
 			histMap[topology] = (TH1D*)templateHist.Clone(newName);
-			gDirectory->cd("..");
+			TDirectory* subDir = gDirectory->Get<TDirectory>(subDirPath);
+			histMap.at(topology)->SetDirectory(subDir);
 			histMap.at(topology)->SetTitle(topology);
 		}
 		histMap.at(topology)->Fill(value, weight);
