@@ -595,7 +595,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			if (not unusedTrackExists) {
 				// there was no unused track in the event
-				dHist_MissingMassSquared_Found->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
+				dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
