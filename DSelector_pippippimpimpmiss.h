@@ -63,25 +63,37 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2D* dHist_MissingParticle_MomVsTheta_Measured;
 		TH2D* dHist_MissingParticle_PhiVsTheta_Measured;
 
-		TH1D* dHist_locMissingDeltaP;
-		TH1D* dHist_locMissingDeltaPOverP;
-		TH1D* dHist_locMissingDeltaTheta;
-		TH1D* dHist_locMissingDeltaPhi;
-		TH2D* dHist_locMissingProtonP_kinFitVsUnused;
-		TH2D* dHist_locMissingProtonTheta_kinFitVsUnused;
-		TH2D* dHist_locMissingProtonPhi_kinFitVsUnused;
-		TH1D* dHist_locTruthDeltaP;
-		TH1D* dHist_locTruthDeltaPOverP;
-		TH1D* dHist_locTruthDeltaTheta;
-		TH1D* dHist_locTruthDeltaPhi;
-		TH1D* dHist_locTruthDeltaP_Found;
-		TH1D* dHist_locTruthDeltaPOverP_Found;
-		TH1D* dHist_locTruthDeltaTheta_Found;
-		TH1D* dHist_locTruthDeltaPhi_Found;
-		TH1D* dHist_locTruthDeltaP_Missing;
-		TH1D* dHist_locTruthDeltaPOverP_Missing;
-		TH1D* dHist_locTruthDeltaTheta_Missing;
-		TH1D* dHist_locTruthDeltaPhi_Missing;
+		TH1D* dHist_MissingDeltaP;
+		TH1D* dHist_MissingDeltaPOverP;
+		TH1D* dHist_MissingDeltaTheta;
+		TH1D* dHist_MissingDeltaPhi;
+		TH2D* dHist_MissingProtonP_kinFitVsUnused;
+		TH2D* dHist_MissingProtonTheta_kinFitVsUnused;
+		TH2D* dHist_MissingProtonPhi_kinFitVsUnused;
+		TH1D* dHist_TruthDeltaP;
+		TH1D* dHist_TruthDeltaPOverP;
+		TH1D* dHist_TruthDeltaTheta;
+		TH1D* dHist_TruthDeltaPhi;
+		TH1D* dHist_TruthDeltaP_Found;
+		TH1D* dHist_TruthDeltaPOverP_Found;
+		TH1D* dHist_TruthDeltaTheta_Found;
+		TH1D* dHist_TruthDeltaPhi_Found;
+		TH1D* dHist_TruthDeltaP_Missing;
+		TH1D* dHist_TruthDeltaPOverP_Missing;
+		TH1D* dHist_TruthDeltaTheta_Missing;
+		TH1D* dHist_TruthDeltaPhi_Missing;
+		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology;
+		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology;
+		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology;
+		map<TString, TH1D*> dHist_TruthDeltaPhi_ThrownTopology;
+		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology_Found;
+		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology_Found;
+		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology_Found;
+		map<TString, TH1D*> dHist_TruthDeltaPhi_ThrownTopology_Found;
+		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology_Missing;
+		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology_Missing;
+		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology_Missing;
+		map<TString, TH1D*> dHist_TruthDeltaPhi_ThrownTopology_Missing;
 
 		TH1D* dHist_MissingMassSquared;
 		TH1D* dHist_MissingMassSquared_Found;
@@ -104,14 +116,19 @@ class DSelector_pippippimpimpmiss : public DSelector
 
 	bool
 	fillTruthDeltaHist(
-		const double missingProtonP,
-		const double missingProtonTheta,
-		const double missingProtonPhi,
-		const double histAccidWeightFactor,
-		TH1D*        hTruthDeltaP,
-		TH1D*        hTruthDeltaPOverP,
-		TH1D*        hTruthDeltaTheta,
-		TH1D*        hTruthDeltaPhi);
+		const double         missingProtonP,
+		const double         missingProtonTheta,
+		const double         missingProtonPhi,
+		const double         histAccidWeightFactor,
+		TH1D*                hTruthDeltaP,
+		TH1D*                hTruthDeltaPOverP,
+		TH1D*                hTruthDeltaTheta,
+		TH1D*                hTruthDeltaPhi,
+		const TString&       thrownTopology,
+		map<TString, TH1D*>& histMap_TruthDeltaP,
+		map<TString, TH1D*>& histMap_TruthDeltaPoverP,
+		map<TString, TH1D*>& histMap_TruthDeltaTheta,
+		map<TString, TH1D*>& histMap_TruthDeltaPhi);
 
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };
