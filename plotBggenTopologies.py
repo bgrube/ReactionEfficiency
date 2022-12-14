@@ -73,10 +73,9 @@ def plotMissingMassSquared(topologies):
   cases = ["Found", "Missing", ""]
   hists = {topology : {case : inFile.Get(histBaseName + ("_" + case if case != "" else "") + "__" + topology) for case in cases} for topology in topologies}
   histsTotal = {case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases}
-  print(histsTotal)
 
   # overlay distributions for topologies
-  hStacks = {case : ROOT.THStack("hStackMissingMassSquared" + case, ("Overall" if case == "" else case) + f";{hists[topologies[0]][case].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)") for case in cases}
+  hStacks = {case : ROOT.THStack("hStackMissingMassSquaredTopologies" + case, ("Overall" if case == "" else case) + f";{hists[topologies[0]][case].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)") for case in cases}
   for case in cases:
     # total distribution
     hist = histsTotal[case]
@@ -89,14 +88,99 @@ def plotMissingMassSquared(topologies):
     for i, topology in enumerate(topologies):
       hist = hists[topology][case]
       hist.SetName(topology)
-      hist.SetLineColor(i + colorOffset)
       hist.Rebin(rebinFactor)
+      hist.SetLineColor(i + colorOffset)
       hStacks[case].Add(hist)
     canv = ROOT.TCanvas("justin_Proton_4pi_mm2_bggen_topologies" + ("_" + case if case != "" else ""))
     hStacks[case].Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
     canv.SaveAs(".pdf")
+
+
+def overlayMissingMassSquared():
+  inFileNames = ("pippippimpimpmiss.30370.root", "pippippimpimpmiss_bggen_2017_01-ver03.root")
+  labels = ("Real data (scaled)", "bggen MC")
+  histBaseName = "MissingMassSquared/MissingMassSquared"
+  rebinFactor = 100
+
+  # get histograms
+  inFiles = [ROOT.TFile(inFileName) for inFileName in inFileNames]
+  cases = ["Found", "Missing", ""]
+  hists = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases} for inFile in inFiles]
+
+  # overlay real-data and bggen MC distributions
+  hStacks = {case : ROOT.THStack("hStackMissingMassSquaredOverlay" + case, ("Total" if case == "" else case) + f";{hists[0][case].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)") for case in cases}
+  for case in cases:
+    # normalize real data
+    hist = hists[0][case]
+    hist.Scale(hists[1][case].Integral() / hist.Integral())
+    # set style
+    hist.SetLineColor(ROOT.kGray)
+    hist.SetFillColor(ROOT.kGray)
+    hists[1][case].SetLineColor(ROOT.kRed + 1)
+    for i, hist in enumerate(hists):
+      hist = hists[i][case]
+      hist.SetName(labels[i])
+      hist.Rebin(rebinFactor)
+      hStacks[case].Add(hist)
+    # draw distributions
+    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_bggen_overlay" + ("_" + case if case != "" else ""))
+    hStacks[case].Draw("NOSTACK HIST")
+    # add legend
+    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+    canv.SaveAs(".pdf")
+
+
+def plotMcTruthComparison():
+  inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  histBaseNames = (
+    "MissingMassSquared/TruthDeltaPOverP",
+    "MissingMassSquared/TruthDeltaTheta",
+    "MissingMassSquared/TruthDeltaPhi")
+  sigTopology = "2#pi^{#plus}2#pi^{#minus}p"
+  bkgTopology = "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]"
+  colors = {
+    "Found"   : ROOT.kGreen + 2,
+    "Missing" : ROOT.kRed + 1,
+    ""        : ROOT.kGray
+  }
+
+  # get histograms
+  inFile = ROOT.TFile(inFileName)
+  cases = ["", "Found", "Missing"]
+  histsTot = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases} for histBaseName in histBaseNames]
+  histsSig = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "") + "__" + sigTopology) for case in cases} for histBaseName in histBaseNames]
+  histsBkg = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "") + "__" + bkgTopology) for case in cases} for histBaseName in histBaseNames]
+  histsBkgTot = []
+  for i, hists in enumerate(histsTot):
+    histsBkgTot.append({})
+    for case, histTot in hists.items():
+      histSig = histsSig[i][case]
+      histBkg = histTot.Clone(histSig.GetName().split("__")[0] + "__bkg")
+      histBkg.Add(histSig, -1)
+      histsBkgTot[i][case] = histBkg
+
+  # draw histograms
+  for hists in histsTot + histsSig + histsBkg + histsBkgTot:
+    distrName = hists[""].GetName()
+    hStack = ROOT.THStack("hStack" + distrName, f";{hists[''].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)")
+    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_bggen_mctruthcomp_" + distrName, "", 600, 600)
+    for case, hist in hists.items():
+      hist.SetName(case if case != "" else "Total")
+      hist.SetTitle("")
+      hist.SetLineColor(colors[case])
+      if case == "":
+        hist.SetFillColor(colors[case])
+      hStack.Add(hist)
+    hStack.Draw("NOSTACK HIST")
+    hStack.GetYaxis().SetTitleOffset(1.5)
+    if "TruthDeltaTheta" in distrName:
+      hStack.GetXaxis().SetRangeUser(-100, 100)
+    # add legend
+    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+    canv.SaveAs(".pdf")
+
 
 if __name__ == "__main__":
   ROOT.gROOT.LoadMacro("~/rootlogon.C")
@@ -114,3 +198,5 @@ if __name__ == "__main__":
   topologies = plotTopologies(normalize = False)
   plotTopologies(normalize = True)
   plotMissingMassSquared(topologies)
+  overlayMissingMassSquared()
+  plotMcTruthComparison()
