@@ -8,7 +8,8 @@
 #include "DSelector/DCutActions.h"
 
 #include "TH1D.h"
-// #include "TH2D.h"
+#include "TH3D.h"
+
 
 class DSelector_pippippimpimpmiss : public DSelector
 {
@@ -52,6 +53,12 @@ class DSelector_pippippimpimpmiss : public DSelector
 		DChargedTrackHypothesis* dPiMinus2Wrapper;
 		DKinematicData* dMissingProtonWrapper;
 
+		// define bin labels for categorial axis
+		static const TString dLabelTotal;
+		static const TString dLabelFound;
+		static const TString dLabelMissing;
+		static const std::vector<TString> dBinLabels;
+
 		// DEFINE YOUR HISTOGRAMS HERE
 		// EXAMPLES:
 		TH1D* dHist_BeamEnergy;
@@ -82,6 +89,8 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1D* dHist_TruthDeltaPOverP_Missing;
 		TH1D* dHist_TruthDeltaTheta_Missing;
 		TH1D* dHist_TruthDeltaPhi_Missing;
+		//TODO use 2D plots with categorial y axis instead of map?
+		//     could in principle also replace Total, Missing, and Found histograms
 		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology;
 		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology;
 		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology;
@@ -105,6 +114,9 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
 		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
+
+		TH3D* dHist_NmbUnusedShowers;
+		TH3D* dHist_EnergyUnusedShowers;
 
 		// bggen MC histograms
 		TH1D* dHist_ThrownTopologies;
