@@ -17,11 +17,13 @@ doit(
 	// const TString fileNamePattern = "./bggen_2017_01-ver03/batch01/tree_pippippimpimpmiss__B1_T1_U1_Effic/030285/tree_pippippimpimpmiss__B1_T1_U1_Effic_030285_000.root";
 	const TString fileNamePattern = "./tree_pippippimpimpmiss__B1_T1_U1_Effic_bggen_2017_01-ver03_batch01.root";
 	// pi+pi-(p)
+	// const TString selectorName    = "./DSelector_pippimpmiss.C+";
 	// const TString treeName        = "pippimpmiss__B1_T1_U1_Effic_Tree";
 	// const TString fileNamePattern = "./2017_01-ver04/batch02/tree_pippimpmiss__B1_T1_U1_Effic_030730.root";
 
 	TChain* chain = new TChain(treeName);
 	chain->Add(fileNamePattern);
+	cout << "processing tree '" << treeName << "' in file(s) '" << fileNamePattern << "' using selector '" << selectorName << "'" << endl;
 	if (runPROOF) {
 		// run with proof
 		gEnv->SetValue("ProofLite.Sandbox", "$PWD/.proof/");
