@@ -182,6 +182,52 @@ def plotMcTruthComparison():
     canv.SaveAs(".pdf")
 
 
+def overlayTopologies(
+  inFileName,
+  histName,
+  maxNmbTopologies = 10,
+  xRange           = None):
+  # get histograms
+  inFile = ROOT.TFile(inFileName)
+  hist3D = inFile.Get(histName)
+  xAxis = hist3D.GetXaxis()
+  yAxis = hist3D.GetYaxis()
+  zAxis = hist3D.GetZaxis()
+  cases = [yAxis.GetBinLabel(i + 1) for i in range(0, yAxis.GetNbins())]
+  topologies = [zAxis.GetBinLabel(i + 1) for i in range(0, zAxis.GetNbins())]
+  assert topologies[0] == "Total"
+  # overlay distributions for topologies
+  for case in cases:
+    hStack = ROOT.THStack(f"{hist3D.GetName()}_{case}", f"{case};{xAxis.GetTitle()};Number of Combos (RF-subtracted)")
+    caseBin = yAxis.FindBin(case)
+    yAxis.SetRange(caseBin, caseBin)
+    hist2D = hist3D.Project3D("ZX_" + case)
+    hists = []
+    for i in range(0, maxNmbTopologies + 1):
+      hist1D = hist2D.ProjectionX(f"{hist3D.GetName()}_{case}_{topologies[i]}", i + 1, i + 1)
+      hist1D.SetTitle(topologies[i])
+      if i == 0:
+        hist1D.SetLineColor(ROOT.kGray)
+        hist1D.SetFillColor(ROOT.kGray)
+      else:
+        hist1D.SetLineColor(i)
+      hists.append(hist1D)
+      hStack.Add(hist1D)
+    # draw distributions
+    canv = ROOT.TCanvas(f"justin_Proton_4pi_{hist3D.GetName()}_bggen_topologies_{case}")
+    hStack.Draw("NOSTACK HIST")
+    xAxis = hStack.GetXaxis()
+    if not xRange is None:
+      xAxis.SetRangeUser(*xRange)
+    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+    if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
+      line = ROOT.TLine()
+      line.SetLineStyle(ROOT.kDashed)
+      line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+    # add legend
+    canv.SaveAs(".pdf")
+
+
 if __name__ == "__main__":
   ROOT.gROOT.LoadMacro("~/rootlogon.C")
   ROOT.gROOT.ForceStyle()
@@ -195,8 +241,12 @@ if __name__ == "__main__":
   ROOT.gStyle.SetStatFormat("8.8g")
   ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
 
-  topologies = plotTopologies(normalize = False)
-  plotTopologies(normalize = True)
-  plotMissingMassSquared(topologies)
-  overlayMissingMassSquared()
-  plotMcTruthComparison()
+  inFileName = "pippippimpimpmiss.root"
+
+  # topologies = plotTopologies(normalize = False)
+  # plotTopologies(normalize = True)
+  # plotMissingMassSquared(topologies)
+  # overlayMissingMassSquared()
+  # plotMcTruthComparison()
+  overlayTopologies(inFileName, "MissingMassSquared/NmbUnusedShowers",    xRange = (-0.5, 10))
+  overlayTopologies(inFileName, "MissingMassSquared/EnergyUnusedShowers", xRange = (0,    6))
