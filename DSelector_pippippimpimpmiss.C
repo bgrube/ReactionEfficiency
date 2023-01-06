@@ -95,52 +95,52 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
-	dHist_BeamEnergy                          = new TH1D("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
-	dHist_RFWeight                            = new TH1D("RFWeight",                           ";RF Weight",                               1000, -2,    2);
-	dHist_MissingMass                         = new TH1D("MissingMass",                        ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
-	dHist_MissingMassSideband                 = new TH1D("MissingMassSideband",                ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
-	dHist_MissingParticle_MomVsTheta          = new TH2D("MissingParticleMomVsTheta",          ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
-	dHist_MissingParticle_PhiVsTheta          = new TH2D("MissingParticlePhiVsTheta",          ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
-	dHist_MissingParticle_MomVsTheta_Measured = new TH2D("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
-	dHist_MissingParticle_PhiVsTheta_Measured = new TH2D("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
+	dHist_BeamEnergy                          = new TH1F("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
+	dHist_RFWeight                            = new TH1F("RFWeight",                           ";RF Weight",                               1000, -2,    2);
+	dHist_MissingMass                         = new TH1F("MissingMass",                        ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
+	dHist_MissingMassSideband                 = new TH1F("MissingMassSideband",                ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
+	dHist_MissingParticle_MomVsTheta          = new TH2F("MissingParticleMomVsTheta",          ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
+	dHist_MissingParticle_PhiVsTheta          = new TH2F("MissingParticlePhiVsTheta",          ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
+	dHist_MissingParticle_MomVsTheta_Measured = new TH2F("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
+	dHist_MissingParticle_PhiVsTheta_Measured = new TH2F("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
 
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
-	dHist_MissingDeltaP                     = new TH1D("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      800, -9, 9);
-	dHist_MissingDeltaPOverP                = new TH1D("MissingDeltaPOverP",                ";(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", 500, -2, 2);
-	dHist_MissingDeltaTheta                 = new TH1D("MissingDeltaTheta",                 ";#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              360, -180, 180);
-	dHist_MissingDeltaPhi                   = new TH1D("MissingDeltaPhi",                   ";#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  360, -180, 180);
-	dHist_MissingProtonP_kinFitVsUnused     = new TH2D("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
-	dHist_MissingProtonTheta_kinFitVsUnused = new TH2D("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
-	dHist_MissingProtonPhi_kinFitVsUnused   = new TH2D("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
+	dHist_MissingDeltaP                     = new TH1F("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      800, -9, 9);
+	dHist_MissingDeltaPOverP                = new TH1F("MissingDeltaPOverP",                ";(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", 500, -2, 2);
+	dHist_MissingDeltaTheta                 = new TH1F("MissingDeltaTheta",                 ";#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              360, -180, 180);
+	dHist_MissingDeltaPhi                   = new TH1F("MissingDeltaPhi",                   ";#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  360, -180, 180);
+	dHist_MissingProtonP_kinFitVsUnused     = new TH2F("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
+	dHist_MissingProtonTheta_kinFitVsUnused = new TH2F("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
+	dHist_MissingProtonPhi_kinFitVsUnused   = new TH2F("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
 	// MC truth histograms
-	dHist_TruthDeltaP                       = new TH1D("TruthDeltaP",                       ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
-	dHist_TruthDeltaPOverP                  = new TH1D("TruthDeltaPOverP",                  ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
-	dHist_TruthDeltaTheta                   = new TH1D("TruthDeltaTheta",                   ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
-	dHist_TruthDeltaPhi                     = new TH1D("TruthDeltaPhi",                     ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
-	dHist_TruthDeltaP_Found                 = new TH1D("TruthDeltaP_Found",                 ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
-	dHist_TruthDeltaPOverP_Found            = new TH1D("TruthDeltaPOverP_Found",            ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
-	dHist_TruthDeltaTheta_Found             = new TH1D("TruthDeltaTheta_Found",             ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
-	dHist_TruthDeltaPhi_Found               = new TH1D("TruthDeltaPhi_Found",               ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
-	dHist_TruthDeltaP_Missing               = new TH1D("TruthDeltaP_Missing",               ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
-	dHist_TruthDeltaPOverP_Missing          = new TH1D("TruthDeltaPOverP_Missing",          ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
-	dHist_TruthDeltaTheta_Missing           = new TH1D("TruthDeltaTheta_Missing",           ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
-	dHist_TruthDeltaPhi_Missing             = new TH1D("TruthDeltaPhi_Missing",             ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
+	dHist_TruthDeltaP                       = new TH1F("TruthDeltaP",                       ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
+	dHist_TruthDeltaPOverP                  = new TH1F("TruthDeltaPOverP",                  ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
+	dHist_TruthDeltaTheta                   = new TH1F("TruthDeltaTheta",                   ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
+	dHist_TruthDeltaPhi                     = new TH1F("TruthDeltaPhi",                     ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
+	dHist_TruthDeltaP_Found                 = new TH1F("TruthDeltaP_Found",                 ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
+	dHist_TruthDeltaPOverP_Found            = new TH1F("TruthDeltaPOverP_Found",            ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
+	dHist_TruthDeltaTheta_Found             = new TH1F("TruthDeltaTheta_Found",             ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
+	dHist_TruthDeltaPhi_Found               = new TH1F("TruthDeltaPhi_Found",               ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
+	dHist_TruthDeltaP_Missing               = new TH1F("TruthDeltaP_Missing",               ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
+	dHist_TruthDeltaPOverP_Missing          = new TH1F("TruthDeltaPOverP_Missing",          ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
+	dHist_TruthDeltaTheta_Missing           = new TH1F("TruthDeltaTheta_Missing",           ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
+	dHist_TruthDeltaPhi_Missing             = new TH1F("TruthDeltaPhi_Missing",             ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
 
-	dHist_MissingMassSquared                             = new TH1D("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquared_Found                       = new TH1D("MissingMassSquared_Found",                       ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquared_Missing                     = new TH1D("MissingMassSquared_Missing",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquaredSideband                     = new TH1D("MissingMassSquaredSideband",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquaredVsBeamEnergy                 = new TH2D("MissingMassSquaredVsBeamEnergy",                 ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergy_Found           = new TH2D("MissingMassSquaredVsBeamEnergy_Found",           ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergy_Missing         = new TH2D("MissingMassSquaredVsBeamEnergy_Missing",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergySideband         = new TH2D("MissingMassSquaredVsBeamEnergySideband",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergySideband_Found   = new TH2D("MissingMassSquaredVsBeamEnergySideband_Found",   ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergySideband_Missing = new TH2D("MissingMassSquaredVsBeamEnergySideband_Missing", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquared                             = new TH1F("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
+	dHist_MissingMassSquared_Found                       = new TH1F("MissingMassSquared_Found",                       ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
+	dHist_MissingMassSquared_Missing                     = new TH1F("MissingMassSquared_Missing",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
+	dHist_MissingMassSquaredSideband                     = new TH1F("MissingMassSquaredSideband",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
+	dHist_MissingMassSquaredVsBeamEnergy                 = new TH2F("MissingMassSquaredVsBeamEnergy",                 ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergy_Found           = new TH2F("MissingMassSquaredVsBeamEnergy_Found",           ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergy_Missing         = new TH2F("MissingMassSquaredVsBeamEnergy_Missing",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergySideband         = new TH2F("MissingMassSquaredVsBeamEnergySideband",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergySideband_Found   = new TH2F("MissingMassSquaredVsBeamEnergySideband_Found",   ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergySideband_Missing = new TH2F("MissingMassSquaredVsBeamEnergySideband_Missing", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 
 	// y axis: combo category, z axis: bggen MC topology
-	dHist_NmbUnusedShowers    = new TH3D("NmbUnusedShowers",    ";Number of Unused Showers;",   20, -0.5, 19.5, 3, 0, 3, 1, 0, 1);
-	dHist_EnergyUnusedShowers = new TH3D("EnergyUnusedShowers", ";Unused Shower Energy (GeV);", 110, 0, 11,     3, 0, 3, 1, 0, 1);
+	dHist_NmbUnusedShowers    = new TH3F("NmbUnusedShowers",    ";Number of Unused Showers;",   20, -0.5, 19.5, 3, 0, 3, 1, 0, 1);
+	dHist_EnergyUnusedShowers = new TH3F("EnergyUnusedShowers", ";Unused Shower Energy (GeV);", 110, 0, 11,     3, 0, 3, 1, 0, 1);
 	// set bin labels for combo category
 	vector<TH1*> hists = {dHist_NmbUnusedShowers, dHist_EnergyUnusedShowers};
 	for (auto hist : hists) {
@@ -152,9 +152,9 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	}
 
 	// bggen MC histograms
-	dHist_ThrownTopologies         = new TH1D("ThrownTopologies",         "", 1, 0, 1);
-	dHist_ThrownTopologies_Found   = new TH1D("ThrownTopologies_Found",   "", 1, 0, 1);
-	dHist_ThrownTopologies_Missing = new TH1D("ThrownTopologies_Missing", "", 1, 0, 1);
+	dHist_ThrownTopologies         = new TH1F("ThrownTopologies",         "", 1, 0, 1);
+	dHist_ThrownTopologies_Found   = new TH1F("ThrownTopologies_Found",   "", 1, 0, 1);
+	dHist_ThrownTopologies_Missing = new TH1F("ThrownTopologies_Missing", "", 1, 0, 1);
 	gDirectory->cd("..");
 
 	/************************** EXAMPLE USER INITIALIZATION: CUSTOM OUTPUT BRANCHES - MAIN TREE *************************/
@@ -218,17 +218,17 @@ namespace {
 
 	void
 	fillTopologyHist(
-		map<TString, TH1D*>& histMap,
+		map<TString, TH1F*>& histMap,
 		const TString&       topology,
 		const double         value,
 		const double         weight,
-		TH1D&                templateHist,
+		TH1F&                templateHist,
 		const TString&       subDirPath = "MissingMassSquared")
 	{
 		if (histMap.find(topology) == histMap.end()) {
 			// create new histogram for topology
 			const TString newName = (TString)templateHist.GetName() + "__" + topology;
-			histMap[topology] = (TH1D*)templateHist.Clone(newName);
+			histMap[topology] = (TH1F*)templateHist.Clone(newName);
 			TDirectory* subDir = gDirectory->Get<TDirectory>(subDirPath);
 			histMap.at(topology)->SetDirectory(subDir);
 			histMap.at(topology)->SetTitle(topology);
@@ -245,15 +245,15 @@ DSelector_pippippimpimpmiss::fillTruthDeltaHist(
 	const double         missingProtonTheta,
 	const double         missingProtonPhi,
 	const double         histAccidWeightFactor,
-	TH1D*                hTruthDeltaP,
-	TH1D*                hTruthDeltaPOverP,
-	TH1D*                hTruthDeltaTheta,
-	TH1D*                hTruthDeltaPhi,
+	TH1F*                hTruthDeltaP,
+	TH1F*                hTruthDeltaPOverP,
+	TH1F*                hTruthDeltaTheta,
+	TH1F*                hTruthDeltaPhi,
 	const TString&       thrownTopology,
-	map<TString, TH1D*>& histMap_TruthDeltaP,
-	map<TString, TH1D*>& histMap_TruthDeltaPoverP,
-	map<TString, TH1D*>& histMap_TruthDeltaTheta,
-	map<TString, TH1D*>& histMap_TruthDeltaPhi)
+	map<TString, TH1F*>& histMap_TruthDeltaP,
+	map<TString, TH1F*>& histMap_TruthDeltaPoverP,
+	map<TString, TH1F*>& histMap_TruthDeltaTheta,
+	map<TString, TH1F*>& histMap_TruthDeltaPhi)
 {
 	bool truthTrackExists = false;
 	for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {

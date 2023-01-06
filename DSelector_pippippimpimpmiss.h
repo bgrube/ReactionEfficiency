@@ -7,8 +7,8 @@
 #include "DSelector/DHistogramActions.h"
 #include "DSelector/DCutActions.h"
 
-#include "TH1D.h"
-#include "TH3D.h"
+#include "TH1F.h"
+#include "TH3F.h"
 
 
 class DSelector_pippippimpimpmiss : public DSelector
@@ -61,70 +61,71 @@ class DSelector_pippippimpimpmiss : public DSelector
 
 		// DEFINE YOUR HISTOGRAMS HERE
 		// EXAMPLES:
-		TH1D* dHist_BeamEnergy;
-		TH1D* dHist_RFWeight;
-		TH1D* dHist_MissingMass;
-		TH1D* dHist_MissingMassSideband;
-		TH2D* dHist_MissingParticle_MomVsTheta;
-		TH2D* dHist_MissingParticle_PhiVsTheta;
-		TH2D* dHist_MissingParticle_MomVsTheta_Measured;
-		TH2D* dHist_MissingParticle_PhiVsTheta_Measured;
+		TH1F* dHist_BeamEnergy;
+		TH1F* dHist_RFWeight;
+		TH1F* dHist_MissingMass;
+		TH1F* dHist_MissingMassSideband;
+		TH2F* dHist_MissingParticle_MomVsTheta;
+		TH2F* dHist_MissingParticle_PhiVsTheta;
+		TH2F* dHist_MissingParticle_MomVsTheta_Measured;
+		TH2F* dHist_MissingParticle_PhiVsTheta_Measured;
 
-		TH1D* dHist_MissingDeltaP;
-		TH1D* dHist_MissingDeltaPOverP;
-		TH1D* dHist_MissingDeltaTheta;
-		TH1D* dHist_MissingDeltaPhi;
-		TH2D* dHist_MissingProtonP_kinFitVsUnused;
-		TH2D* dHist_MissingProtonTheta_kinFitVsUnused;
-		TH2D* dHist_MissingProtonPhi_kinFitVsUnused;
-		TH1D* dHist_TruthDeltaP;
-		TH1D* dHist_TruthDeltaPOverP;
-		TH1D* dHist_TruthDeltaTheta;
-		TH1D* dHist_TruthDeltaPhi;
-		TH1D* dHist_TruthDeltaP_Found;
-		TH1D* dHist_TruthDeltaPOverP_Found;
-		TH1D* dHist_TruthDeltaTheta_Found;
-		TH1D* dHist_TruthDeltaPhi_Found;
-		TH1D* dHist_TruthDeltaP_Missing;
-		TH1D* dHist_TruthDeltaPOverP_Missing;
-		TH1D* dHist_TruthDeltaTheta_Missing;
-		TH1D* dHist_TruthDeltaPhi_Missing;
+		TH1F* dHist_MissingDeltaP;
+		TH1F* dHist_MissingDeltaPOverP;
+		TH1F* dHist_MissingDeltaTheta;
+		TH1F* dHist_MissingDeltaPhi;
+		TH2F* dHist_MissingProtonP_kinFitVsUnused;
+		TH2F* dHist_MissingProtonTheta_kinFitVsUnused;
+		TH2F* dHist_MissingProtonPhi_kinFitVsUnused;
+		TH1F* dHist_TruthDeltaP;
+		TH1F* dHist_TruthDeltaPOverP;
+		TH1F* dHist_TruthDeltaTheta;
+		TH1F* dHist_TruthDeltaPhi;
+		TH1F* dHist_TruthDeltaP_Found;
+		TH1F* dHist_TruthDeltaPOverP_Found;
+		TH1F* dHist_TruthDeltaTheta_Found;
+		TH1F* dHist_TruthDeltaPhi_Found;
+		TH1F* dHist_TruthDeltaP_Missing;
+		TH1F* dHist_TruthDeltaPOverP_Missing;
+		TH1F* dHist_TruthDeltaTheta_Missing;
+		TH1F* dHist_TruthDeltaPhi_Missing;
 		//TODO use 2D plots with categorial y axis instead of map?
 		//     could in principle also replace Total, Missing, and Found histograms
-		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology;
-		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology;
-		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology;
-		map<TString, TH1D*> dHist_TruthDeltaPhi_ThrownTopology;
-		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology_Found;
-		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology_Found;
-		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology_Found;
-		map<TString, TH1D*> dHist_TruthDeltaPhi_ThrownTopology_Found;
-		map<TString, TH1D*> dHist_TruthDeltaP_ThrownTopology_Missing;
-		map<TString, TH1D*> dHist_TruthDeltaPoverP_ThrownTopology_Missing;
-		map<TString, TH1D*> dHist_TruthDeltaTheta_ThrownTopology_Missing;
-		map<TString, TH1D*> dHist_TruthDeltaPhi_ThrownTopology_Missing;
+		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology;
+		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology;
+		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology;
+		map<TString, TH1F*> dHist_TruthDeltaPhi_ThrownTopology;
+		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology_Found;
+		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology_Found;
+		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology_Found;
+		map<TString, TH1F*> dHist_TruthDeltaPhi_ThrownTopology_Found;
+		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology_Missing;
+		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology_Missing;
+		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology_Missing;
+		map<TString, TH1F*> dHist_TruthDeltaPhi_ThrownTopology_Missing;
 
-		TH1D* dHist_MissingMassSquared;
-		TH1D* dHist_MissingMassSquared_Found;
-		TH1D* dHist_MissingMassSquared_Missing;
-		TH1D* dHist_MissingMassSquaredSideband;
-		TH2D* dHist_MissingMassSquaredVsBeamEnergy;
-		TH2D* dHist_MissingMassSquaredVsBeamEnergy_Found;
-		TH2D* dHist_MissingMassSquaredVsBeamEnergy_Missing;
-		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband;
-		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
-		TH2D* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
+		TH1F* dHist_MissingMassSquared;
+		TH1F* dHist_MissingMassSquared_Found;
+		TH1F* dHist_MissingMassSquared_Missing;
+		TH1F* dHist_MissingMassSquaredSideband;
+		TH2F* dHist_MissingMassSquaredVsBeamEnergy;
+		TH2F* dHist_MissingMassSquaredVsBeamEnergy_Found;
+		TH2F* dHist_MissingMassSquaredVsBeamEnergy_Missing;
+		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband;
+		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
+		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
 
-		TH3D* dHist_NmbUnusedShowers;
-		TH3D* dHist_EnergyUnusedShowers;
+		// y axis: {Total, Found, Missing}, z axis: bggen MC topology
+		TH3F* dHist_NmbUnusedShowers;
+		TH3F* dHist_EnergyUnusedShowers;
 
 		// bggen MC histograms
-		TH1D* dHist_ThrownTopologies;
-		TH1D* dHist_ThrownTopologies_Found;
-		TH1D* dHist_ThrownTopologies_Missing;
-		map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology;
-		map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology_Found;
-		map<TString, TH1D*> dHist_MissingMassSquared_ThrownTopology_Missing;
+		TH1F* dHist_ThrownTopologies;
+		TH1F* dHist_ThrownTopologies_Found;
+		TH1F* dHist_ThrownTopologies_Missing;
+		map<TString, TH1F*> dHist_MissingMassSquared_ThrownTopology;
+		map<TString, TH1F*> dHist_MissingMassSquared_ThrownTopology_Found;
+		map<TString, TH1F*> dHist_MissingMassSquared_ThrownTopology_Missing;
 
 	bool
 	fillTruthDeltaHist(
@@ -132,15 +133,15 @@ class DSelector_pippippimpimpmiss : public DSelector
 		const double         missingProtonTheta,
 		const double         missingProtonPhi,
 		const double         histAccidWeightFactor,
-		TH1D*                hTruthDeltaP,
-		TH1D*                hTruthDeltaPOverP,
-		TH1D*                hTruthDeltaTheta,
-		TH1D*                hTruthDeltaPhi,
+		TH1F*                hTruthDeltaP,
+		TH1F*                hTruthDeltaPOverP,
+		TH1F*                hTruthDeltaTheta,
+		TH1F*                hTruthDeltaPhi,
 		const TString&       thrownTopology,
-		map<TString, TH1D*>& histMap_TruthDeltaP,
-		map<TString, TH1D*>& histMap_TruthDeltaPoverP,
-		map<TString, TH1D*>& histMap_TruthDeltaTheta,
-		map<TString, TH1D*>& histMap_TruthDeltaPhi);
+		map<TString, TH1F*>& histMap_TruthDeltaP,
+		map<TString, TH1F*>& histMap_TruthDeltaPoverP,
+		map<TString, TH1F*>& histMap_TruthDeltaTheta,
+		map<TString, TH1F*>& histMap_TruthDeltaPhi);
 
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };
