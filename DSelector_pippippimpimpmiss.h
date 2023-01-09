@@ -116,6 +116,9 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
 
 		// y axis: {Total, Found, Missing}, z axis: bggen MC topology
+		TH1F* dHist_NmbUnusedShowers_Total;
+		TH1F* dHist_NmbUnusedShowers_Found;
+		TH1F* dHist_NmbUnusedShowers_Missing;
 		TH3F* dHist_NmbUnusedShowers;
 		TH3F* dHist_EnergyUnusedShowers;
 

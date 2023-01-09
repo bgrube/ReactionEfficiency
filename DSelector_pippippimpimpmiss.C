@@ -1,5 +1,7 @@
 #include <cassert>
 
+#include "TObjString.h"
+
 #include "DSelector_pippippimpimpmiss.h"
 
 
@@ -7,6 +9,17 @@ const TString DSelector_pippippimpimpmiss::dLabelTotal   = "Total";
 const TString DSelector_pippippimpimpmiss::dLabelFound   = "Found";
 const TString DSelector_pippippimpimpmiss::dLabelMissing = "Missing";
 const std::vector<TString> DSelector_pippippimpimpmiss::dBinLabels = {DSelector_pippippimpimpmiss::dLabelTotal, DSelector_pippippimpimpmiss::dLabelFound, DSelector_pippippimpimpmiss::dLabelMissing};
+
+
+// workaround: provide dummy conversion function for unnecessary static cast to TLorentzVector in DSelector/DTreeInterface.h:662
+struct myTObjString : TObjString
+{
+	myTObjString(const TString& s = "")
+		: TObjString(s)
+	{ }
+
+	operator TLorentzVector() const { return TLorentzVector(); }
+};
 
 
 void DSelector_pippippimpimpmiss::Init(TTree *locTree)
@@ -18,15 +31,18 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	// Init() will be called many times when running on PROOF (once per file to be processed).
 
 	//USERS: SET OUTPUT FILE NAME //can be overriden by user in PROOF
-	dOutputFileName = "pippippimpimpmiss.root"; //"" for none
-	dOutputTreeFileName = ""; //"" for none
-	dFlatTreeFileName = ""; //output flat tree (one combo per tree entry), "" for none
-	dFlatTreeName = ""; //if blank, default name will be chosen
-	//dSaveDefaultFlatBranches = true; // False: don't save default branches, reduce disk footprint.
-	//dSaveTLorentzVectorsAsFundamentaFlatTree = false; // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
+	const string baseName = "pippippimpimpmiss";
+	dOutputFileName = baseName + ".root";  // "" for none
+	dOutputTreeFileName = "";  // "" for none
+	dFlatTreeFileName = baseName + "_flatTree.root";  // output flat tree (one combo per tree entry), "" for none
+	dFlatTreeName = baseName;  // if blank, default name will be chosen
+	dSaveDefaultFlatBranches = false;  // False: don't save default branches, reduce disk footprint.
+	// dSaveTLorentzVectorsAsFundamentaFlatTree = false;  // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
 
-	cout << "output file name = '" << dOutputFileName << "'" << endl
-	     << "accidental subtraction = " << dSidebandSubtractAcc << endl;
+	cout << "histogram output file name = '" << dOutputFileName << "'" << endl
+	     << "flat tree output file name = '" << dFlatTreeFileName << "'" << endl
+	     << "flat tree name = '"             << dFlatTreeName << "'" << endl
+	     << "accidental subtraction = "      << dSidebandSubtractAcc << endl;
 
 	//Because this function gets called for each TTree in the TChain, we must be careful:
 		//We need to re-initialize the tree interface & branch wrappers, but don't want to recreate histograms
@@ -104,6 +120,10 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingParticle_MomVsTheta_Measured = new TH2F("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
 	dHist_MissingParticle_PhiVsTheta_Measured = new TH2F("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
 
+	dHist_NmbUnusedShowers_Total   = new TH1F("NmbUnusedShowers_Total",   "Total;Number of Unused Showers;",   20, -0.5, 19.5);
+	dHist_NmbUnusedShowers_Found   = new TH1F("NmbUnusedShowers_Found",   "Found;Number of Unused Showers;",   20, -0.5, 19.5);
+	dHist_NmbUnusedShowers_Missing = new TH1F("NmbUnusedShowers_Missing", "Missing;Number of Unused Showers;", 20, -0.5, 19.5);
+
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingDeltaP                     = new TH1F("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      800, -9, 9);
@@ -171,21 +191,19 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dTreeInterface->Create_Branch_ClonesArray<TLorentzVector>("my_p4_array");
 	*/
 
-	/************************** EXAMPLE USER INITIALIZATION: CUSTOM OUTPUT BRANCHES - FLAT TREE *************************/
+	/************************** USER INITIALIZATION: CUSTOM OUTPUT BRANCHES - FLAT TREE *************************/
 
 	// RECOMMENDED: CREATE ACCIDENTAL WEIGHT BRANCH
-	// dFlatTreeInterface->Create_Branch_Fundamental<Double_t>("accidweight");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>("AccidWeightFactor");
 
 	//EXAMPLE FLAT TREE CUSTOM BRANCHES (OUTPUT ROOT FILE NAME MUST FIRST BE GIVEN!!!! (ABOVE: TOP)):
 	//The type for the branch must be included in the brackets
 	//1st function argument is the name of the branch
 	//2nd function argument is the name of the branch that contains the size of the array (for fundamentals only)
-	/*
-	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>("flat_my_int"); //fundamental = char, int, float, double, etc.
-	dFlatTreeInterface->Create_Branch_FundamentalArray<Int_t>("flat_my_int_array", "flat_my_int");
-	dFlatTreeInterface->Create_Branch_NoSplitTObject<TLorentzVector>("flat_my_p4");
-	dFlatTreeInterface->Create_Branch_ClonesArray<TLorentzVector>("flat_my_p4_array");
-	*/
+	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
+	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
+	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
 
 	/************************************* ADVANCED EXAMPLE: CHOOSE BRANCHES TO READ ************************************/
 
@@ -485,6 +503,16 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			locUsedSoFar_BeamEnergy.insert(locBeamID);
 		}
 
+		/****************************************** SET FLAT TREE BRANCHES ******************************************/
+
+		// RECOMMENDED: FILL ACCIDENTAL WEIGHT
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("AccidWeightFactor", locHistAccidWeightFactor);
+
+		// FILL ANY CUSTOM BRANCHES FIRST!!
+		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",      myTObjString(locThrownTopology));
+		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",    locNumUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers", locEnergyUnusedShowers);
+
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
 
 		// adapted from https://github.com/jrstevenjlab/wm_gluex/blob/master/analysis/omega_misspi/selector/DSelector_omega_misspi.C#L481
@@ -558,6 +586,10 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 						locThrownTopology,
 						dHist_TruthDeltaP_ThrownTopology_Found, dHist_TruthDeltaPoverP_ThrownTopology_Found, dHist_TruthDeltaTheta_ThrownTopology_Found, dHist_TruthDeltaPhi_ThrownTopology_Found);
 
+					// FILL FLAT TREE
+					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
+					Fill_FlatTree();
+					dHist_NmbUnusedShowers_Found->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
 					// fill histograms for topologies in bggen MC
 					dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelFound, dLabelTotal, locHistAccidWeightFactor);
 					dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelFound, dLabelTotal, locHistAccidWeightFactor);
@@ -578,6 +610,10 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 						locThrownTopology,
 						dHist_TruthDeltaP_ThrownTopology_Missing, dHist_TruthDeltaPoverP_ThrownTopology_Missing, dHist_TruthDeltaTheta_ThrownTopology_Missing, dHist_TruthDeltaPhi_ThrownTopology_Missing);
 
+					// FILL FLAT TREE
+					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
+					Fill_FlatTree();
+					dHist_NmbUnusedShowers_Missing->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
 					// fill histograms for topologies in bggen MC
 					dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
 					dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
@@ -608,7 +644,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			// dHist_MissingMass->Fill(sqrt(locMissingMassSquared));  // Fills in-time and out-of-time beam photon combos
 			dHist_MissingMass->Fill        (sqrt(locMissingMassSquared_Measured), locHistAccidWeightFactor);  // Alternate version with accidental subtraction
 			dHist_MissingMassSideband->Fill(sqrt(locMissingMassSquared_Measured), 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
-			// dHist_MissingMassSquared->Fill(locMissingMassSquared);  // Fills in-time and out-of-time beam photon combos
+			// dHist_MissingMassSquared->Fill(locMissingMassSquared);  // xFills in-time and out-of-time beam photon combos
 			dHist_MissingMassSquared->Fill        (locMissingMassSquared_Measured, locHistAccidWeightFactor);  // Alternate version with accidental subtraction
 			dHist_MissingMassSquaredSideband->Fill(locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
 
@@ -619,6 +655,8 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingParticle_PhiVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonPhi,          locHistAccidWeightFactor);
 			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
 			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
+
+			dHist_NmbUnusedShowers_Total->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
 
 			fillTruthDeltaHist(locMissingProtonP, locMissingProtonTheta, locMissingProtonPhi, locHistAccidWeightFactor,
 				dHist_TruthDeltaP, dHist_TruthDeltaPOverP, dHist_TruthDeltaTheta, dHist_TruthDeltaPhi,
@@ -646,7 +684,10 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					locThrownTopology,
 					dHist_TruthDeltaP_ThrownTopology_Missing, dHist_TruthDeltaPoverP_ThrownTopology_Missing, dHist_TruthDeltaTheta_ThrownTopology_Missing, dHist_TruthDeltaPhi_ThrownTopology_Missing);
 
-
+				// FILL FLAT TREE
+				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
+				Fill_FlatTree();
+				dHist_NmbUnusedShowers_Missing->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
 				// fill histograms for topologies in bggen MC
 				dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
 				dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
@@ -668,29 +709,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		//	continue;
 		//}
 
-		/****************************************** FILL FLAT TREE (IF DESIRED) ******************************************/
-
-		// RECOMMENDED: FILL ACCIDENTAL WEIGHT
-		// dFlatTreeInterface->Fill_Fundamental<Double_t>("accidweight",locHistAccidWeightFactor);
-
-		/*
-		//FILL ANY CUSTOM BRANCHES FIRST!!
-		Int_t locMyInt_Flat = 7;
-		dFlatTreeInterface->Fill_Fundamental<Int_t>("flat_my_int", locMyInt_Flat);
-
-		TLorentzVector locMyP4_Flat(4.0, 3.0, 2.0, 1.0);
-		dFlatTreeInterface->Fill_TObject<TLorentzVector>("flat_my_p4", locMyP4_Flat);
-
-		for(int loc_j = 0; loc_j < locMyInt_Flat; ++loc_j)
-		{
-			dFlatTreeInterface->Fill_Fundamental<Int_t>("flat_my_int_array", 3*loc_j, loc_j); //2nd argument = value, 3rd = array index
-			TLorentzVector locMyComboP4_Flat(8.0, 7.0, 6.0, 5.0);
-			dFlatTreeInterface->Fill_TObject<TLorentzVector>("flat_my_p4_array", locMyComboP4_Flat, loc_j);
-		}
-		*/
-
-		//FILL FLAT TREE
-		//Fill_FlatTree(); //for the active combo
 	} // end of combo loop
 
 	//FILL HISTOGRAMS: Num combos / events surviving actions
