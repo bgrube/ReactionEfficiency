@@ -120,10 +120,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingParticle_MomVsTheta_Measured = new TH2F("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
 	dHist_MissingParticle_PhiVsTheta_Measured = new TH2F("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
 
-	dHist_NmbUnusedShowers_Total   = new TH1F("NmbUnusedShowers_Total",   "Total;Number of Unused Showers;",   20, -0.5, 19.5);
-	dHist_NmbUnusedShowers_Found   = new TH1F("NmbUnusedShowers_Found",   "Found;Number of Unused Showers;",   20, -0.5, 19.5);
-	dHist_NmbUnusedShowers_Missing = new TH1F("NmbUnusedShowers_Missing", "Missing;Number of Unused Showers;", 20, -0.5, 19.5);
-
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingDeltaP                     = new TH1F("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      800, -9, 9);
@@ -157,19 +153,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingMassSquaredVsBeamEnergySideband         = new TH2F("MissingMassSquaredVsBeamEnergySideband",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergySideband_Found   = new TH2F("MissingMassSquaredVsBeamEnergySideband_Found",   ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergySideband_Missing = new TH2F("MissingMassSquaredVsBeamEnergySideband_Missing", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-
-	// y axis: combo category, z axis: bggen MC topology
-	dHist_NmbUnusedShowers    = new TH3F("NmbUnusedShowers",    ";Number of Unused Showers;",   20, -0.5, 19.5, 3, 0, 3, 1, 0, 1);
-	dHist_EnergyUnusedShowers = new TH3F("EnergyUnusedShowers", ";Unused Shower Energy (GeV);", 110, 0, 11,     3, 0, 3, 1, 0, 1);
-	// set bin labels for combo category
-	vector<TH1*> hists = {dHist_NmbUnusedShowers, dHist_EnergyUnusedShowers};
-	for (auto hist : hists) {
-		TAxis* axis = hist->GetYaxis();
-		assert(axis->GetNbins() == dBinLabels.size());
-		for (int i = 1; i <= axis->GetNbins(); ++i) {
-			axis->SetBinLabel(i, dBinLabels[i - 1]);
-		}
-	}
 
 	// bggen MC histograms
 	dHist_ThrownTopologies         = new TH1F("ThrownTopologies",         "", 1, 0, 1);
@@ -589,14 +572,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					// FILL FLAT TREE
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
 					Fill_FlatTree();
-					dHist_NmbUnusedShowers_Found->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
-					// fill histograms for topologies in bggen MC
-					dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelFound, dLabelTotal, locHistAccidWeightFactor);
-					dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelFound, dLabelTotal, locHistAccidWeightFactor);
-					if (locThrownTopology != "") {
-						dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelFound, locThrownTopology.Data(), locHistAccidWeightFactor);
-						dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelFound, locThrownTopology.Data(), locHistAccidWeightFactor);
-					}
 					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Found, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Found);
 				} else {
@@ -613,14 +588,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					// FILL FLAT TREE
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 					Fill_FlatTree();
-					dHist_NmbUnusedShowers_Missing->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
-					// fill histograms for topologies in bggen MC
-					dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
-					dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
-					if (locThrownTopology != "") {
-						dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelMissing, locThrownTopology.Data(), locHistAccidWeightFactor);
-						dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelMissing, locThrownTopology.Data(), locHistAccidWeightFactor);
-					}
 					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 				}
@@ -656,20 +623,12 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
 			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
 
-			dHist_NmbUnusedShowers_Total->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
-
 			fillTruthDeltaHist(locMissingProtonP, locMissingProtonTheta, locMissingProtonPhi, locHistAccidWeightFactor,
 				dHist_TruthDeltaP, dHist_TruthDeltaPOverP, dHist_TruthDeltaTheta, dHist_TruthDeltaPhi,
 				locThrownTopology,
 				dHist_TruthDeltaP_ThrownTopology, dHist_TruthDeltaPoverP_ThrownTopology, dHist_TruthDeltaTheta_ThrownTopology, dHist_TruthDeltaPhi_ThrownTopology);
 
 			// fill histograms for topologies in bggen MC
-			dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelTotal, dLabelTotal, locHistAccidWeightFactor);
-			dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelTotal, dLabelTotal, locHistAccidWeightFactor);
-			if (locThrownTopology != "") {
-				dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelTotal, locThrownTopology.Data(), locHistAccidWeightFactor);
-				dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelTotal, locThrownTopology.Data(), locHistAccidWeightFactor);
-			}
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 			fillTopologyHist(dHist_MissingMassSquared_ThrownTopology, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared);
 
@@ -687,14 +646,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				// FILL FLAT TREE
 				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 				Fill_FlatTree();
-				dHist_NmbUnusedShowers_Missing->Fill(locNumUnusedShowers, locHistAccidWeightFactor);
-				// fill histograms for topologies in bggen MC
-				dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
-				dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelMissing, dLabelTotal, locHistAccidWeightFactor);
-				if (locThrownTopology != "") {
-					dHist_NmbUnusedShowers->Fill   (locNumUnusedShowers,    dLabelMissing, locThrownTopology.Data(), locHistAccidWeightFactor);
-					dHist_EnergyUnusedShowers->Fill(locEnergyUnusedShowers, dLabelMissing, locThrownTopology.Data(), locHistAccidWeightFactor);
-				}
 				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 			}
@@ -788,11 +739,6 @@ void DSelector_pippippimpimpmiss::Finalize(void)
 		//Besides, it is best-practice to do post-processing (e.g. fitting) separately, in case there is a problem.
 
 	//DO YOUR STUFF HERE
-	dHist_NmbUnusedShowers->LabelsDeflate("Z");
-	dHist_NmbUnusedShowers->LabelsOption(">", "Z");
-	dHist_EnergyUnusedShowers->LabelsDeflate("Z");
-	dHist_EnergyUnusedShowers->LabelsOption(">", "Z");
-
 	dHist_ThrownTopologies->LabelsDeflate("X");
 	dHist_ThrownTopologies->LabelsOption(">", "X");
 	dHist_ThrownTopologies_Found->LabelsDeflate("X");

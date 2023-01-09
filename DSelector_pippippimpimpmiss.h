@@ -89,8 +89,7 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1F* dHist_TruthDeltaPOverP_Missing;
 		TH1F* dHist_TruthDeltaTheta_Missing;
 		TH1F* dHist_TruthDeltaPhi_Missing;
-		//TODO use 2D plots with categorial y axis instead of map?
-		//     could in principle also replace Total, Missing, and Found histograms
+		//TODO migrate all histograms to tree
 		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology;
 		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology;
 		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology;
@@ -114,13 +113,6 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
-
-		// y axis: {Total, Found, Missing}, z axis: bggen MC topology
-		TH1F* dHist_NmbUnusedShowers_Total;
-		TH1F* dHist_NmbUnusedShowers_Found;
-		TH1F* dHist_NmbUnusedShowers_Missing;
-		TH3F* dHist_NmbUnusedShowers;
-		TH3F* dHist_EnergyUnusedShowers;
 
 		// bggen MC histograms
 		TH1F* dHist_ThrownTopologies;
