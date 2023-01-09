@@ -2,6 +2,7 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+import pandas
 import ROOT
 
 ROOT.gROOT.SetBatch(True)
@@ -190,19 +191,31 @@ def overlayTopologies(
   # get histograms
   inFile = ROOT.TFile(inFileName)
   hist3D = inFile.Get(histName)
-  xAxis = hist3D.GetXaxis()
-  yAxis = hist3D.GetYaxis()
-  zAxis = hist3D.GetZaxis()
-  cases = [yAxis.GetBinLabel(i + 1) for i in range(0, yAxis.GetNbins())]
-  topologies = [zAxis.GetBinLabel(i + 1) for i in range(0, zAxis.GetNbins())]
-  assert topologies[0] == "Total"
-  # overlay distributions for topologies
+  xAxisTitle = hist3D.GetXaxis().GetTitle()
+  caseAxis = hist3D.GetYaxis()
+  cases = [caseAxis.GetBinLabel(i + 1) for i in range(0, caseAxis.GetNbins())]
+  # topoAxis = hist3D.GetZaxis()
+  # topologies = [topoAxis.GetBinLabel(i + 1) for i in range(0, topoAxis.GetNbins())]
+  # assert topologies[0] == "Total"
   for case in cases:
-    hStack = ROOT.THStack(f"{hist3D.GetName()}_{case}", f"{case};{xAxis.GetTitle()};Number of Combos (RF-subtracted)")
-    caseBin = yAxis.FindBin(case)
-    yAxis.SetRange(caseBin, caseBin)
+    hStack = ROOT.THStack(f"{hist3D.GetName()}_{case}", f"{case};{xAxisTitle};Number of Combos (RF-subtracted)")
+    caseBin = caseAxis.FindBin(case)
+    caseAxis.SetRange(caseBin, caseBin)
     hist2D = hist3D.Project3D("ZX_" + case)
+    hist2D.LabelsDeflate("Y")
+    hist2D.LabelsOption(">", "Y")
+    topoAxis = hist2D.GetYaxis()
+    topologies = [topoAxis.GetBinLabel(i + 1) for i in range(0, topoAxis.GetNbins())]
+    # topoHistSorted = []
+    # for yBin in range(1, topoAxis.GetNbins() + 1):
+    #   nmbCombos = 0
+    #   for xBin in range(1, hist2D.GetXaxis().GetNbins() + 1):
+    #     nmbCombos += hist2D.GetBinContent(xBin, yBin)
+    #   topoHistSorted.append((topoAxis.GetBinLabel(yBin), nmbCombos))
+    # print(case, topoHistSorted[:maxNmbTopologies + 1])
+    assert topologies[0] == "Total"
     hists = []
+    # overlay distributions for topologies
     for i in range(0, maxNmbTopologies + 1):
       hist1D = hist2D.ProjectionX(f"{hist3D.GetName()}_{case}_{topologies[i]}", i + 1, i + 1)
       hist1D.SetTitle(topologies[i])
@@ -219,12 +232,73 @@ def overlayTopologies(
     xAxis = hStack.GetXaxis()
     if not xRange is None:
       xAxis.SetRangeUser(*xRange)
+    # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
     if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
       line = ROOT.TLine()
       line.SetLineStyle(ROOT.kDashed)
       line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+    canv.SaveAs(".pdf")
+
+
+def overlayTopologies2(
+  inFileName,
+  treeName,
+  branchName,
+  xTitle,
+  binning,
+  maxNmbTopologies = 10):
+  inputData = ROOT.RDataFrame(treeName, inFileName)
+  # get topologies with largest number of combos for total data set
+  # print(df.GetColumnType("ThrownTopology"))
+  toposToPlot = ["Total"]
+  topos = [str(topo) for topo in inputData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
+  if len(topos) > 1:
+    weights = inputData.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
+    pdf = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
+    topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
+    toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
+  # print(toposToPlot)
+  filterCases = {
+    "Total"   : "true",
+    "Found"   : "TrackFound == true",
+    "Missing" : "TrackFound == false"
+  }
+  for case, caseFilter in filterCases.items():
+    caseData = inputData.Filter(caseFilter)
+    # get topologies with largest number of combos for given case
+    toposToPlot = ["Total"]
+    topos = [str(topo) for topo in caseData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
+    if len(topos) > 1:
+      weights = caseData.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
+      pdf = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
+      topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
+      # print(case, topoHistSorted[:maxNmbTopologies])
+      toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
+    hStack = ROOT.THStack(f"{branchName}_{case}", f"{case};{xTitle};Number of Combos (RF-subtracted)")
+    hists = []
+    # overlay distributions for topologies
+    for index, topo in enumerate(toposToPlot):
+      topoData = caseData.Filter(f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true")
+      hist = topoData.Histo1D((f"{branchName}_{case}_{topo}", topo, *binning), branchName, "AccidWeightFactor")
+      if topo == "Total":
+        hist.SetLineColor(ROOT.kGray)
+        hist.SetFillColor(ROOT.kGray)
+      else:
+        hist.SetLineColor(index)
+      hists.append(hist)
+      hStack.Add(hist.GetPtr())
+    # draw distributions
+    canv = ROOT.TCanvas(f"justin_Proton_4pi_{branchName}_bggen_topologies_{case}_new")
+    hStack.Draw("NOSTACK HIST")
+    xAxis = hStack.GetXaxis()
     # add legend
+    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+    # draw zero line, if necessary
+    if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
+      line = ROOT.TLine()
+      line.SetLineStyle(ROOT.kDashed)
+      line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
     canv.SaveAs(".pdf")
 
 
@@ -242,11 +316,15 @@ if __name__ == "__main__":
   ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
 
   inFileName = "pippippimpimpmiss.root"
-
   # topologies = plotTopologies(normalize = False)
   # plotTopologies(normalize = True)
   # plotMissingMassSquared(topologies)
   # overlayMissingMassSquared()
   # plotMcTruthComparison()
-  overlayTopologies(inFileName, "MissingMassSquared/NmbUnusedShowers",    xRange = (-0.5, 10))
+  overlayTopologies(inFileName, "MissingMassSquared/NmbUnusedShowers",    xRange = (-0.5, 10.5))
   overlayTopologies(inFileName, "MissingMassSquared/EnergyUnusedShowers", xRange = (0,    6))
+
+  inFileName = "pippippimpimpmiss_flatTree.root"
+  treeName = "pippippimpimpmiss"
+  overlayTopologies2(inFileName, treeName, "NmbUnusedShowers",    "Number of Unused Showers",   binning = (11, -0.5, 10.5))
+  overlayTopologies2(inFileName, treeName, "EnergyUnusedShowers", "Unused Shower Energy (GeV)", binning = (60,  0,    6))
