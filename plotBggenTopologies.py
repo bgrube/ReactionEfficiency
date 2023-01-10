@@ -69,43 +69,6 @@ def plotTopologies(maxNmbTopologies = 10, normalize = False):
   return [bins[i]["topology"] for i in range(maxNmbTopologies)]  # return maxNmbTopologies largest topologies in overall distribution
 
 
-def plotMissingMassSquared(topologies):
-  inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
-  # inFileName = "pippippimpimpmiss.root"
-  histBaseName = "MissingMassSquared/MissingMassSquared"
-  rebinFactor = 100
-  colorOffset = 1
-
-  # get histograms
-  inFile = ROOT.TFile(inFileName)
-  cases = ["Found", "Missing", ""]
-  hists = {topology : {case : inFile.Get(histBaseName + ("_" + case if case != "" else "") + "__" + topology) for case in cases} for topology in topologies}
-  histsTotal = {case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases}
-
-  # overlay distributions for topologies
-  hStacks = {case : ROOT.THStack("hStackMissingMassSquaredTopologies" + case, ("Overall" if case == "" else case) + f";{hists[topologies[0]][case].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)") for case in cases}
-  for case in cases:
-    # total distribution
-    hist = histsTotal[case]
-    hist.SetName("Total")
-    hist.Rebin(rebinFactor)
-    hist.SetFillColor(ROOT.kGray)
-    hist.SetLineColor(ROOT.kGray)
-    hStacks[case].Add(hist)
-    # distribution for topologies
-    for i, topology in enumerate(topologies):
-      hist = hists[topology][case]
-      hist.SetName(topology)
-      hist.Rebin(rebinFactor)
-      hist.SetLineColor(i + colorOffset)
-      hStacks[case].Add(hist)
-    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_bggen_topologies" + ("_" + case if case != "" else ""))
-    hStacks[case].Draw("NOSTACK HIST")
-    # add legend
-    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-    canv.SaveAs(".pdf")
-
-
 def overlayMissingMassSquared():
   inFileNames = ("pippippimpimpmiss.30370.root", "pippippimpimpmiss_bggen_2017_01-ver03.root")
   labels = ("Real data (scaled)", "bggen MC")
@@ -263,9 +226,8 @@ if __name__ == "__main__":
   ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
 
   inFileName = "pippippimpimpmiss.root"
-  topologies = plotTopologies(normalize = False)
+  # topologies = plotTopologies(normalize = False)
   # plotTopologies(normalize = True)
-  plotMissingMassSquared(topologies)
   # overlayMissingMassSquared()
   # plotMcTruthComparison()
 

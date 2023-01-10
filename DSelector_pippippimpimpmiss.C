@@ -593,7 +593,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
 					Fill_FlatTree();
 					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
-					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Found, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Found);
 				} else {
 					// unused track exists but does not match
 					dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
@@ -609,7 +608,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 					Fill_FlatTree();
 					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
-					fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 				}
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
@@ -650,7 +648,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			// fill histograms for topologies in bggen MC
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
-			fillTopologyHist(dHist_MissingMassSquared_ThrownTopology, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared);
 
 			if (not unusedTrackExists) {
 				// there was no unused track in the event
@@ -667,7 +664,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 				Fill_FlatTree();
 				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
-				fillTopologyHist(dHist_MissingMassSquared_ThrownTopology_Missing, locThrownTopology, locMissingMassSquared_Measured, locHistAccidWeightFactor, *dHist_MissingMassSquared_Missing);
 			}
 
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);

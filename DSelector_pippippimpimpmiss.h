@@ -118,9 +118,6 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1F* dHist_ThrownTopologies;
 		TH1F* dHist_ThrownTopologies_Found;
 		TH1F* dHist_ThrownTopologies_Missing;
-		map<TString, TH1F*> dHist_MissingMassSquared_ThrownTopology;
-		map<TString, TH1F*> dHist_MissingMassSquared_ThrownTopology_Found;
-		map<TString, TH1F*> dHist_MissingMassSquared_ThrownTopology_Missing;
 
 	bool
 	fillTruthDeltaHist(
