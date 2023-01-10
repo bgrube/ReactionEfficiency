@@ -8,6 +8,13 @@ import ROOT
 ROOT.gROOT.SetBatch(True)
 
 
+FILTER_CASES = {
+  "Total"   : "true",
+  "Found"   : "TrackFound == true",
+  "Missing" : "TrackFound == false"
+}
+
+
 def plotTopologies(maxNmbTopologies = 10, normalize = False):
   inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
   histBaseName = "MissingMassSquared/ThrownTopologies"
@@ -64,6 +71,7 @@ def plotTopologies(maxNmbTopologies = 10, normalize = False):
 
 def plotMissingMassSquared(topologies):
   inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  # inFileName = "pippippimpimpmiss.root"
   histBaseName = "MissingMassSquared/MissingMassSquared"
   rebinFactor = 100
   colorOffset = 1
@@ -182,13 +190,16 @@ def plotMcTruthComparison():
     canv.SaveAs(".pdf")
 
 
+# plot distribution of variable defined by `branchName` for overall data sample
+# for bggen sample: in addition overlay distributions for the `maxNmbTopologies` largest topologies
 def overlayTopologies(
   inFileName,
   treeName,
   branchName,
   xTitle,
   binning,
-  maxNmbTopologies = 10):
+  pdfFileNamePrefix = "justin_Proton_4pi_",
+  maxNmbTopologies  = 10):
   inputData = ROOT.RDataFrame(treeName, inFileName)
   # # get topologies with largest number of combos for total data set
   # # print(df.GetColumnType("ThrownTopology"))
@@ -200,13 +211,8 @@ def overlayTopologies(
   #   topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
   #   toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
   # # print(toposToPlot)
-  filterCases = {
-    "Total"   : "true",
-    "Found"   : "TrackFound == true",
-    "Missing" : "TrackFound == false"
-  }
-  for case, caseFilter in filterCases.items():
-    caseData = inputData.Filter(caseFilter)
+  for case in FILTER_CASES.keys():
+    caseData = inputData.Filter(FILTER_CASES[case])
     # get topologies with largest number of combos for given case
     toposToPlot = ["Total"]
     topos = [str(topo) for topo in caseData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
@@ -230,7 +236,7 @@ def overlayTopologies(
       hists.append(hist)
       hStack.Add(hist.GetPtr())
     # draw distributions
-    canv = ROOT.TCanvas(f"justin_Proton_4pi_{branchName}_bggen_topologies_{case}")
+    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{branchName}_bggen_topologies_{case}")
     hStack.Draw("NOSTACK HIST")
     xAxis = hStack.GetXaxis()
     # add legend
@@ -257,13 +263,14 @@ if __name__ == "__main__":
   ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
 
   inFileName = "pippippimpimpmiss.root"
-  # topologies = plotTopologies(normalize = False)
+  topologies = plotTopologies(normalize = False)
   # plotTopologies(normalize = True)
-  # plotMissingMassSquared(topologies)
+  plotMissingMassSquared(topologies)
   # overlayMissingMassSquared()
   # plotMcTruthComparison()
 
   inFileName = "pippippimpimpmiss_flatTree.root"
   treeName = "pippippimpimpmiss"
-  overlayTopologies(inFileName, treeName, "NmbUnusedShowers",    "Number of Unused Showers",   binning = (11, -0.5, 10.5))
-  overlayTopologies(inFileName, treeName, "EnergyUnusedShowers", "Unused Shower Energy (GeV)", binning = (60,  0,    6))
+  overlayTopologies(inFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
+  overlayTopologies(inFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60,  0,    6))
+  overlayTopologies(inFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))

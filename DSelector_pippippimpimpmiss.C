@@ -11,15 +11,29 @@ const TString DSelector_pippippimpimpmiss::dLabelMissing = "Missing";
 const std::vector<TString> DSelector_pippippimpimpmiss::dBinLabels = {DSelector_pippippimpimpmiss::dLabelTotal, DSelector_pippippimpimpmiss::dLabelFound, DSelector_pippippimpimpmiss::dLabelMissing};
 
 
-// workaround: provide dummy conversion function for unnecessary static cast to TLorentzVector in DSelector/DTreeInterface.h:662
-struct myTObjString : TObjString
-{
-	myTObjString(const TString& s = "")
-		: TObjString(s)
-	{ }
+// workaround: provide dummy conversion functions for unnecessary static cast to TLorentzVector in DSelector/DTreeInterface.h:662
+namespace {
 
-	operator TLorentzVector() const { return TLorentzVector(); }
-};
+	struct myTObjString : TObjString
+	{
+		myTObjString(const TString& s = "")
+			: TObjString(s)
+		{ }
+
+		operator TLorentzVector() const { return TLorentzVector(); }
+	};
+
+
+	struct myTVector3 : TVector3
+	{
+		myTVector3(const TVector3& v = TVector3())
+			: TVector3(v)
+		{ }
+
+		operator TLorentzVector() const { return TLorentzVector(); }
+	};
+
+}
 
 
 void DSelector_pippippimpimpmiss::Init(TTree *locTree)
@@ -183,10 +197,13 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	//The type for the branch must be included in the brackets
 	//1st function argument is the name of the branch
 	//2nd function argument is the name of the branch that contains the size of the array (for fundamentals only)
-	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BeamEnergy");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingMassSquared_Measured");
+	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTVector3>  ("MissingProtonP3_Measured");
+	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
 
 	/************************************* ADVANCED EXAMPLE: CHOOSE BRANCHES TO READ ************************************/
 
@@ -492,9 +509,12 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("AccidWeightFactor", locHistAccidWeightFactor);
 
 		// FILL ANY CUSTOM BRANCHES FIRST!!
-		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",      myTObjString(locThrownTopology));
-		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",    locNumUnusedShowers);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers", locEnergyUnusedShowers);
+		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",              myTObjString(locThrownTopology));
+		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",            locNumUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers",         locEnergyUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("BeamEnergy",                  locBeamEnergy);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared_Measured", locMissingMassSquared_Measured);
+		dFlatTreeInterface->Fill_TObject<myTVector3>  ("MissingProtonP3_Measured",    myTVector3(locMissingProtonP3_Measured));
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
 
