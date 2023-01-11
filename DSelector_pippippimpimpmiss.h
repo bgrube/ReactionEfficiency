@@ -77,31 +77,6 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2F* dHist_MissingProtonP_kinFitVsUnused;
 		TH2F* dHist_MissingProtonTheta_kinFitVsUnused;
 		TH2F* dHist_MissingProtonPhi_kinFitVsUnused;
-		TH1F* dHist_TruthDeltaP;
-		TH1F* dHist_TruthDeltaPOverP;
-		TH1F* dHist_TruthDeltaTheta;
-		TH1F* dHist_TruthDeltaPhi;
-		TH1F* dHist_TruthDeltaP_Found;
-		TH1F* dHist_TruthDeltaPOverP_Found;
-		TH1F* dHist_TruthDeltaTheta_Found;
-		TH1F* dHist_TruthDeltaPhi_Found;
-		TH1F* dHist_TruthDeltaP_Missing;
-		TH1F* dHist_TruthDeltaPOverP_Missing;
-		TH1F* dHist_TruthDeltaTheta_Missing;
-		TH1F* dHist_TruthDeltaPhi_Missing;
-		//TODO migrate all histograms to tree
-		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology;
-		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology;
-		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology;
-		map<TString, TH1F*> dHist_TruthDeltaPhi_ThrownTopology;
-		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology_Found;
-		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology_Found;
-		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology_Found;
-		map<TString, TH1F*> dHist_TruthDeltaPhi_ThrownTopology_Found;
-		map<TString, TH1F*> dHist_TruthDeltaP_ThrownTopology_Missing;
-		map<TString, TH1F*> dHist_TruthDeltaPoverP_ThrownTopology_Missing;
-		map<TString, TH1F*> dHist_TruthDeltaTheta_ThrownTopology_Missing;
-		map<TString, TH1F*> dHist_TruthDeltaPhi_ThrownTopology_Missing;
 
 		TH1F* dHist_MissingMassSquared;
 		TH1F* dHist_MissingMassSquared_Found;
@@ -120,24 +95,7 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1F* dHist_ThrownTopologies_Missing;
 
 	bool
-	fillTruthDeltaHist(
-		const double         missingProtonP,
-		const double         missingProtonTheta,
-		const double         missingProtonPhi,
-		const double         histAccidWeightFactor,
-		TH1F*                hTruthDeltaP,
-		TH1F*                hTruthDeltaPOverP,
-		TH1F*                hTruthDeltaTheta,
-		TH1F*                hTruthDeltaPhi,
-		const TString&       thrownTopology,
-		map<TString, TH1F*>& histMap_TruthDeltaP,
-		map<TString, TH1F*>& histMap_TruthDeltaPoverP,
-		map<TString, TH1F*>& histMap_TruthDeltaTheta,
-		map<TString, TH1F*>& histMap_TruthDeltaPhi,
-		const bool debug = false);
-
-	bool
-	fillTreeTruthDelta(const TLorentzVector& missingProtonP4, const bool debug = false);
+	fillTreeTruthDelta(const TLorentzVector& missingProtonP4);
 
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };

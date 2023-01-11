@@ -143,19 +143,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingProtonP_kinFitVsUnused     = new TH2F("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
 	dHist_MissingProtonTheta_kinFitVsUnused = new TH2F("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
 	dHist_MissingProtonPhi_kinFitVsUnused   = new TH2F("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
-	// MC truth histograms
-	dHist_TruthDeltaP                       = new TH1F("TruthDeltaP",                       ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
-	dHist_TruthDeltaPOverP                  = new TH1F("TruthDeltaPOverP",                  ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
-	dHist_TruthDeltaTheta                   = new TH1F("TruthDeltaTheta",                   ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
-	dHist_TruthDeltaPhi                     = new TH1F("TruthDeltaPhi",                     ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
-	dHist_TruthDeltaP_Found                 = new TH1F("TruthDeltaP_Found",                 ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
-	dHist_TruthDeltaPOverP_Found            = new TH1F("TruthDeltaPOverP_Found",            ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
-	dHist_TruthDeltaTheta_Found             = new TH1F("TruthDeltaTheta_Found",             ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
-	dHist_TruthDeltaPhi_Found               = new TH1F("TruthDeltaPhi_Found",               ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
-	dHist_TruthDeltaP_Missing               = new TH1F("TruthDeltaP_Missing",               ";#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                       800, -9, 9);
-	dHist_TruthDeltaPOverP_Missing          = new TH1F("TruthDeltaPOverP_Missing",          ";(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}",  500, -2, 2);
-	dHist_TruthDeltaTheta_Missing           = new TH1F("TruthDeltaTheta_Missing",           ";#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",               360, -180, 180);
-	dHist_TruthDeltaPhi_Missing             = new TH1F("TruthDeltaPhi_Missing",             ";#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180);
 
 	dHist_MissingMassSquared                             = new TH1F("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
 	dHist_MissingMassSquared_Found                       = new TH1F("MissingMassSquared_Found",                       ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
@@ -238,92 +225,8 @@ printTrack(const DKinematicData& track)
 }
 
 
-namespace {
-
-	void
-	fillTopologyHist(
-		map<TString, TH1F*>& histMap,
-		const TString&       topology,
-		const double         value,
-		const double         weight,
-		TH1F&                templateHist,
-		const TString&       subDirPath = "MissingMassSquared")
-	{
-		if (histMap.find(topology) == histMap.end()) {
-			// create new histogram for topology
-			const TString newName = (TString)templateHist.GetName() + "__" + topology;
-			histMap[topology] = (TH1F*)templateHist.Clone(newName);
-		  histMap.at(topology)->Reset();
-		  histMap.at(topology)->SetTitle(topology);
-			TDirectory* subDir = gDirectory->Get<TDirectory>(subDirPath);
-			histMap.at(topology)->SetDirectory(subDir);
-		}
-		histMap.at(topology)->Fill(value, weight);
-	}
-
-}
-
-
 bool
-DSelector_pippippimpimpmiss::fillTruthDeltaHist(
-	const double         missingProtonP,
-	const double         missingProtonTheta,
-	const double         missingProtonPhi,
-	const double         histAccidWeightFactor,
-	TH1F*                hTruthDeltaP,
-	TH1F*                hTruthDeltaPOverP,
-	TH1F*                hTruthDeltaTheta,
-	TH1F*                hTruthDeltaPhi,
-	const TString&       thrownTopology,
-	map<TString, TH1F*>& histMap_TruthDeltaP,
-	map<TString, TH1F*>& histMap_TruthDeltaPoverP,
-	map<TString, TH1F*>& histMap_TruthDeltaTheta,
-	map<TString, TH1F*>& histMap_TruthDeltaPhi,
-	const bool debug)
-{
-	bool truthTrackExists = false;
-	for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
-		// Set branch array indices corresponding to this charged-track hypothesis
-		dThrownWrapper->Set_ArrayIndex(locTrackIndex);
-		// Make sure it is the unused track
-		if (dThrownWrapper->Get_PID() != Proton) {
-			continue;
-		}
-		truthTrackExists = true;
-
-		const TLorentzVector locMissingProtonP4_Truth    = dThrownWrapper->Get_P4_Measured();
-		const TVector3       locMissingProtonP3_Truth    = locMissingProtonP4_Truth.Vect();
-		const double         locMissingProtonP_Truth     = locMissingProtonP3_Truth.Mag();
-		const double         locMissingProtonTheta_Truth = locMissingProtonP3_Truth.Theta() * TMath::RadToDeg();
-		const double         locMissingProtonPhi_Truth   = locMissingProtonP3_Truth.Phi()   * TMath::RadToDeg();
-		const double         locTruthDeltaP              = locMissingProtonP_Truth - missingProtonP;
-		const double         locTruthDeltaPOverP         = locTruthDeltaP / missingProtonP;
-		const double         locTruthDeltaTheta          = locMissingProtonTheta_Truth - missingProtonTheta;
-		double               locTruthDeltaPhi            = locMissingProtonPhi_Truth - missingProtonPhi;
-		while (locTruthDeltaPhi > 180) {
-			locTruthDeltaPhi -= 360;
-		}
-		while (locTruthDeltaPhi < -180) {
-			locTruthDeltaPhi += 360;
-		}
-		if (debug)
-			cout << locTruthDeltaPOverP << endl;
-		hTruthDeltaP->Fill     (locTruthDeltaP,      histAccidWeightFactor);
-		hTruthDeltaPOverP->Fill(locTruthDeltaPOverP, histAccidWeightFactor);
-		hTruthDeltaTheta->Fill (locTruthDeltaTheta,  histAccidWeightFactor);
-		hTruthDeltaPhi->Fill   (locTruthDeltaPhi,    histAccidWeightFactor);
-
-		fillTopologyHist(histMap_TruthDeltaP,      thrownTopology, locTruthDeltaP,      histAccidWeightFactor, *hTruthDeltaP);
-		fillTopologyHist(histMap_TruthDeltaPoverP, thrownTopology, locTruthDeltaPOverP, histAccidWeightFactor, *hTruthDeltaPOverP);
-		fillTopologyHist(histMap_TruthDeltaTheta,  thrownTopology, locTruthDeltaTheta,  histAccidWeightFactor, *hTruthDeltaTheta);
-		fillTopologyHist(histMap_TruthDeltaPhi,    thrownTopology, locTruthDeltaPhi,    histAccidWeightFactor, *hTruthDeltaPhi);
-	}
-	return truthTrackExists;
-}
-
-
-bool
-DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingProtonP4, const bool debug)
+DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingProtonP4)
 {
 	int nmbTruthTracks = 0;
 	for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
@@ -356,8 +259,6 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingPro
 		while (locTruthDeltaPhi < -180) {
 			locTruthDeltaPhi += 360;
 		}
-		if (debug)
-			cout << locTruthDeltaPOverP << endl;
 
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaP",      locTruthDeltaP,      nmbTruthTracks - 1);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPOverP", locTruthDeltaPOverP, nmbTruthTracks - 1);
@@ -641,11 +542,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
-					fillTruthDeltaHist(locMissingProtonP, locMissingProtonTheta, locMissingProtonPhi, locHistAccidWeightFactor,
-						dHist_TruthDeltaP_Found, dHist_TruthDeltaPOverP_Found, dHist_TruthDeltaTheta_Found, dHist_TruthDeltaPhi_Found,
-						locThrownTopology,
-						dHist_TruthDeltaP_ThrownTopology_Found, dHist_TruthDeltaPoverP_ThrownTopology_Found, dHist_TruthDeltaTheta_ThrownTopology_Found, dHist_TruthDeltaPhi_ThrownTopology_Found);
-
 					// FILL FLAT TREE
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
 					fillTreeTruthDelta(locMissingProtonP4);
@@ -656,11 +552,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
-
-					fillTruthDeltaHist(locMissingProtonP, locMissingProtonTheta, locMissingProtonPhi, locHistAccidWeightFactor,
-						dHist_TruthDeltaP_Missing, dHist_TruthDeltaPOverP_Missing, dHist_TruthDeltaTheta_Missing, dHist_TruthDeltaPhi_Missing,
-						locThrownTopology,
-						dHist_TruthDeltaP_ThrownTopology_Missing, dHist_TruthDeltaPoverP_ThrownTopology_Missing, dHist_TruthDeltaTheta_ThrownTopology_Missing, dHist_TruthDeltaPhi_ThrownTopology_Missing);
 
 					// FILL FLAT TREE
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
@@ -700,11 +591,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
 			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
 
-			fillTruthDeltaHist(locMissingProtonP, locMissingProtonTheta, locMissingProtonPhi, locHistAccidWeightFactor,
-				dHist_TruthDeltaP, dHist_TruthDeltaPOverP, dHist_TruthDeltaTheta, dHist_TruthDeltaPhi,
-				locThrownTopology,
-				dHist_TruthDeltaP_ThrownTopology, dHist_TruthDeltaPoverP_ThrownTopology, dHist_TruthDeltaTheta_ThrownTopology, dHist_TruthDeltaPhi_ThrownTopology);
-
 			// fill histograms for topologies in bggen MC
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 
@@ -713,11 +599,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
-
-				fillTruthDeltaHist(locMissingProtonP, locMissingProtonTheta, locMissingProtonPhi, locHistAccidWeightFactor,
-					dHist_TruthDeltaP_Missing, dHist_TruthDeltaPOverP_Missing, dHist_TruthDeltaTheta_Missing, dHist_TruthDeltaPhi_Missing,
-					locThrownTopology,
-					dHist_TruthDeltaP_ThrownTopology_Missing, dHist_TruthDeltaPoverP_ThrownTopology_Missing, dHist_TruthDeltaTheta_ThrownTopology_Missing, dHist_TruthDeltaPhi_ThrownTopology_Missing);
 
 				// FILL FLAT TREE
 				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);

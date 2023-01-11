@@ -103,57 +103,6 @@ def overlayMissingMassSquared():
     canv.SaveAs(".pdf")
 
 
-def plotMcTruthComparison():
-  # inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
-  inFileName = "pippippimpimpmiss.root"
-  histBaseNames = (
-    "MissingMassSquared/TruthDeltaPOverP",
-    "MissingMassSquared/TruthDeltaTheta",
-    "MissingMassSquared/TruthDeltaPhi")
-  sigTopology = "2#pi^{#plus}2#pi^{#minus}p"
-  bkgTopology = "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]"
-  colors = {
-    "Found"   : ROOT.kGreen + 2,
-    "Missing" : ROOT.kRed + 1,
-    ""        : ROOT.kGray
-  }
-
-  # get histograms
-  inFile = ROOT.TFile(inFileName)
-  cases = ["", "Found", "Missing"]
-  histsTot = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases} for histBaseName in histBaseNames]
-  histsSig = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "") + "__" + sigTopology) for case in cases} for histBaseName in histBaseNames]
-  histsBkg = [{case : inFile.Get(histBaseName + ("_" + case if case != "" else "") + "__" + bkgTopology) for case in cases} for histBaseName in histBaseNames]
-  histsBkgTot = []
-  for i, hists in enumerate(histsTot):
-    histsBkgTot.append({})
-    for case, histTot in hists.items():
-      histSig = histsSig[i][case]
-      histBkg = histTot.Clone(histSig.GetName().split("__")[0] + "__bkg")
-      histBkg.Add(histSig, -1)
-      histsBkgTot[i][case] = histBkg
-
-  # draw histograms
-  for hists in histsTot + histsSig + histsBkg + histsBkgTot:
-    distrName = hists[""].GetName()
-    hStack = ROOT.THStack("hStack" + distrName, f";{hists[''].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)")
-    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_bggen_mctruthcomp_" + distrName, "", 600, 600)
-    for case, hist in hists.items():
-      hist.SetName(case if case != "" else "Total")
-      hist.SetTitle("")
-      hist.SetLineColor(colors[case])
-      if case == "":
-        hist.SetFillColor(colors[case])
-      hStack.Add(hist)
-    hStack.Draw("NOSTACK HIST")
-    hStack.GetYaxis().SetTitleOffset(1.5)
-    if "TruthDeltaTheta" in distrName:
-      hStack.GetXaxis().SetRangeUser(-100, 100)
-    # add legend
-    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-    canv.SaveAs(".pdf")
-
-
 # plot distribution of variable defined by `variable` and overlay total, missing and found cases
 def overlayCases(
   inFileName,
@@ -275,14 +224,13 @@ if __name__ == "__main__":
   # topologies = plotTopologies(normalize = False)
   # plotTopologies(normalize = True)
   # overlayMissingMassSquared()
-  plotMcTruthComparison()
 
   inFileName = "pippippimpimpmiss_flatTree.root"
   treeName = "pippippimpimpmiss"
 
-  # overlayTopologies(inFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
-  # overlayTopologies(inFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60,  0,    6))
-  # overlayTopologies(inFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  overlayTopologies(inFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
+  overlayTopologies(inFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60,  0,    6))
+  overlayTopologies(inFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
 
   filterTopologies = {
     ""                                             : None,
@@ -295,13 +243,3 @@ if __name__ == "__main__":
     overlayCases(inFileName, treeName, "TruthDeltaPOverP", xTitle = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(inFileName, treeName, "TruthDeltaTheta",  xTitle = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(inFileName, treeName, "TruthDeltaPhi",    xTitle = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
-
-  # df = ROOT.RDataFrame(treeName, inFileName).Filter('(TrackFound == true) and (ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")')
-  # row = df.AsNumpy(["TruthDeltaPOverP"])["TruthDeltaPOverP"]
-  # for vals in row:
-  #   for val in vals:
-  #     print(f"{val:.6g}")
-  # print(type(row[0]), row[0].size())
-  # pdf = pandas.DataFrame({"TruthDeltaPOverP" : row})
-  # print(type(pdf.values), pdf.values)
-  # print(pdf.iloc[20:40, 0])
