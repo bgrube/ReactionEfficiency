@@ -204,6 +204,12 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingMassSquared_Measured");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTVector3>  ("MissingProtonP3_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
+	//TODO write out only best match instead of all candidates?
+	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaP",      "NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaPOverP", "NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaTheta",  "NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaPhi",    "NmbTruthTracks");
 
 	/************************************* ADVANCED EXAMPLE: CHOOSE BRANCHES TO READ ************************************/
 
@@ -247,9 +253,10 @@ namespace {
 			// create new histogram for topology
 			const TString newName = (TString)templateHist.GetName() + "__" + topology;
 			histMap[topology] = (TH1F*)templateHist.Clone(newName);
+		  histMap.at(topology)->Reset();
+		  histMap.at(topology)->SetTitle(topology);
 			TDirectory* subDir = gDirectory->Get<TDirectory>(subDirPath);
 			histMap.at(topology)->SetDirectory(subDir);
-			histMap.at(topology)->SetTitle(topology);
 		}
 		histMap.at(topology)->Fill(value, weight);
 	}
@@ -271,7 +278,8 @@ DSelector_pippippimpimpmiss::fillTruthDeltaHist(
 	map<TString, TH1F*>& histMap_TruthDeltaP,
 	map<TString, TH1F*>& histMap_TruthDeltaPoverP,
 	map<TString, TH1F*>& histMap_TruthDeltaTheta,
-	map<TString, TH1F*>& histMap_TruthDeltaPhi)
+	map<TString, TH1F*>& histMap_TruthDeltaPhi,
+	const bool debug)
 {
 	bool truthTrackExists = false;
 	for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
@@ -298,6 +306,8 @@ DSelector_pippippimpimpmiss::fillTruthDeltaHist(
 		while (locTruthDeltaPhi < -180) {
 			locTruthDeltaPhi += 360;
 		}
+		if (debug)
+			cout << locTruthDeltaPOverP << endl;
 		hTruthDeltaP->Fill     (locTruthDeltaP,      histAccidWeightFactor);
 		hTruthDeltaPOverP->Fill(locTruthDeltaPOverP, histAccidWeightFactor);
 		hTruthDeltaTheta->Fill (locTruthDeltaTheta,  histAccidWeightFactor);
@@ -309,6 +319,53 @@ DSelector_pippippimpimpmiss::fillTruthDeltaHist(
 		fillTopologyHist(histMap_TruthDeltaPhi,    thrownTopology, locTruthDeltaPhi,    histAccidWeightFactor, *hTruthDeltaPhi);
 	}
 	return truthTrackExists;
+}
+
+
+bool
+DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingProtonP4, const bool debug)
+{
+	int nmbTruthTracks = 0;
+	for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
+		// Set branch array indices corresponding to this charged-track hypothesis
+		dThrownWrapper->Set_ArrayIndex(locTrackIndex);
+		// Make sure it is the unused track
+		if (dThrownWrapper->Get_PID() != Proton) {
+			continue;
+		}
+		++nmbTruthTracks;
+
+		const TVector3 missingProtonP3    = missingProtonP4.Vect();
+		const double   missingProtonP     = missingProtonP3.Mag();
+		const double   missingProtonTheta = missingProtonP3.Theta() * TMath::RadToDeg();
+		const double   missingProtonPhi   = missingProtonP3.Phi()   * TMath::RadToDeg();
+
+		const TLorentzVector locMissingProtonP4_Truth    = dThrownWrapper->Get_P4_Measured();
+		const TVector3       locMissingProtonP3_Truth    = locMissingProtonP4_Truth.Vect();
+		const double         locMissingProtonP_Truth     = locMissingProtonP3_Truth.Mag();
+		const double         locMissingProtonTheta_Truth = locMissingProtonP3_Truth.Theta() * TMath::RadToDeg();
+		const double         locMissingProtonPhi_Truth   = locMissingProtonP3_Truth.Phi()   * TMath::RadToDeg();
+
+		const double         locTruthDeltaP              = locMissingProtonP_Truth - missingProtonP;
+		const double         locTruthDeltaPOverP         = locTruthDeltaP / missingProtonP;
+		const double         locTruthDeltaTheta          = locMissingProtonTheta_Truth - missingProtonTheta;
+		double               locTruthDeltaPhi            = locMissingProtonPhi_Truth - missingProtonPhi;
+		while (locTruthDeltaPhi > 180) {
+			locTruthDeltaPhi -= 360;
+		}
+		while (locTruthDeltaPhi < -180) {
+			locTruthDeltaPhi += 360;
+		}
+		if (debug)
+			cout << locTruthDeltaPOverP << endl;
+
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaP",      locTruthDeltaP,      nmbTruthTracks - 1);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPOverP", locTruthDeltaPOverP, nmbTruthTracks - 1);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaTheta",  locTruthDeltaTheta,  nmbTruthTracks - 1);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPhi",    locTruthDeltaPhi,    nmbTruthTracks - 1);
+	}
+	dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbTruthTracks", nmbTruthTracks);
+	return nmbTruthTracks > 0;
 }
 
 
@@ -591,6 +648,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 					// FILL FLAT TREE
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
+					fillTreeTruthDelta(locMissingProtonP4);
 					Fill_FlatTree();
 					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				} else {
@@ -606,6 +664,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 					// FILL FLAT TREE
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
+					fillTreeTruthDelta(locMissingProtonP4);
 					Fill_FlatTree();
 					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				}
@@ -662,6 +721,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 				// FILL FLAT TREE
 				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
+				fillTreeTruthDelta(locMissingProtonP4);
 				Fill_FlatTree();
 				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 			}

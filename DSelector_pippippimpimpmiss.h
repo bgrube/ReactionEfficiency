@@ -133,7 +133,11 @@ class DSelector_pippippimpimpmiss : public DSelector
 		map<TString, TH1F*>& histMap_TruthDeltaP,
 		map<TString, TH1F*>& histMap_TruthDeltaPoverP,
 		map<TString, TH1F*>& histMap_TruthDeltaTheta,
-		map<TString, TH1F*>& histMap_TruthDeltaPhi);
+		map<TString, TH1F*>& histMap_TruthDeltaPhi,
+		const bool debug = false);
+
+	bool
+	fillTreeTruthDelta(const TLorentzVector& missingProtonP4, const bool debug = false);
 
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };
