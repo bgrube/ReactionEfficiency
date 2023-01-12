@@ -10,6 +10,7 @@ ROOT.gROOT.LoadMacro("~/rootlogon.C")
 
 
 def getCanvName(fileName, histName):
+  histName = histName.replace("MissingMassSquared/", "")
   particle = "Pi+" if "pipmiss" in fileName else ('Pi-' if "pimmiss" in fileName else "Proton")
   channel  = "4pi" if fileName.count("pi") == 4 else "2pi"
   dataset  = fileName.split('.')[1]
@@ -21,21 +22,22 @@ def getCanvName(fileName, histName):
 
 # total missing-mass (squared) distributions
 inFileNames = [
-  "pippimpmiss.30370.root",
-  "pippimpmiss.30370_acc.root"]
+  "pippippimpimpmiss.root"]
+  # "pippimpmiss.30370.root",
+  # "pippimpmiss.30370_acc.root"]
   # "pippippimpimpmiss.30370.root",
   # "pippippimpimpmiss.30370_acc.root"]
 histNames = [
   "MissingMass",
   "MissingMassSideband",
-  "MissingMassSquared",
-  "MissingMassSquaredSideband"]
+  "MissingMassSquared/MissingMassSquared",
+  "MissingMassSquared/MissingMassSquaredSideband"]
 rebinFactor = 20
 
 inFiles = [ROOT.TFile(inFileName) for inFileName in inFileNames]
 hists = [[inFile.Get(histName) for histName in histNames] for inFile in inFiles]
 canvNames = [[getCanvName(inFileName, histName) for histName in histNames] for inFileName in inFileNames]
-canvs = [[ROOT.TCanvas(name, name, 1470, 891) for name in names] for names in canvNames]
+canvs = [[ROOT.TCanvas(name, name, 600, 600) for name in names] for names in canvNames]
 for fileIndex, histsInFile in enumerate(hists):
   for histIndex, hist in enumerate(histsInFile):
     canv = canvs[fileIndex][histIndex]
@@ -48,27 +50,27 @@ for fileIndex, histsInFile in enumerate(hists):
     hist.Rebin(rebinFactor)
     hist.GetXaxis().SetRangeUser(*mmRange)
     hist.Draw("HIST")
-    if histIndex % 2 == 0:
-      # overlay RF sidebands
-      sbHist = hists[fileIndex][histIndex + 1]
-      if sbHist.Integral() != 0:
-        sbHistCopy = sbHist.DrawCopy("HIST SAME")
-        sbHistCopy.Rebin(rebinFactor)
-        sbHistCopy.SetLineColor(ROOT.kGreen+2)
-        if sbHistCopy.GetMaximum() > hist.GetMaximum():
-          hist.SetMaximum(1.1 * sbHistCopy.GetMaximum())
+    # if histIndex % 2 == 0:
+    #   # overlay RF sidebands
+    #   sbHist = hists[fileIndex][histIndex + 1]
+    #   if sbHist.Integral() != 0:
+    #     sbHistCopy = sbHist.DrawCopy("HIST SAME")
+    #     sbHistCopy.Rebin(rebinFactor)
+    #     sbHistCopy.SetLineColor(ROOT.kGreen+2)
+    #     if sbHistCopy.GetMaximum() > hist.GetMaximum():
+    #       hist.SetMaximum(1.1 * sbHistCopy.GetMaximum())
     canv.SaveAs(".pdf")
     print()
 
-inFileNames = [
-  "pippimpmiss.30370_acc.root",
-  "pippippimpimpmiss.30370_acc.root"]
-histName = "MissingMassSquared"
+# inFileNames = [
+#   "pippimpmiss.30370_acc.root",
+#   "pippippimpimpmiss.30370_acc.root"]
+histName = "MissingMassSquared/MissingMassSquared"
 
 inFiles = [ROOT.TFile(inFileName) for inFileName in inFileNames]
 hists = [inFile.Get(histName) for inFile in inFiles]
 canvNames = [f"{getCanvName(inFileName, histName)}_2" for inFileName in inFileNames]
-canvs = [ROOT.TCanvas(canvName, canvName, 1470, 891) for canvName in canvNames]
+canvs = [ROOT.TCanvas(canvName, canvName, 600, 600) for canvName in canvNames]
 for index, hist in enumerate(hists):
   canv = canvs[index]
   canv.cd()
@@ -83,7 +85,7 @@ histName = "RFWeight"
 inFiles = [ROOT.TFile(inFileName) for inFileName in inFileNames]
 hists = [inFile.Get(histName) for inFile in inFiles]
 canvNames = [f"{getCanvName(inFileName, histName)}" for inFileName in inFileNames]
-canvs = [ROOT.TCanvas(canvName, canvName, 1470, 891) for canvName in canvNames]
+canvs = [ROOT.TCanvas(canvName, canvName, 600, 600) for canvName in canvNames]
 for index, hist in enumerate(hists):
   canv = canvs[index]
   canv.cd()
@@ -106,7 +108,7 @@ inFiles = [ROOT.TFile(inFileName) for inFileName in inFileNames]
 hists = [[inFile.Get(histName) for histName in histNames] for inFile in inFiles]
 canvNames = [[getCanvName(inFileName, histName) for histName in histNames] for inFileName in inFileNames]
 print(canvNames)
-canvs = [[ROOT.TCanvas(name, name, 1470, 891) for name in names] for names in canvNames]
+canvs = [[ROOT.TCanvas(name, name, 600, 600) for name in names] for names in canvNames]
 print(canvs)
 for fileIndex, histsInFile in enumerate(hists):
   for histIndex, hist in enumerate(histsInFile):

@@ -2,6 +2,7 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+from collections.abc import Iterable
 import pandas
 import ROOT
 
@@ -103,7 +104,81 @@ def overlayMissingMassSquared():
     canv.SaveAs(".pdf")
 
 
-# plot distribution of variable defined by `variable` and overlay total, missing and found cases
+def drawHistogram(
+  inFileName,
+  histName,
+  rebinFactor = 100,
+  pdfFileNamePrefix = "justin_Proton_4pi_",
+  pdfFileNameSuffix = ""
+):
+  # get histogram
+  inFile = ROOT.TFile(inFileName)
+  hist = inFile.Get(histName)
+  hist.Rebin(rebinFactor)
+  # draw histogram
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
+  hist.Draw("HIST")
+  canv.SaveAs(".pdf")
+
+
+def getHist1D(
+  inFileName,
+  treeName,
+  variable,  # may column name, or tuple with new column definition
+  binning,
+  xTitle,
+  yTitle,
+  weightVariable,  # may be None, string with column name, or tuple with new column definition
+  additionalFilter
+):
+  inputData = ROOT.RDataFrame(treeName, inFileName) if additionalFilter is None else ROOT.RDataFrame(treeName, inFileName).Filter(additionalFilter)
+  columnName = None
+  if isinstance(variable, str):
+    columnName = variable
+  elif isinstance(variable, Iterable):  # create new column
+    inputData  = inputData.Define(variable[0], variable[1])
+    columnName = variable[0]
+  assert columnName is not None
+  histDef = (f"{columnName}", f";{xTitle};{yTitle}", *binning)
+  hist = None
+  if weightVariable is None:
+    hist = inputData.Histo1D(histDef, columnName)
+  elif isinstance(weightVariable, str):  # use existing column
+    hist = inputData.Histo1D(histDef, columnName, weightVariable)
+  elif isinstance(weightVariable, Iterable):  # create new column
+    hist = inputData.Define(weightVariable[0], weightVariable[1]).Histo1D(histDef, columnName, weightVariable[0])
+  assert hist is not None
+  return hist, columnName
+
+
+# plot distribution of variable defined by `variable`
+def plotVariable(
+  inFileName,
+  treeName,
+  variable,  # may column name, or tuple with new column definition
+  binning,
+  xTitle,
+  yTitle = "Number of Combos (RF-subtracted)",
+  weightVariable = "AccidWeightFactor",  # may be None, string with column name, or tuple with new column definition
+  pdfFileNamePrefix = "justin_Proton_4pi_",
+  pdfFileNameSuffix = "",
+  additionalFilter  = None
+):
+  hist, columnName = getHist1D(inFileName, treeName, variable, binning, xTitle, yTitle, weightVariable, additionalFilter)
+  # draw distributions
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{columnName}{pdfFileNameSuffix}")
+  hist.Draw("HIST")
+  hist.GetYaxis().SetTitleOffset(1.5)
+  # draw zero line, if necessary
+  xAxis = hist.GetXaxis()
+  if hist.GetMinimum() < 0 and hist.GetMaximum() > 0:
+    line = ROOT.TLine()
+    line.SetLineStyle(ROOT.kDashed)
+    line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+  canv.SaveAs(".pdf")
+
+
+# overlay distributions of variable defined by `variable` for Total, Found, and Missing cases
 def overlayCases(
   inFileName,
   treeName,
@@ -112,14 +187,14 @@ def overlayCases(
   binning,
   additionalFilter  = None,
   pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = ""):
+  pdfFileNameSuffix = ""
+):
   inputData = ROOT.RDataFrame(treeName, inFileName) if additionalFilter is None else ROOT.RDataFrame(treeName, inFileName).Filter(additionalFilter)
   colorCases = {
     "Total"   : ROOT.kGray,
     "Found"   : ROOT.kGreen + 2,
     "Missing" : ROOT.kRed + 1
   }
-
   # overlay distributions for cases
   hStack = ROOT.THStack(f"{variable}", f";{xTitle};Number of Combos (RF-subtracted)")
   hists = []
@@ -132,7 +207,7 @@ def overlayCases(
     hists.append(hist)
     hStack.Add(hist.GetPtr())
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}{pdfFileNameSuffix}")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_cases{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   hStack.GetYaxis().SetTitleOffset(1.5)
   # add legend
@@ -147,7 +222,7 @@ def overlayCases(
 
 
 # plot distribution of variable defined by `variable` for overall data sample
-# for bggen sample: in addition overlay distributions for the `maxNmbTopologies` largest topologies
+# for bggen sample: overlay distributions for the `maxNmbTopologies` topologies with the largest number of combos
 def overlayTopologies(
   inFileName,
   treeName,
@@ -156,7 +231,8 @@ def overlayTopologies(
   binning,
   additionalFilter  = None,
   pdfFileNamePrefix = "justin_Proton_4pi_",
-  maxNmbTopologies  = 10):
+  maxNmbTopologies  = 10
+):
   inputData = ROOT.RDataFrame(treeName, inFileName) if additionalFilter is None else ROOT.RDataFrame(treeName, inFileName).Filter(additionalFilter)
   # # get topologies with largest number of combos for total data set
   # # print(df.GetColumnType("ThrownTopology"))
@@ -220,17 +296,17 @@ if __name__ == "__main__":
   ROOT.gStyle.SetStatFormat("8.8g")
   ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
 
-  inFileName = "pippippimpimpmiss.root"
+  histFileName = "pippippimpimpmiss.root"
   # topologies = plotTopologies(normalize = False)
   # plotTopologies(normalize = True)
   # overlayMissingMassSquared()
 
-  inFileName = "pippippimpimpmiss_flatTree.root"
+  treeFileName = "pippippimpimpmiss_flatTree.root"
   treeName = "pippippimpimpmiss"
 
-  overlayTopologies(inFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
-  overlayTopologies(inFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60,  0,    6))
-  overlayTopologies(inFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  overlayTopologies(treeFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
+  overlayTopologies(treeFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60, 0, 6))
+  overlayTopologies(treeFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
 
   filterTopologies = {
     ""                                             : None,
@@ -239,7 +315,14 @@ if __name__ == "__main__":
     "__bkg"                                        : 'ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p"'
   }
   for suffix, filter in filterTopologies.items():
-    overlayCases(inFileName, treeName, "TruthDeltaP",      xTitle = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(inFileName, treeName, "TruthDeltaPOverP", xTitle = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(inFileName, treeName, "TruthDeltaTheta",  xTitle = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(inFileName, treeName, "TruthDeltaPhi",    xTitle = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(treeFileName, treeName, "TruthDeltaP",      xTitle = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(treeFileName, treeName, "TruthDeltaPOverP", xTitle = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(treeFileName, treeName, "TruthDeltaTheta",  xTitle = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(treeFileName, treeName, "TruthDeltaPhi",    xTitle = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
+
+  sideBandArgs = {"yTitle" : "Number of Combos (RF-Sideband)", "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
+  plotVariable(treeFileName, treeName, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2))
+  plotVariable(treeFileName, treeName, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2), **sideBandArgs)
+  plotVariable(treeFileName, treeName, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4))
+  plotVariable(treeFileName, treeName, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4), **sideBandArgs)
+  plotVariable(treeFileName, treeName, "AccidWeightFactor",                                           xTitle = "RF Weight",                            binning = (1000, -2, 2), weightVariable = None)
