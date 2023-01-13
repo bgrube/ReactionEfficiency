@@ -148,25 +148,68 @@ def getHist1D(
   elif isinstance(weightVariable, Iterable):  # create new column
     hist = inputData.Define(weightVariable[0], weightVariable[1]).Histo1D(histDef, columnName, weightVariable[0])
   assert hist is not None
-  return hist, columnName
+  return hist
+
+
+def getHistND(
+  inputData,       # RDataFrame
+  variables,       # tuple of either column names or tuples with new column definitions; defines dimension of histogram
+  binning,
+  titles,          # tuple with axis titles
+  weightVariable,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression
+):
+  histDim = len(variables)
+  assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
+  if filterExpression:
+    # apply additional filters
+    inputData = inputData.Filter(filterExpression)
+  columnNames = [None,] * len(variables)
+  for index, variable in enumerate(variables):
+    if isinstance(variable, str):
+      # use existing variable column
+      columnNames[index] = variable
+    elif isinstance(variable, Iterable):
+      # create new variable column
+      inputData  = inputData.Define(variable[0], variable[1])
+      columnNames[index] = variable[0]
+    assert columnNames[index] is not None, f"failed to get column name for variable '{variable}'"
+  if not isinstance(weightVariable, str) and isinstance(weightVariable, Iterable):
+    # create new weight column
+    inputData = inputData.Define(weightVariable[0], weightVariable[1])
+  # create histogram
+  hist = None
+  histDef = ("_vs_".join(columnNames), ";" + ";".join(titles), *binning)
+  # get member function to create histogram
+  HistoND = getattr(inputData, "Histo1D") if histDim == 1 else getattr(inputData, "Histo2D")
+  if weightVariable is None:
+    hist = HistoND(histDef, *columnNames)
+  elif isinstance(weightVariable, str):
+    # use existing weight column
+    hist = HistoND(histDef, *columnNames, weightVariable)
+  elif isinstance(weightVariable, Iterable):
+    # use new weight column
+    hist = HistoND(histDef, *columnNames, weightVariable[0])
+  assert hist is not None, f"failed to create histogram for weight variable '{weightVariable}'"
+  return hist
 
 
 # plot distribution of variable defined by `variable`
 def plotVariable(
-  inFileName,
-  treeName,
-  variable,  # may column name, or tuple with new column definition
+  inputData,  # RDataFrame
+  variable,  # may be column name, or tuple with new column definition
   binning,
   xTitle,
   yTitle = "Number of Combos (RF-subtracted)",
-  weightVariable = "AccidWeightFactor",  # may be None, string with column name, or tuple with new column definition
+  weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = "",
   additionalFilter  = None
 ):
-  hist, columnName = getHist1D(inFileName, treeName, variable, binning, xTitle, yTitle, weightVariable, additionalFilter)
+  # hist = getHist1D(inFileName, treeName, variable, binning, xTitle, yTitle, weightVariable, additionalFilter)
+  hist = getHistND(inputData, (variable,), binning, (xTitle, yTitle), weightVariable, additionalFilter)
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{columnName}{pdfFileNameSuffix}")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
   hist.GetYaxis().SetTitleOffset(1.5)
   # draw zero line, if necessary
@@ -320,9 +363,10 @@ if __name__ == "__main__":
     overlayCases(treeFileName, treeName, "TruthDeltaTheta",  xTitle = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(treeFileName, treeName, "TruthDeltaPhi",    xTitle = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
+  inputData = ROOT.RDataFrame(treeName, treeFileName)
   sideBandArgs = {"yTitle" : "Number of Combos (RF-Sideband)", "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
-  plotVariable(treeFileName, treeName, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2))
-  plotVariable(treeFileName, treeName, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2), **sideBandArgs)
-  plotVariable(treeFileName, treeName, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4))
-  plotVariable(treeFileName, treeName, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4), **sideBandArgs)
-  plotVariable(treeFileName, treeName, "AccidWeightFactor",                                           xTitle = "RF Weight",                            binning = (1000, -2, 2), weightVariable = None)
+  plotVariable(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2))
+  plotVariable(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2), **sideBandArgs)
+  plotVariable(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4))
+  plotVariable(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4), **sideBandArgs)
+  plotVariable(inputData, "AccidWeightFactor",                                           xTitle = "RF Weight",                            binning = (1000, -2, 2), weightVariable = None)
