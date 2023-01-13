@@ -16,6 +16,21 @@ FILTER_CASES = {
 }
 
 
+def setupPlotStyle():
+  ROOT.gROOT.LoadMacro("~/rootlogon.C")
+  ROOT.gROOT.ForceStyle()
+  ROOT.gStyle.SetCanvasDefW(600)
+  ROOT.gStyle.SetCanvasDefH(600)
+  ROOT.gStyle.SetPalette(ROOT.kBird)
+  # ROOT.gStyle.SetPalette(ROOT.kViridis)
+  ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
+  ROOT.gStyle.SetLegendBorderSize(1)
+  # ROOT.gStyle.SetOptStat("ni")  # show only name and integral
+  ROOT.gStyle.SetOptStat("i")  # show only integral
+  ROOT.gStyle.SetStatFormat("8.8g")
+  ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
+
+
 def plotTopologies(maxNmbTopologies = 10, normalize = False):
   inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
   histBaseName = "MissingMassSquared/ThrownTopologies"
@@ -317,18 +332,7 @@ def overlayTopologies(
 
 
 if __name__ == "__main__":
-  ROOT.gROOT.LoadMacro("~/rootlogon.C")
-  ROOT.gROOT.ForceStyle()
-  ROOT.gStyle.SetCanvasDefW(600)
-  ROOT.gStyle.SetCanvasDefH(600)
-  # ROOT.gStyle.SetPalette(ROOT.kBird)
-  ROOT.gStyle.SetPalette(ROOT.kViridis)
-  ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
-  ROOT.gStyle.SetLegendBorderSize(1)
-  # ROOT.gStyle.SetOptStat("ni")  # show only name and integral
-  ROOT.gStyle.SetOptStat("i")  # show only integral
-  ROOT.gStyle.SetStatFormat("8.8g")
-  ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
+  setupPlotStyle()
 
   histFileName = "pippippimpimpmiss.root"
   # topologies = plotTopologies(normalize = False)
