@@ -126,9 +126,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 
 	//EXAMPLE MANUAL HISTOGRAMS:
 	dHist_BeamEnergy                          = new TH1F("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
-	dHist_RFWeight                            = new TH1F("RFWeight",                           ";RF Weight",                               1000, -2,    2);
-	dHist_MissingMass                         = new TH1F("MissingMass",                        ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
-	dHist_MissingMassSideband                 = new TH1F("MissingMassSideband",                ";Missing Mass (GeV/c^{2})",                5000, -0.5,  4.5);
 	dHist_MissingParticle_MomVsTheta          = new TH2F("MissingParticleMomVsTheta",          ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
 	dHist_MissingParticle_PhiVsTheta          = new TH2F("MissingParticlePhiVsTheta",          ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
 	dHist_MissingParticle_MomVsTheta_Measured = new TH2F("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
@@ -144,10 +141,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingProtonTheta_kinFitVsUnused = new TH2F("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
 	dHist_MissingProtonPhi_kinFitVsUnused   = new TH2F("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
 
-	dHist_MissingMassSquared                             = new TH1F("MissingMassSquared",                             ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquared_Found                       = new TH1F("MissingMassSquared_Found",                       ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquared_Missing                     = new TH1F("MissingMassSquared_Missing",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
-	dHist_MissingMassSquaredSideband                     = new TH1F("MissingMassSquaredSideband",                     ";Missing Mass Squared (GeV/c^{2})^{2}",                    5000, -0.5,  4.5);
 	dHist_MissingMassSquaredVsBeamEnergy                 = new TH2F("MissingMassSquaredVsBeamEnergy",                 ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergy_Found           = new TH2F("MissingMassSquaredVsBeamEnergy_Found",           ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergy_Missing         = new TH2F("MissingMassSquaredVsBeamEnergy_Missing",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
@@ -538,7 +531,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				const bool locPassDeltaPOverPCutFlag = (fabs(locMissingDeltaPOverP) <= 0.6);
 				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
 					// found matching unused track
-					dHist_MissingMassSquared_Found->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
@@ -549,7 +541,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				} else {
 					// unused track exists but does not match
-					dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
@@ -575,14 +566,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		//compare to what's been used so far
 		if (locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end()) {
 			//unique missing mass combo: histogram it, and register this combo of particles
-			dHist_RFWeight->Fill(locHistAccidWeightFactor);
-			// dHist_MissingMass->Fill(sqrt(locMissingMassSquared));  // Fills in-time and out-of-time beam photon combos
-			dHist_MissingMass->Fill        (sqrt(locMissingMassSquared_Measured), locHistAccidWeightFactor);  // Alternate version with accidental subtraction
-			dHist_MissingMassSideband->Fill(sqrt(locMissingMassSquared_Measured), 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
-			// dHist_MissingMassSquared->Fill(locMissingMassSquared);  // xFills in-time and out-of-time beam photon combos
-			dHist_MissingMassSquared->Fill        (locMissingMassSquared_Measured, locHistAccidWeightFactor);  // Alternate version with accidental subtraction
-			dHist_MissingMassSquaredSideband->Fill(locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);  // fill subtracted RF sidebands
-
 			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
@@ -596,7 +579,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			if (not unusedTrackExists) {
 				// there was no unused track in the event
-				dHist_MissingMassSquared_Missing->Fill(locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
