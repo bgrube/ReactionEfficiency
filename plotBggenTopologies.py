@@ -121,36 +121,6 @@ def drawHistogram(
   canv.SaveAs(".pdf")
 
 
-def getHist1D(
-  inFileName,
-  treeName,
-  variable,  # may column name, or tuple with new column definition
-  binning,
-  xTitle,
-  yTitle,
-  weightVariable,  # may be None, string with column name, or tuple with new column definition
-  additionalFilter
-):
-  inputData = ROOT.RDataFrame(treeName, inFileName) if additionalFilter is None else ROOT.RDataFrame(treeName, inFileName).Filter(additionalFilter)
-  columnName = None
-  if isinstance(variable, str):
-    columnName = variable
-  elif isinstance(variable, Iterable):  # create new column
-    inputData  = inputData.Define(variable[0], variable[1])
-    columnName = variable[0]
-  assert columnName is not None
-  histDef = (f"{columnName}", f";{xTitle};{yTitle}", *binning)
-  hist = None
-  if weightVariable is None:
-    hist = inputData.Histo1D(histDef, columnName)
-  elif isinstance(weightVariable, str):  # use existing column
-    hist = inputData.Histo1D(histDef, columnName, weightVariable)
-  elif isinstance(weightVariable, Iterable):  # create new column
-    hist = inputData.Define(weightVariable[0], weightVariable[1]).Histo1D(histDef, columnName, weightVariable[0])
-  assert hist is not None
-  return hist
-
-
 def getHistND(
   inputData,       # RDataFrame
   variables,       # tuple of either column names or tuples with new column definitions; defines dimension of histogram
@@ -206,7 +176,6 @@ def plotVariable(
   pdfFileNameSuffix = "",
   additionalFilter  = None
 ):
-  # hist = getHist1D(inFileName, treeName, variable, binning, xTitle, yTitle, weightVariable, additionalFilter)
   hist = getHistND(inputData, (variable,), binning, (xTitle, yTitle), weightVariable, additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
