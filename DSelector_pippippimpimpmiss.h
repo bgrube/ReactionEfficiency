@@ -62,10 +62,6 @@ class DSelector_pippippimpimpmiss : public DSelector
 		// DEFINE YOUR HISTOGRAMS HERE
 		// EXAMPLES:
 		TH1F* dHist_BeamEnergy;
-		TH2F* dHist_MissingParticle_MomVsTheta;
-		TH2F* dHist_MissingParticle_PhiVsTheta;
-		TH2F* dHist_MissingParticle_MomVsTheta_Measured;
-		TH2F* dHist_MissingParticle_PhiVsTheta_Measured;
 
 		TH1F* dHist_MissingDeltaP;
 		TH1F* dHist_MissingDeltaPOverP;

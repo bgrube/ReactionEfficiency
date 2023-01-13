@@ -125,11 +125,7 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
-	dHist_BeamEnergy                          = new TH1F("BeamEnergy",                         ";Beam Energy (GeV)",                       1000,  2,   12);
-	dHist_MissingParticle_MomVsTheta          = new TH2F("MissingParticleMomVsTheta",          ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
-	dHist_MissingParticle_PhiVsTheta          = new TH2F("MissingParticlePhiVsTheta",          ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
-	dHist_MissingParticle_MomVsTheta_Measured = new TH2F("MissingParticleMomVsTheta_Measured", ";Missing #theta (deg);Missing p (GeV/c)",  360, 0, 180, 400,    0,   9);
-	dHist_MissingParticle_PhiVsTheta_Measured = new TH2F("MissingParticlePhiVsTheta_Measured", ";Missing #theta (deg);Missing #phi (deg)", 360, 0, 180, 360, -180, 180);
+	dHist_BeamEnergy = new TH1F("BeamEnergy", ";Beam Energy (GeV)", 1000,  2,   12);
 
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
@@ -579,11 +575,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			//unique missing mass combo: histogram it, and register this combo of particles
 			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
-
-			dHist_MissingParticle_MomVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonP,            locHistAccidWeightFactor);
-			dHist_MissingParticle_PhiVsTheta->Fill         (locMissingProtonTheta,          locMissingProtonPhi,          locHistAccidWeightFactor);
-			dHist_MissingParticle_MomVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonP_Measured,   locHistAccidWeightFactor);
-			dHist_MissingParticle_PhiVsTheta_Measured->Fill(locMissingProtonTheta_Measured, locMissingProtonPhi_Measured, locHistAccidWeightFactor);
 
 			// fill histograms for topologies in bggen MC
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
