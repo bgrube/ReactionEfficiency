@@ -123,9 +123,9 @@ def drawHistogram(
 
 def getHistND(
   inputData,       # RDataFrame
-  variables,       # tuple of either column names or tuples with new column definitions; defines dimension of histogram
+  variables,       # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
   binning,
-  titles,          # tuple with axis titles
+  titles,          # tuple with x, y, ... axis titles
   weightVariable,  # may be None (= no weighting), string with column name, or tuple with new column definition
   filterExpression
 ):
@@ -149,7 +149,7 @@ def getHistND(
     inputData = inputData.Define(weightVariable[0], weightVariable[1])
   # create histogram
   hist = None
-  histDef = ("_vs_".join(columnNames), ";" + ";".join(titles), *binning)
+  histDef = ("_".join(columnNames), ";" + ";".join(titles), *binning)
   # get member function to create histogram
   HistoND = getattr(inputData, "Histo1D") if histDim == 1 else getattr(inputData, "Histo2D")
   if weightVariable is None:
@@ -164,10 +164,10 @@ def getHistND(
   return hist
 
 
-# plot distribution of variable defined by `variable`
+# plot 1D distribution of given variable
 def plot1D(
   inputData,  # RDataFrame
-  variable,  # may be column name, or tuple with new column definition
+  variable,  # variable to plot; may be column name, or tuple with new column definition
   binning,
   xTitle,
   yTitle = "Number of Combos (RF-subtracted)",
@@ -187,6 +187,27 @@ def plot1D(
     line = ROOT.TLine()
     line.SetLineStyle(ROOT.kDashed)
     line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+  canv.SaveAs(".pdf")
+
+
+# plot 2D distribution of given variables
+def plot2D(
+  inputData,  # RDataFrame
+  xVariable,  # x variable to plot; may be column name, or tuple with new column definition
+  yVariable,  # y variable to plot; may be column name, or tuple with new column definition
+  binning,
+  xTitle,
+  yTitle,
+  weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix = "justin_Proton_4pi_",
+  pdfFileNameSuffix = "",
+  additionalFilter  = None
+):
+  hist = getHistND(inputData, (xVariable, yVariable), binning, (xTitle, yTitle), weightVariable, additionalFilter)
+  # draw distributions
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
+  hist.Draw("COLZ")
+  hist.GetYaxis().SetTitleOffset(1.5)
   canv.SaveAs(".pdf")
 
 
@@ -300,7 +321,8 @@ if __name__ == "__main__":
   ROOT.gROOT.ForceStyle()
   ROOT.gStyle.SetCanvasDefW(600)
   ROOT.gStyle.SetCanvasDefH(600)
-  ROOT.gStyle.SetPalette(ROOT.kBird)
+  # ROOT.gStyle.SetPalette(ROOT.kBird)
+  ROOT.gStyle.SetPalette(ROOT.kViridis)
   ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
   ROOT.gStyle.SetLegendBorderSize(1)
   # ROOT.gStyle.SetOptStat("ni")  # show only name and integral
@@ -339,3 +361,8 @@ if __name__ == "__main__":
   plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4))
   plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4), **sideBandArgs)
   plot1D(inputData, "AccidWeightFactor",                                           xTitle = "RF Weight",                            binning = (1000, -2, 2), weightVariable = None)
+
+  plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   xTitle = "Missing #theta (deg)", yTitle = "Missing p (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
+  plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", xTitle = "Missing #theta (deg)", yTitle = "Missing #phi (deg)", binning = (180, 0, 90, 360, -180, 180))
+  plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   xTitle = "Missing #theta (deg)", yTitle = "Missing p (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
+  plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", xTitle = "Missing #theta (deg)", yTitle = "Missing #phi (deg)", binning = (180, 0, 90, 360, -180, 180))

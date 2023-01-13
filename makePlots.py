@@ -20,6 +20,12 @@ def getCanvName(fileName, histName):
     return f"justin_{particle}_{channel}_{histName.lower()}_{dataset}"
 
 
+inFileNames = [
+  "pippippimpimpmiss.root"]
+  # "pippimpmiss.30370.root",
+  # "pippimpmiss.30370_acc.root"]
+  # "pippippimpimpmiss.30370.root",
+  # "pippippimpimpmiss.30370_acc.root"]
 # missing particle kinematics
 histNames = [
   "MissingParticleMomVsTheta",
