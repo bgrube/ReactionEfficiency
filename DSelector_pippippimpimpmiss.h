@@ -53,23 +53,9 @@ class DSelector_pippippimpimpmiss : public DSelector
 		DChargedTrackHypothesis* dPiMinus2Wrapper;
 		DKinematicData* dMissingProtonWrapper;
 
-		// define bin labels for categorial axis
-		static const TString dLabelTotal;
-		static const TString dLabelFound;
-		static const TString dLabelMissing;
-		static const std::vector<TString> dBinLabels;
-
 		// DEFINE YOUR HISTOGRAMS HERE
 		// EXAMPLES:
 		TH1F* dHist_BeamEnergy;
-
-		TH1F* dHist_MissingDeltaP;
-		TH1F* dHist_MissingDeltaPOverP;
-		TH1F* dHist_MissingDeltaTheta;
-		TH1F* dHist_MissingDeltaPhi;
-		TH2F* dHist_MissingProtonP_kinFitVsUnused;
-		TH2F* dHist_MissingProtonTheta_kinFitVsUnused;
-		TH2F* dHist_MissingProtonPhi_kinFitVsUnused;
 
 		TH2F* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergy_Found;

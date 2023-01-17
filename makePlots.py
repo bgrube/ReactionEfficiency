@@ -348,9 +348,9 @@ if __name__ == "__main__":
   treeFileName = "pippippimpimpmiss_flatTree.root"
   treeName = "pippippimpimpmiss"
 
-  overlayTopologies(treeFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
-  overlayTopologies(treeFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60, 0, 6))
-  overlayTopologies(treeFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  # overlayTopologies(treeFileName, treeName, "NmbUnusedShowers",            xTitle = "Number of Unused Showers",             binning = (11, -0.5, 10.5))
+  # overlayTopologies(treeFileName, treeName, "EnergyUnusedShowers",         xTitle = "Unused Shower Energy (GeV)",           binning = (60, 0, 6))
+  # overlayTopologies(treeFileName, treeName, "MissingMassSquared_Measured", xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
 
   filterTopologies = {
     ""                                             : None,
@@ -364,31 +364,24 @@ if __name__ == "__main__":
     overlayCases(treeFileName, treeName, "TruthDeltaTheta",  xTitle = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(treeFileName, treeName, "TruthDeltaPhi",    xTitle = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
-  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaP",      pdfFileNameSuffix = "_orig")
-  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaPOverP", pdfFileNameSuffix = "_orig")
-  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaTheta",  pdfFileNameSuffix = "_orig")
-  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaPhi",    pdfFileNameSuffix = "_orig")
-  drawHistogram(histFileName, "MissingMassSquared/MissingProtonP_kinFitVsUnused",     drawOption = "COLZ", pdfFileNameSuffix = "_orig")
-  drawHistogram(histFileName, "MissingMassSquared/MissingProtonTheta_kinFitVsUnused", drawOption = "COLZ", pdfFileNameSuffix = "_orig")
-  drawHistogram(histFileName, "MissingMassSquared/MissingProtonPhi_kinFitVsUnused",   drawOption = "COLZ", pdfFileNameSuffix = "_orig")
-
   inputData = ROOT.RDataFrame(treeName, treeFileName)
+
   sideBandArgs = {"yTitle" : "Number of Combos (RF-Sideband)", "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
-  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",                                                            binning = (100, 0, 2))
-  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",                                                            binning = (100, 0, 2), **sideBandArgs)
-  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}",                                                binning = (225, -0.5, 4))
-  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}",                                                binning = (225, -0.5, 4), **sideBandArgs)
-  plot1D(inputData, "AccidWeightFactor",                                           xTitle = "RF Weight",                                                                           binning = (1000, -2, 2), weightVariable = None)
-  plot1D(inputData, "UnusedDeltaP",                                                xTitle = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6))
-  plot1D(inputData, "UnusedDeltaPOverP",                                           xTitle = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
-  plot1D(inputData, "UnusedDeltaTheta",                                            xTitle = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100))
-  plot1D(inputData, "UnusedDeltaPhi",                                              xTitle = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180))
+  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2))
+  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2), **sideBandArgs)
+  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4))
+  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4), **sideBandArgs)
+  plot1D(inputData, "AccidWeightFactor",                                           xTitle = "RF Weight",                            binning = (1000, -2, 2), weightVariable = None)
 
   plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   xTitle = "Missing #theta (deg)", yTitle = "Missing p (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", xTitle = "Missing #theta (deg)", yTitle = "Missing #phi (deg)", binning = (180, 0, 90, 360, -180, 180))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   xTitle = "Missing #theta (deg)", yTitle = "Missing p (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", xTitle = "Missing #theta (deg)", yTitle = "Missing #phi (deg)", binning = (180, 0, 90, 360, -180, 180))
 
+  plot1D(inputData, "UnusedDeltaP",      xTitle = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6))
+  plot1D(inputData, "UnusedDeltaPOverP", xTitle = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
+  plot1D(inputData, "UnusedDeltaTheta",  xTitle = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100))
+  plot1D(inputData, "UnusedDeltaPhi",    xTitle = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180))
   unusedTrackData = inputData.Filter("NmbUnusedTracks == 1")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
   plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     xTitle = "#it{p}^{miss}_{unused} (GeV/c)",    yTitle = "#it{p}^{miss}_{kin. fit} (GeV/c)",    binning = (400, 0, 9, 400, 0, 9))
   plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", xTitle = "#it{#theta}^{miss}_{unused} (deg)", yTitle = "#it{#theta}^{miss}_{kin. fit} (deg)", binning = (360, 0, 180, 360, 0, 180))

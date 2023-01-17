@@ -5,12 +5,6 @@
 #include "DSelector_pippippimpimpmiss.h"
 
 
-const TString DSelector_pippippimpimpmiss::dLabelTotal   = "Total";
-const TString DSelector_pippippimpimpmiss::dLabelFound   = "Found";
-const TString DSelector_pippippimpimpmiss::dLabelMissing = "Missing";
-const std::vector<TString> DSelector_pippippimpimpmiss::dBinLabels = {DSelector_pippippimpimpmiss::dLabelTotal, DSelector_pippippimpimpmiss::dLabelFound, DSelector_pippippimpimpmiss::dLabelMissing};
-
-
 // workaround: provide dummy conversion functions for unnecessary static cast to TLorentzVector in DSelector/DTreeInterface.h:662
 namespace {
 
@@ -129,14 +123,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
-	dHist_MissingDeltaP                     = new TH1F("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      600, -6, 6);
-	dHist_MissingDeltaPOverP                = new TH1F("MissingDeltaPOverP",                ";(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", 500, -2, 2);
-	dHist_MissingDeltaTheta                 = new TH1F("MissingDeltaTheta",                 ";#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              200, -100, 100);
-	dHist_MissingDeltaPhi                   = new TH1F("MissingDeltaPhi",                   ";#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  360, -180, 180);
-	dHist_MissingProtonP_kinFitVsUnused     = new TH2F("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
-	dHist_MissingProtonTheta_kinFitVsUnused = new TH2F("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
-	dHist_MissingProtonPhi_kinFitVsUnused   = new TH2F("MissingProtonPhi_kinFitVsUnused",   ";#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",                   360, -180, 180, 360, -180, 180);
-
 	dHist_MissingMassSquaredVsBeamEnergy                 = new TH2F("MissingMassSquaredVsBeamEnergy",                 ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergy_Found           = new TH2F("MissingMassSquaredVsBeamEnergy_Found",           ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergy_Missing         = new TH2F("MissingMassSquaredVsBeamEnergy_Missing",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
@@ -533,13 +519,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				while (locUnusedDeltaPhi < -180) {
 					locUnusedDeltaPhi += 360;
 				}
-				dHist_MissingDeltaP->Fill     (locUnusedDeltaP,      locHistAccidWeightFactor);
-				dHist_MissingDeltaPOverP->Fill(locUnusedDeltaPOverP, locHistAccidWeightFactor);
-				dHist_MissingDeltaTheta->Fill (locUnusedDeltaTheta,  locHistAccidWeightFactor);
-				dHist_MissingDeltaPhi->Fill   (locUnusedDeltaPhi,    locHistAccidWeightFactor);
-				dHist_MissingProtonP_kinFitVsUnused->Fill    (locMissingProtonP_Unused,     locMissingProtonP,     locHistAccidWeightFactor);
-				dHist_MissingProtonTheta_kinFitVsUnused->Fill(locMissingProtonTheta_Unused, locMissingProtonTheta, locHistAccidWeightFactor);
-				dHist_MissingProtonPhi_kinFitVsUnused->Fill  (locMissingProtonPhi_Unused,   locMissingProtonPhi,   locHistAccidWeightFactor);
 
 				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 1);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedP",           locMissingProtonP_Unused,     0);
