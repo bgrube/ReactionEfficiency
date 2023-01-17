@@ -122,17 +122,24 @@ def overlayMissingMassSquared():
 def drawHistogram(
   inFileName,
   histName,
-  rebinFactor = 100,
+  rebinFactor = 1,
+  drawOption = "HIST",
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = ""
 ):
   # get histogram
   inFile = ROOT.TFile(inFileName)
   hist = inFile.Get(histName)
-  hist.Rebin(rebinFactor)
+  if isinstance(hist, ROOT.TH2):
+    if isinstance(rebinFactor, int):
+      hist.RebinX(rebinFactor)
+    elif isinstance(rebinFactor, Iterable):
+      hist.Rebin2D(rebinFactor[0], rebinFactor[1])
+  elif isinstance(hist, ROOT.TH1):
+    hist.Rebin(rebinFactor)
   # draw histogram
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
-  hist.Draw("HIST")
+  hist.Draw(drawOption)
   canv.SaveAs(".pdf")
 
 
@@ -146,9 +153,8 @@ def getHistND(
 ):
   histDim = len(variables)
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
-  if filterExpression:
-    # apply additional filters
-    inputData = inputData.Filter(filterExpression)
+  # apply additional filters, if defined
+  data = inputData.Filter(filterExpression) if filterExpression else inputData
   columnNames = [None,] * len(variables)
   for index, variable in enumerate(variables):
     if isinstance(variable, str):
@@ -156,17 +162,17 @@ def getHistND(
       columnNames[index] = variable
     elif isinstance(variable, Iterable):
       # create new variable column
-      inputData  = inputData.Define(variable[0], variable[1])
+      data  = data.Define(variable[0], variable[1])
       columnNames[index] = variable[0]
     assert columnNames[index] is not None, f"failed to get column name for variable '{variable}'"
   if not isinstance(weightVariable, str) and isinstance(weightVariable, Iterable):
     # create new weight column
-    inputData = inputData.Define(weightVariable[0], weightVariable[1])
+    data = data.Define(weightVariable[0], weightVariable[1])
   # create histogram
   hist = None
   histDef = ("_".join(columnNames), ";" + ";".join(titles), *binning)
   # get member function to create histogram
-  HistoND = getattr(inputData, "Histo1D") if histDim == 1 else getattr(inputData, "Histo2D")
+  HistoND = getattr(data, "Histo1D") if histDim == 1 else getattr(data, "Histo2D")
   if weightVariable is None:
     hist = HistoND(histDef, *columnNames)
   elif isinstance(weightVariable, str):
@@ -195,7 +201,7 @@ def plot1D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
-  hist.GetYaxis().SetTitleOffset(1.5)
+  hist.GetYaxis().SetTitleOffset(1.35)
   # draw zero line, if necessary
   xAxis = hist.GetXaxis()
   if hist.GetMinimum() < 0 and hist.GetMaximum() > 0:
@@ -222,7 +228,7 @@ def plot2D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
-  hist.GetYaxis().SetTitleOffset(1.5)
+  hist.GetYaxis().SetTitleOffset(1.35)
   canv.SaveAs(".pdf")
 
 
@@ -257,7 +263,7 @@ def overlayCases(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_cases{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
-  hStack.GetYaxis().SetTitleOffset(1.5)
+  hStack.GetYaxis().SetTitleOffset(1.35)
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   # draw zero line, if necessary
@@ -319,7 +325,7 @@ def overlayTopologies(
     # draw distributions
     canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_bggen_topologies_{case}")  #TODO replace "_bggen_topologies_" with configurable string
     hStack.Draw("NOSTACK HIST")
-    hStack.GetYaxis().SetTitleOffset(1.5)
+    hStack.GetYaxis().SetTitleOffset(1.35)
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
     # draw zero line, if necessary
@@ -358,15 +364,34 @@ if __name__ == "__main__":
     overlayCases(treeFileName, treeName, "TruthDeltaTheta",  xTitle = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(treeFileName, treeName, "TruthDeltaPhi",    xTitle = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
+  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaP",      pdfFileNameSuffix = "_orig")
+  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaPOverP", pdfFileNameSuffix = "_orig")
+  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaTheta",  pdfFileNameSuffix = "_orig")
+  drawHistogram(histFileName, "MissingMassSquared/MissingDeltaPhi",    pdfFileNameSuffix = "_orig")
+  drawHistogram(histFileName, "MissingMassSquared/MissingProtonP_kinFitVsUnused",     drawOption = "COLZ", pdfFileNameSuffix = "_orig")
+  drawHistogram(histFileName, "MissingMassSquared/MissingProtonTheta_kinFitVsUnused", drawOption = "COLZ", pdfFileNameSuffix = "_orig")
+  drawHistogram(histFileName, "MissingMassSquared/MissingProtonPhi_kinFitVsUnused",   drawOption = "COLZ", pdfFileNameSuffix = "_orig")
+
   inputData = ROOT.RDataFrame(treeName, treeFileName)
   sideBandArgs = {"yTitle" : "Number of Combos (RF-Sideband)", "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
-  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2))
-  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",             binning = (100, 0, 2), **sideBandArgs)
-  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4))
-  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}", binning = (225, -0.5, 4), **sideBandArgs)
-  plot1D(inputData, "AccidWeightFactor",                                           xTitle = "RF Weight",                            binning = (1000, -2, 2), weightVariable = None)
+  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",                                                            binning = (100, 0, 2))
+  plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), xTitle = "Missing Mass (GeV/c^{2})",                                                            binning = (100, 0, 2), **sideBandArgs)
+  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}",                                                binning = (225, -0.5, 4))
+  plot1D(inputData, "MissingMassSquared_Measured",                                 xTitle = "Missing Mass Squared (GeV/c^{2})^{2}",                                                binning = (225, -0.5, 4), **sideBandArgs)
+  plot1D(inputData, "AccidWeightFactor",                                           xTitle = "RF Weight",                                                                           binning = (1000, -2, 2), weightVariable = None)
+  plot1D(inputData, "UnusedDeltaP",                                                xTitle = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6))
+  plot1D(inputData, "UnusedDeltaPOverP",                                           xTitle = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
+  plot1D(inputData, "UnusedDeltaTheta",                                            xTitle = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100))
+  plot1D(inputData, "UnusedDeltaPhi",                                              xTitle = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180))
 
   plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   xTitle = "Missing #theta (deg)", yTitle = "Missing p (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", xTitle = "Missing #theta (deg)", yTitle = "Missing #phi (deg)", binning = (180, 0, 90, 360, -180, 180))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   xTitle = "Missing #theta (deg)", yTitle = "Missing p (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", xTitle = "Missing #theta (deg)", yTitle = "Missing #phi (deg)", binning = (180, 0, 90, 360, -180, 180))
+
+  unusedTrackData = inputData.Filter("NmbUnusedTracks == 1")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
+  plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     xTitle = "#it{p}^{miss}_{unused} (GeV/c)",    yTitle = "#it{p}^{miss}_{kin. fit} (GeV/c)",    binning = (400, 0, 9, 400, 0, 9))
+  plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", xTitle = "#it{#theta}^{miss}_{unused} (deg)", yTitle = "#it{#theta}^{miss}_{kin. fit} (deg)", binning = (360, 0, 180, 360, 0, 180))
+  plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   xTitle = "#it{#phi}^{miss}_{unused} (deg)",   yTitle = "#it{#phi}^{miss}_{kin. fit} (deg)",   binning = (360, -180, 180, 360, -180, 180))
+
+#TODO simplify axis title handling: just the string after title

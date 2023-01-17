@@ -125,13 +125,13 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
-	dHist_BeamEnergy = new TH1F("BeamEnergy", ";Beam Energy (GeV)", 1000,  2,   12);
+	dHist_BeamEnergy = new TH1F("BeamEnergy", ";Beam Energy (GeV)", 1000,  2, 12);
 
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
-	dHist_MissingDeltaP                     = new TH1F("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      800, -9, 9);
+	dHist_MissingDeltaP                     = new TH1F("MissingDeltaP",                     ";#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      600, -6, 6);
 	dHist_MissingDeltaPOverP                = new TH1F("MissingDeltaPOverP",                ";(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", 500, -2, 2);
-	dHist_MissingDeltaTheta                 = new TH1F("MissingDeltaTheta",                 ";#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              360, -180, 180);
+	dHist_MissingDeltaTheta                 = new TH1F("MissingDeltaTheta",                 ";#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              200, -100, 100);
 	dHist_MissingDeltaPhi                   = new TH1F("MissingDeltaPhi",                   ";#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  360, -180, 180);
 	dHist_MissingProtonP_kinFitVsUnused     = new TH2F("MissingProtonP_kinFitVsUnused",     ";#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",                     400, 0, 9, 400, 0, 9);
 	dHist_MissingProtonTheta_kinFitVsUnused = new TH2F("MissingProtonTheta_kinFitVsUnused", ";#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",               360, 0, 180, 360, 0, 180);
@@ -188,10 +188,21 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
 	//TODO write out only best match instead of all candidates?
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthP",           "NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthTheta",       "NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthPhi",         "NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaP",      "NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaPOverP", "NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaTheta",  "NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthDeltaPhi",    "NmbTruthTracks");
+	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedP",           "NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedTheta",       "NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedPhi",         "NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedDeltaP",      "NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedDeltaPOverP", "NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedDeltaTheta",  "NmbUnusedTracks");
+	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("UnusedDeltaPhi",    "NmbUnusedTracks");
 
 	/************************************* ADVANCED EXAMPLE: CHOOSE BRANCHES TO READ ************************************/
 
@@ -222,7 +233,7 @@ printTrack(const DKinematicData& track)
 bool
 DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingProtonP4)
 {
-	int nmbTruthTracks = 0;
+	int locNmbTruthTracks = 0;
 	for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
 		// Set branch array indices corresponding to this charged-track hypothesis
 		dThrownWrapper->Set_ArrayIndex(locTrackIndex);
@@ -230,7 +241,6 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingPro
 		if (dThrownWrapper->Get_PID() != Proton) {
 			continue;
 		}
-		++nmbTruthTracks;
 
 		const TVector3 missingProtonP3    = missingProtonP4.Vect();
 		const double   missingProtonP     = missingProtonP3.Mag();
@@ -242,7 +252,7 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingPro
 		const double         locMissingProtonP_Truth     = locMissingProtonP3_Truth.Mag();
 		const double         locMissingProtonTheta_Truth = locMissingProtonP3_Truth.Theta() * TMath::RadToDeg();
 		const double         locMissingProtonPhi_Truth   = locMissingProtonP3_Truth.Phi()   * TMath::RadToDeg();
-
+		// calculate deviation in spherical coordinates
 		const double         locTruthDeltaP              = locMissingProtonP_Truth - missingProtonP;
 		const double         locTruthDeltaPOverP         = locTruthDeltaP / missingProtonP;
 		const double         locTruthDeltaTheta          = locMissingProtonTheta_Truth - missingProtonTheta;
@@ -254,13 +264,17 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingPro
 			locTruthDeltaPhi += 360;
 		}
 
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaP",      locTruthDeltaP,      nmbTruthTracks - 1);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPOverP", locTruthDeltaPOverP, nmbTruthTracks - 1);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaTheta",  locTruthDeltaTheta,  nmbTruthTracks - 1);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPhi",    locTruthDeltaPhi,    nmbTruthTracks - 1);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthP",           locMissingProtonP_Truth,      locNmbTruthTracks);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthTheta",       locMissingProtonTheta_Truth,  locNmbTruthTracks);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthPhi",         locMissingProtonPhi_Truth,    locNmbTruthTracks);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaP",      locTruthDeltaP,               locNmbTruthTracks);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPOverP", locTruthDeltaPOverP,          locNmbTruthTracks);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaTheta",  locTruthDeltaTheta,           locNmbTruthTracks);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthDeltaPhi",    locTruthDeltaPhi,             locNmbTruthTracks);
+		++locNmbTruthTracks;
 	}
-	dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbTruthTracks", nmbTruthTracks);
-	return nmbTruthTracks > 0;
+	dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbTruthTracks", locNmbTruthTracks);
+	return locNmbTruthTracks > 0;
 }
 
 
@@ -478,7 +492,8 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 		// adapted from https://github.com/jrstevenjlab/wm_gluex/blob/master/analysis/omega_misspi/selector/DSelector_omega_misspi.C#L481
 		// Loop over charged-track hypotheses and find unused track
-		bool unusedTrackExists = false;
+		// NOTE! this assumes that there is maximum 1 unused track
+		bool locUnusedTrackExists = false;
 		for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumChargedHypos(); ++locTrackIndex) {
 			// Set branch array indices corresponding to this charged-track hypothesis
 			dChargedHypoWrapper->Set_ArrayIndex(locTrackIndex);
@@ -488,7 +503,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			    or (dChargedHypoWrapper->Get_TrackID() == locPiMinus1TrackID) or (dChargedHypoWrapper->Get_TrackID() == locPiMinus2TrackID)) {
 				continue;
 			}
-			unusedTrackExists = true;
+			locUnusedTrackExists = true;
 
 			//Uniqueness tracking: Build the map of particles used for the unused track
 				//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
@@ -508,34 +523,37 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				const double         locMissingProtonTheta_Unused = locMissingProtonP3_Unused.Theta() * TMath::RadToDeg();
 				const double         locMissingProtonPhi_Unused   = locMissingProtonP3_Unused.Phi()   * TMath::RadToDeg();
 				// calculate deviation in spherical coordinates
-				//TODO use values from kinematic fit or measured values?
-				// const double         locMissingDeltaP             = locMissingProtonP_Unused - locMissingProtonP_Measured;
-				// const double         locMissingDeltaPOverP        = locMissingDeltaP / locMissingProtonP_Measured;
-				// const double         locMissingDeltaTheta         = locMissingProtonTheta_Unused - locMissingProtonTheta_Measured;
-				// double               locMissingDeltaPhi           = locMissingProtonPhi_Unused - locMissingProtonPhi_Measured;
-				const double         locMissingDeltaP             = locMissingProtonP_Unused - locMissingProtonP;
-				const double         locMissingDeltaPOverP        = locMissingDeltaP / locMissingProtonP;
-				const double         locMissingDeltaTheta         = locMissingProtonTheta_Unused - locMissingProtonTheta;
-				double               locMissingDeltaPhi           = locMissingProtonPhi_Unused - locMissingProtonPhi;
-				while (locMissingDeltaPhi > 180) {
-					locMissingDeltaPhi -= 360;
+				const double         locUnusedDeltaP             = locMissingProtonP_Unused - locMissingProtonP;
+				const double         locUnusedDeltaPOverP        = locUnusedDeltaP / locMissingProtonP;
+				const double         locUnusedDeltaTheta         = locMissingProtonTheta_Unused - locMissingProtonTheta;
+				double               locUnusedDeltaPhi           = locMissingProtonPhi_Unused - locMissingProtonPhi;
+				while (locUnusedDeltaPhi > 180) {
+					locUnusedDeltaPhi -= 360;
 				}
-				while (locMissingDeltaPhi < -180) {
-					locMissingDeltaPhi += 360;
+				while (locUnusedDeltaPhi < -180) {
+					locUnusedDeltaPhi += 360;
 				}
-				dHist_MissingDeltaP->Fill     (locMissingDeltaP,      locHistAccidWeightFactor);
-				dHist_MissingDeltaPOverP->Fill(locMissingDeltaPOverP, locHistAccidWeightFactor);
-				dHist_MissingDeltaTheta->Fill (locMissingDeltaTheta,  locHistAccidWeightFactor);
-				dHist_MissingDeltaPhi->Fill   (locMissingDeltaPhi,    locHistAccidWeightFactor);
+				dHist_MissingDeltaP->Fill     (locUnusedDeltaP,      locHistAccidWeightFactor);
+				dHist_MissingDeltaPOverP->Fill(locUnusedDeltaPOverP, locHistAccidWeightFactor);
+				dHist_MissingDeltaTheta->Fill (locUnusedDeltaTheta,  locHistAccidWeightFactor);
+				dHist_MissingDeltaPhi->Fill   (locUnusedDeltaPhi,    locHistAccidWeightFactor);
 				dHist_MissingProtonP_kinFitVsUnused->Fill    (locMissingProtonP_Unused,     locMissingProtonP,     locHistAccidWeightFactor);
 				dHist_MissingProtonTheta_kinFitVsUnused->Fill(locMissingProtonTheta_Unused, locMissingProtonTheta, locHistAccidWeightFactor);
 				dHist_MissingProtonPhi_kinFitVsUnused->Fill  (locMissingProtonPhi_Unused,   locMissingProtonPhi,   locHistAccidWeightFactor);
+
+				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 1);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedP",           locMissingProtonP_Unused,     0);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedTheta",       locMissingProtonTheta_Unused, 0);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedPhi",         locMissingProtonPhi_Unused,   0);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaP",      locUnusedDeltaP,              0);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaPOverP", locUnusedDeltaPOverP,         0);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaTheta",  locUnusedDeltaTheta,          0);
+				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaPhi",    locUnusedDeltaPhi,            0);
+
 				// define matching track
-				//TODO use values from kinematic fit or measured values?
-				// const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta_Measured < 5) ? true : (fabs(locMissingDeltaPhi) <= 30);
-				const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta < 5) ? true : (fabs(locMissingDeltaPhi) <= 30);
-				const bool locPassDeltaThetaCutFlag  = (fabs(locMissingDeltaTheta) <= 30);
-				const bool locPassDeltaPOverPCutFlag = (fabs(locMissingDeltaPOverP) <= 0.6);
+				const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta < 5) ? true : (fabs(locUnusedDeltaPhi) <= 30);
+				const bool locPassDeltaThetaCutFlag  = (fabs(locUnusedDeltaTheta) <= 30);
+				const bool locPassDeltaPOverPCutFlag = (fabs(locUnusedDeltaPOverP) <= 0.6);
 				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
 					// found matching unused track
 					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
@@ -579,7 +597,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			// fill histograms for topologies in bggen MC
 			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 
-			if (not unusedTrackExists) {
+			if (not locUnusedTrackExists) {
 				// there was no unused track in the event
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
@@ -587,6 +605,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				// FILL FLAT TREE
 				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 				fillTreeTruthDelta(locMissingProtonP4);
+				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 0);
 				Fill_FlatTree();
 				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 			}
