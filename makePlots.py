@@ -33,7 +33,8 @@ def setupPlotStyle():
 
 
 def plotTopologies(maxNmbTopologies = 10, normalize = False):
-  inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  # inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  inFileName = "pippippimpimpmiss.root"
   histBaseName = "MissingMassSquared/ThrownTopologies"
   colors = {
     "Found"   : ROOT.kGreen + 2,
@@ -73,7 +74,7 @@ def plotTopologies(maxNmbTopologies = 10, normalize = False):
   canv = ROOT.TCanvas("justin_Proton_4pi_topologies" + ("_norm" if normalize else ""))
   hStack.Draw("NOSTACK HIST")
   hStack.GetXaxis().SetRangeUser(0, maxNmbTopologies)
-  hStack.SetMinimum(0)
+  # hStack.SetMinimum(0)
   # add legend
   legend = canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   # add labels that show number or fraction outside of plot range
@@ -285,6 +286,75 @@ def overlayCases(
   canv.SaveAs(".pdf")
 
 
+def getTopologyHist(
+  inputData  # RDataFrame
+):
+  # print(inputData.GetColumnType("ThrownTopology"))
+  topos = [str(topo) for topo in inputData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
+  if len(topos) > 1:
+    weights = inputData.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
+    df = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
+    topoHistSorted = df.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
+    # print(type(topoHistSorted), topoHistSorted)
+    # print("INDEX", type(topoHistSorted.index), topoHistSorted.index)
+    # print("VAKUES", type(topoHistSorted.values), topoHistSorted.values)
+    return (list(topoHistSorted.index), topoHistSorted.values)
+
+
+def plotTopologyHist(
+  inputData,  # RDataFrame
+  normalize         = False,
+  maxNmbTopologies  = 10,
+  additionalFilter  = None,
+  pdfFileNamePrefix = "justin_Proton_4pi_",
+  pdfFileNameSuffix = ""
+):
+  data = inputData.Filter(additionalFilter) if additionalFilter else inputData
+  colorCases = {
+    # "Total"   : ROOT.kGray,
+    # "Found"   : ROOT.kGreen + 2,
+    # "Missing" : ROOT.kRed + 1
+    "Total"   : ROOT.kBlue,
+    "Found"   : ROOT.kGreen + 2,
+    "Missing" : ROOT.kRed + 1
+  }
+  # get histogram data
+  topoHists = {}
+  for case in FILTER_CASES.keys():
+    caseData = data.Filter(FILTER_CASES[case])
+    topoHists[case] = getTopologyHist(caseData)
+  # overlay distributions for cases
+  hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
+  hists = {}
+  topoLabels = topoHists["Total"][0]
+  for case in FILTER_CASES.keys():
+    hist = ROOT.TH1F(f"topologies_{case}{'_norm' if normalize else ''}", case, 1, 0, 1)
+    histValues = dict(zip(topoHists[case][0], topoHists[case][1]))
+    # set bin content of histogram
+    for binLabel in topoLabels:
+      hist.Fill(binLabel, histValues[binLabel] if binLabel in histValues else 0)
+    if normalize:
+      hist.Scale(100 / hist.Integral())
+    hist.SetLineColor(colorCases[case])
+    # if case == "Total":
+    #   hist.SetFillColor(colorCases[case])
+    hists[case] = hist
+    hStack.Add(hist)
+    print(f"{case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}topologies{'_norm' if normalize else ''}{pdfFileNameSuffix}")
+  hStack.Draw("NOSTACK HIST")
+  hStack.GetXaxis().SetRangeUser(0, maxNmbTopologies)
+  # # add legend
+  legend = canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+  # add labels that show number or fraction outside of plot range
+  legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "Other topologies:", "")
+  for case in FILTER_CASES.keys():
+    integralOtherTopos = hists[case].Integral(maxNmbTopologies, hists[case].GetNbinsX())
+    legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")
+    legendEntry.SetTextColor(colorCases[case])
+  canv.SaveAs(".pdf")
+
+
 # plot distribution of variable defined by `variable` for overall data sample
 # for bggen sample: overlay distributions for the `maxNmbTopologies` topologies with the largest number of combos
 def overlayTopologies(
@@ -298,27 +368,14 @@ def overlayTopologies(
   pdfFileNameSuffix = "_bggen_topologies"
 ):
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
-    # # get topologies with largest number of combos for total data set
-  # # print(df.GetColumnType("ThrownTopology"))
-  # toposToPlot = ["Total"]
-  # topos = [str(topo) for topo in data.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
-  # if len(topos) > 1:
-  #   weights = data.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
-  #   pdf = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
-  #   topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
-  #   toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
-  # # print(toposToPlot)
+  # # get topologies with largest number of combos for total data set
+  # toposToPlot, _ = getTopologyHist(data)
+  # toposToPlot = ["Total"] + toposToPlot[:maxNmbTopologies]
   for case in FILTER_CASES.keys():
     caseData = data.Filter(FILTER_CASES[case])
     # get topologies with largest number of combos for given case
-    toposToPlot = ["Total"]
-    topos = [str(topo) for topo in caseData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
-    if len(topos) > 1:
-      weights = caseData.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
-      pdf = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
-      topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
-      # print(case, topoHistSorted[:maxNmbTopologies])
-      toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
+    toposToPlot, _ = getTopologyHist(caseData)
+    toposToPlot = ["Total"] + toposToPlot[:maxNmbTopologies]
     hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{setDefaultYAxisTitle(axisTitles)}")
     hists = []
     # overlay distributions for topologies
@@ -349,19 +406,14 @@ def overlayTopologies(
 if __name__ == "__main__":
   setupPlotStyle()
 
-  histFileName = "pippippimpimpmiss.root"
-  # topologies = plotTopologies(normalize = False)
-  # plotTopologies(normalize = True)
+  topologies = plotTopologies(normalize = False)
+  plotTopologies(normalize = True)
   # overlayMissingMassSquared()
 
+  histFileName = "pippippimpimpmiss.root"
   treeFileName = "pippippimpimpmiss_flatTree.root"
-  treeName = "pippippimpimpmiss"
-  inputData = ROOT.RDataFrame(treeName, treeFileName)
-
-  overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5))
-  overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6))
-  # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
-  overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  treeName     = "pippippimpimpmiss"
+  inputData    = ROOT.RDataFrame(treeName, treeFileName)
 
   filterTopologies = {
     ""                                             : None,
@@ -374,6 +426,14 @@ if __name__ == "__main__":
     overlayCases(inputData, "TruthDeltaPOverP", axisTitles = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
     overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
+
+  plotTopologyHist(inputData, normalize = False)
+  plotTopologyHist(inputData, normalize = True)
+
+  overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5))
+  overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6))
+  # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
 
   sideBandArgs = {"weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
   sideBandYTitle = "Number of Combos (RF-Sideband)"
