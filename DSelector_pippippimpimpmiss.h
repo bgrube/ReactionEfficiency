@@ -64,11 +64,6 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
 
-		// bggen MC histograms
-		TH1F* dHist_ThrownTopologies;
-		TH1F* dHist_ThrownTopologies_Found;
-		TH1F* dHist_ThrownTopologies_Missing;
-
 	bool
 	fillTreeTruthDelta(const TLorentzVector& missingProtonP4);
 

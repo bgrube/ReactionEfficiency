@@ -32,61 +32,6 @@ def setupPlotStyle():
   ROOT.gStyle.SetTitleOffset(1.35, "Y")
 
 
-def plotTopologies(maxNmbTopologies = 10, normalize = False):
-  # inFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
-  inFileName = "pippippimpimpmiss.root"
-  histBaseName = "MissingMassSquared/ThrownTopologies"
-  colors = {
-    "Found"   : ROOT.kGreen + 2,
-    "Missing" : ROOT.kRed + 1,
-    ""        : ROOT.kBlue
-  }
-
-  inFile = ROOT.TFile(inFileName)
-  cases = ["Found", "Missing", ""]
-  hists = {case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases}
-  if normalize:
-    for hist in hists.values():
-      hist.Scale(100 / hist.Integral())
-  hStack = ROOT.THStack("hStackTopologies", ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
-  # get overall distribution
-  hist = hists[""]
-  hist.SetName("Overall" if normalize else "Total")
-  hist.SetLineColor(colors[""])
-  # get bin content of found and missing histograms in the order of the topologies in the overall histogram
-  bins = [{"topology" : hist.GetXaxis().GetBinLabel(i)} for i in range(1, hist.GetNbinsX() + 1)]
-  for bin in bins:
-    for case in ["Found", "Missing"]:
-      hist = hists[case]
-      bin[case] = hist.GetBinContent(hist.GetXaxis().FindBin(bin["topology"]))
-  # overlay missing and found histograms
-  for case in ["Found", "Missing"]:
-    hist = hists[case] = hists[""].Clone(case)
-    for index, bin in enumerate(bins):
-      hist.SetBinContent(index + 1, bin[case])
-      assert bin["topology"] == hist.GetXaxis().GetBinLabel(index + 1)
-    hist.SetLineColor(colors[case])
-    hStack.Add(hist)
-    print(f"{case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
-  hStack.Add(hists[""])  # draw on top
-  print(f"Overall signal: {hists[''].GetBinContent(1)}{'%' if normalize else ' combos'}")
-  # plot overall distribution
-  canv = ROOT.TCanvas("justin_Proton_4pi_topologies" + ("_norm" if normalize else ""))
-  hStack.Draw("NOSTACK HIST")
-  hStack.GetXaxis().SetRangeUser(0, maxNmbTopologies)
-  # hStack.SetMinimum(0)
-  # add legend
-  legend = canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  # add labels that show number or fraction outside of plot range
-  legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "Other topologies:", "")
-  for case in cases:
-    integralOtherTopos = hists[case].Integral(maxNmbTopologies, hists[case].GetNbinsX())
-    legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")
-    legendEntry.SetTextColor(colors[case])
-  canv.SaveAs(".pdf")
-  return [bins[i]["topology"] for i in range(maxNmbTopologies)]  # return maxNmbTopologies largest topologies in overall distribution
-
-
 def overlayMissingMassSquared():
   inFileNames = ("pippippimpimpmiss.30370.root", "pippippimpimpmiss_bggen_2017_01-ver03.root")
   labels = ("Real data (scaled)", "bggen MC")
@@ -121,6 +66,7 @@ def overlayMissingMassSquared():
     canv.SaveAs(".pdf")
 
 
+# simple generic function to plot a histogram in a ROOT file
 def drawHistogram(
   inFileName,
   histName,
@@ -406,8 +352,6 @@ def overlayTopologies(
 if __name__ == "__main__":
   setupPlotStyle()
 
-  topologies = plotTopologies(normalize = False)
-  plotTopologies(normalize = True)
   # overlayMissingMassSquared()
 
   histFileName = "pippippimpimpmiss.root"

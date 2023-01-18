@@ -17,16 +17,6 @@ namespace {
 		operator TLorentzVector() const { return TLorentzVector(); }
 	};
 
-
-	struct myTVector3 : TVector3
-	{
-		myTVector3(const TVector3& v = TVector3())
-			: TVector3(v)
-		{ }
-
-		operator TLorentzVector() const { return TLorentzVector(); }
-	};
-
 }
 
 
@@ -129,11 +119,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dHist_MissingMassSquaredVsBeamEnergySideband         = new TH2F("MissingMassSquaredVsBeamEnergySideband",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergySideband_Found   = new TH2F("MissingMassSquaredVsBeamEnergySideband_Found",   ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	dHist_MissingMassSquaredVsBeamEnergySideband_Missing = new TH2F("MissingMassSquaredVsBeamEnergySideband_Missing", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-
-	// bggen MC histograms
-	dHist_ThrownTopologies         = new TH1F("ThrownTopologies",         "", 1, 0, 1);
-	dHist_ThrownTopologies_Found   = new TH1F("ThrownTopologies_Found",   "", 1, 0, 1);
-	dHist_ThrownTopologies_Missing = new TH1F("ThrownTopologies_Missing", "", 1, 0, 1);
 	gDirectory->cd("..");
 
 	/************************** EXAMPLE USER INITIALIZATION: CUSTOM OUTPUT BRANCHES - MAIN TREE *************************/
@@ -542,7 +527,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
 					fillTreeTruthDelta(locMissingProtonP4);
 					Fill_FlatTree();
-					dHist_ThrownTopologies_Found->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				} else {
 					// unused track exists but does not match
 					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
@@ -552,7 +536,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 					fillTreeTruthDelta(locMissingProtonP4);
 					Fill_FlatTree();
-					dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 				}
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
@@ -573,9 +556,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
-			// fill histograms for topologies in bggen MC
-			dHist_ThrownTopologies->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
-
 			if (not locUnusedTrackExists) {
 				// there was no unused track in the event
 				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
@@ -586,7 +566,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				fillTreeTruthDelta(locMissingProtonP4);
 				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 0);
 				Fill_FlatTree();
-				dHist_ThrownTopologies_Missing->Fill(locThrownTopology.Data(), locHistAccidWeightFactor);
 			}
 
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
@@ -678,12 +657,6 @@ void DSelector_pippippimpimpmiss::Finalize(void)
 		//Besides, it is best-practice to do post-processing (e.g. fitting) separately, in case there is a problem.
 
 	//DO YOUR STUFF HERE
-	dHist_ThrownTopologies->LabelsDeflate("X");
-	dHist_ThrownTopologies->LabelsOption(">", "X");
-	dHist_ThrownTopologies_Found->LabelsDeflate("X");
-	dHist_ThrownTopologies_Found->LabelsOption(">", "X");
-	dHist_ThrownTopologies_Missing->LabelsDeflate("X");
-	dHist_ThrownTopologies_Missing->LabelsOption(">", "X");
 
 	//CALL THIS LAST
 	DSelector::Finalize(); //Saves results to the output file
