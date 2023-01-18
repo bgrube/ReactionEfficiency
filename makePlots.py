@@ -149,8 +149,10 @@ def getHistND(
   variables,       # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
   binning,
   axisTitles,      # semicolon-separated list
-  weightVariable,  # may be None (= no weighting), string with column name, or tuple with new column definition
-  filterExpression
+  weightVariable   = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression = None,
+  histNameSuffix   = "",
+  histTitle        = ""
 ):
   histDim = len(variables)
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
@@ -171,10 +173,10 @@ def getHistND(
     data = data.Define(weightVariable[0], weightVariable[1])
   # create histogram
   hist = None
-  histDef = ("_".join(columnNames), ";" + axisTitles, *binning)
+  histDef = ("_".join(columnNames + ([histNameSuffix] if histNameSuffix else [])), f"{histTitle};{axisTitles}", *binning)  # histogram definition
   # get member function to create histogram
   HistoND = getattr(data, "Histo1D") if histDim == 1 else getattr(data, "Histo2D")
-  if weightVariable is None:
+  if not weightVariable:
     hist = HistoND(histDef, *columnNames)
   elif isinstance(weightVariable, str):
     # use existing weight column
@@ -184,6 +186,19 @@ def getHistND(
     hist = HistoND(histDef, *columnNames, weightVariable[0])
   assert hist is not None, f"failed to create histogram for weight variable '{weightVariable}'"
   return hist
+
+
+def setDefaultYAxisTitle(
+  axisTitles,  # semicolon-separated list
+  defaultYTitle = "Number of Combos (RF-subtracted)"
+):
+  titles = axisTitles.split(";")
+  if (len(titles) == 1):
+    return titles[0] + ";" + defaultYTitle
+  elif (len(titles) == 0):
+    return ";" + defaultYTitle
+  else:
+    return axisTitles
 
 
 # plot 1D distribution of given variable
@@ -197,14 +212,7 @@ def plot1D(
   pdfFileNameSuffix = "",
   additionalFilter  = None
 ):
-  # set default y-axis title
-  defaultYTitle = "Number of Combos (RF-subtracted)"
-  titles = axisTitles.split(";")
-  if (len(titles) == 1):
-    axisTitles = titles[0] + ";" + defaultYTitle
-  if (len(titles) == 0):
-    axisTitles = ";" + defaultYTitle
-  hist = getHistND(inputData, (variable,), binning, axisTitles, weightVariable, additionalFilter)
+  hist = getHistND(inputData, (variable,), binning, setDefaultYAxisTitle(axisTitles), weightVariable, additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
@@ -253,11 +261,11 @@ def overlayCases(
     "Missing" : ROOT.kRed + 1
   }
   # overlay distributions for cases
-  hStack = ROOT.THStack(f"{variable}", f";{axisTitles};Number of Combos (RF-subtracted)")
+  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
   for case in FILTER_CASES.keys():
-    caseData = data.Filter(FILTER_CASES[case])
-    hist = caseData.Histo1D((f"{variable}_{case}", case, *binning), variable, "AccidWeightFactor")
+    hist = getHistND(data, (variable,), binning, setDefaultYAxisTitle(axisTitles), "AccidWeightFactor", FILTER_CASES[case],
+                     histNameSuffix = case, histTitle = case)
     hist.SetLineColor(colorCases[case])
     if case == "Total":
       hist.SetFillColor(colorCases[case])
@@ -285,8 +293,9 @@ def overlayTopologies(
   axisTitles,  # semicolon-separated list
   binning,
   additionalFilter  = None,
+  maxNmbTopologies  = 10,
   pdfFileNamePrefix = "justin_Proton_4pi_",
-  maxNmbTopologies  = 10
+  pdfFileNameSuffix = "_bggen_topologies"
 ):
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
     # # get topologies with largest number of combos for total data set
@@ -310,12 +319,12 @@ def overlayTopologies(
       topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
       # print(case, topoHistSorted[:maxNmbTopologies])
       toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
-    hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{axisTitles};Number of Combos (RF-subtracted)")
+    hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{setDefaultYAxisTitle(axisTitles)}")
     hists = []
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot):
-      topoData = caseData.Filter(f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true")
-      hist = topoData.Histo1D((f"{variable}_{case}_{topo}", topo, *binning), variable, "AccidWeightFactor")
+      hist = getHistND(caseData, (variable,), binning, setDefaultYAxisTitle(axisTitles), "AccidWeightFactor", (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
+                       histNameSuffix = f"{case}_{topo}", histTitle = f"{case} {topo}")
       if topo == "Total":
         hist.SetLineColor(ROOT.kGray)
         hist.SetFillColor(ROOT.kGray)
@@ -324,7 +333,7 @@ def overlayTopologies(
       hists.append(hist)
       hStack.Add(hist.GetPtr())
     # draw distributions
-    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_bggen_topologies_{case}")  #TODO replace "_bggen_topologies_" with configurable string
+    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}{pdfFileNameSuffix}_{case}")
     hStack.Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
@@ -351,7 +360,7 @@ if __name__ == "__main__":
 
   overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5))
   overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6))
-  overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
   overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
 
   filterTopologies = {
@@ -368,10 +377,10 @@ if __name__ == "__main__":
 
   sideBandArgs = {"weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
   sideBandYTitle = "Number of Combos (RF-Sideband)"
-  plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2})",                   binning = (100, 0, 2))
-  plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
-  plot1D(inputData, "MissingMassSquared",                        axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}",                   binning = (225, -0.5, 4))
-  plot1D(inputData, "MissingMassSquared",                        axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
+  # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2})",                   binning = (100, 0, 2))
+  # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
+  # plot1D(inputData, "MissingMassSquared",                        axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}",                   binning = (225, -0.5, 4))
+  # plot1D(inputData, "MissingMassSquared",                        axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
   plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/c^{2})",                   binning = (100, 0, 2))
   plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
   plot1D(inputData, "MissingMassSquared_Measured",                                 axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}",                   binning = (225, -0.5, 4))
@@ -392,6 +401,4 @@ if __name__ == "__main__":
   plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)", binning = (360, 0, 180, 360, 0, 180))
   plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",     binning = (360, -180, 180, 360, -180, 180))
 
-#TODO use getHistND in overlay... functions
 #TODO make 2D plots for measured theta and phi
-#TODO use same routine to set default y-axis title as in plot1D in overlay... functions
