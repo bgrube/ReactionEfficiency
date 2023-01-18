@@ -123,7 +123,7 @@ def overlayMissingMassSquared():
 def drawHistogram(
   inFileName,
   histName,
-  rebinFactor = 1,
+  rebinFactor = 1,  # if integer -> rebin x-axis, if iterable of integers rebin axes
   drawOption = "HIST",
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = ""
@@ -238,8 +238,7 @@ def plot2D(
 
 # overlay distributions of variable defined by `variable` for Total, Found, and Missing cases
 def overlayCases(
-  inFileName,
-  treeName,
+  inputData,  # RDataFrame
   variable,
   axisTitles,  # semicolon-separated list
   binning,
@@ -247,7 +246,7 @@ def overlayCases(
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = ""
 ):
-  inputData = ROOT.RDataFrame(treeName, inFileName) if additionalFilter is None else ROOT.RDataFrame(treeName, inFileName).Filter(additionalFilter)
+  data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   colorCases = {
     "Total"   : ROOT.kGray,
     "Found"   : ROOT.kGreen + 2,
@@ -257,7 +256,7 @@ def overlayCases(
   hStack = ROOT.THStack(f"{variable}", f";{axisTitles};Number of Combos (RF-subtracted)")
   hists = []
   for case in FILTER_CASES.keys():
-    caseData = inputData.Filter(FILTER_CASES[case])
+    caseData = data.Filter(FILTER_CASES[case])
     hist = caseData.Histo1D((f"{variable}_{case}", case, *binning), variable, "AccidWeightFactor")
     hist.SetLineColor(colorCases[case])
     if case == "Total":
@@ -281,8 +280,7 @@ def overlayCases(
 # plot distribution of variable defined by `variable` for overall data sample
 # for bggen sample: overlay distributions for the `maxNmbTopologies` topologies with the largest number of combos
 def overlayTopologies(
-  inFileName,
-  treeName,
+  inputData,  # RDataFrame
   variable,
   axisTitles,  # semicolon-separated list
   binning,
@@ -290,19 +288,19 @@ def overlayTopologies(
   pdfFileNamePrefix = "justin_Proton_4pi_",
   maxNmbTopologies  = 10
 ):
-  inputData = ROOT.RDataFrame(treeName, inFileName) if additionalFilter is None else ROOT.RDataFrame(treeName, inFileName).Filter(additionalFilter)
-  # # get topologies with largest number of combos for total data set
+  data = inputData.Filter(additionalFilter) if additionalFilter else inputData
+    # # get topologies with largest number of combos for total data set
   # # print(df.GetColumnType("ThrownTopology"))
   # toposToPlot = ["Total"]
-  # topos = [str(topo) for topo in inputData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
+  # topos = [str(topo) for topo in data.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
   # if len(topos) > 1:
-  #   weights = inputData.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
+  #   weights = data.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
   #   pdf = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
   #   topoHistSorted = pdf.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
   #   toposToPlot += list(topoHistSorted[:maxNmbTopologies].index)
   # # print(toposToPlot)
   for case in FILTER_CASES.keys():
-    caseData = inputData.Filter(FILTER_CASES[case])
+    caseData = data.Filter(FILTER_CASES[case])
     # get topologies with largest number of combos for given case
     toposToPlot = ["Total"]
     topos = [str(topo) for topo in caseData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
@@ -349,11 +347,12 @@ if __name__ == "__main__":
 
   treeFileName = "pippippimpimpmiss_flatTree.root"
   treeName = "pippippimpimpmiss"
+  inputData = ROOT.RDataFrame(treeName, treeFileName)
 
-  overlayTopologies(treeFileName, treeName, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5))
-  overlayTopologies(treeFileName, treeName, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6))
-  overlayTopologies(treeFileName, treeName, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
-  overlayTopologies(treeFileName, treeName, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5))
+  overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6))
+  overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
 
   filterTopologies = {
     ""                                             : None,
@@ -362,12 +361,10 @@ if __name__ == "__main__":
     "__bkg"                                        : 'ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p"'
   }
   for suffix, filter in filterTopologies.items():
-    overlayCases(treeFileName, treeName, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(treeFileName, treeName, "TruthDeltaPOverP", axisTitles = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(treeFileName, treeName, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(treeFileName, treeName, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
-
-  inputData = ROOT.RDataFrame(treeName, treeFileName)
+    overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(inputData, "TruthDeltaPOverP", axisTitles = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
+    overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
   sideBandArgs = {"weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
   sideBandYTitle = "Number of Combos (RF-Sideband)"
@@ -383,8 +380,8 @@ if __name__ == "__main__":
 
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonP",            axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonPhi",          axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 360, -180, 180))
-  plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
-  plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 360, -180, 180))
+  plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{p}^{miss}_{measured} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
+  plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{#phi}^{miss}_{measured} (deg)", binning = (180, 0, 90, 360, -180, 180))
 
   plot1D(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6))
   plot1D(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
