@@ -7,6 +7,7 @@ import pandas
 import ROOT
 
 ROOT.gROOT.SetBatch(True)
+ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame
 
 
 FILTER_CASES = {
@@ -327,7 +328,7 @@ def overlayTopologies(
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot):
       hist = getHistND(caseData, (variable,), binning, setDefaultYAxisTitle(axisTitles), "AccidWeightFactor", (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
-                       histNameSuffix = f"{case}_{topo}", histTitle = f"{case} {topo}")
+                       histNameSuffix = f"{case}_{topo}", histTitle = topo)
       if topo == "Total":
         hist.SetLineColor(ROOT.kGray)
         hist.SetFillColor(ROOT.kGray)
@@ -354,8 +355,10 @@ if __name__ == "__main__":
 
   # overlayMissingMassSquared()
 
-  histFileName = "pippippimpimpmiss.root"
-  treeFileName = "pippippimpimpmiss_flatTree.root"
+  # histFileName = "pippippimpimpmiss.root"
+  # treeFileName = "pippippimpimpmiss_flatTree.root"
+  histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
   treeName     = "pippippimpimpmiss"
   inputData    = ROOT.RDataFrame(treeName, treeFileName)
 
@@ -374,10 +377,19 @@ if __name__ == "__main__":
   plotTopologyHist(inputData, normalize = False)
   plotTopologyHist(inputData, normalize = True)
 
-  overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5))
-  overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6))
-  # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
-  overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5))
+  cutsArgs = [
+    {},  # no extra cut
+    {"additionalFilter" : "NmbUnusedShowers == 0", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+    # # the two cuts below are equivalent to the one above
+    # {"additionalFilter" : "EnergyUnusedShowers == 0", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
+    # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
+  ]
+  for cutArgs in cutsArgs:
+    overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), **cutArgs)
+    overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       **cutArgs)
+    # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
+    overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
+    overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
 
   sideBandArgs = {"weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
   sideBandYTitle = "Number of Combos (RF-Sideband)"
