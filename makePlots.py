@@ -6,9 +6,6 @@ from collections.abc import Iterable
 import pandas
 import ROOT
 
-ROOT.gROOT.SetBatch(True)
-ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame
-
 
 FILTER_CASES = {
   "Total"   : "(true)",
@@ -94,10 +91,10 @@ def drawHistogram(
 
 
 def getHistND(
-  inputData,       # RDataFrame
-  variables,       # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
-  binning,
-  axisTitles,      # semicolon-separated list
+  inputData,   # RDataFrame
+  variables,   # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
+  axisTitles,  # semicolon-separated list
+  binning,     # tuple with binning definition
   weightVariable   = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
   filterExpression = None,
   histNameSuffix   = "",
@@ -152,16 +149,16 @@ def setDefaultYAxisTitle(
 
 # plot 1D distribution of given variable
 def plot1D(
-  inputData,  # RDataFrame
-  variable,  # variable to plot; may be column name, or tuple with new column definition
-  binning,
+  inputData,   # RDataFrame
+  variable,    # variable to plot; may be column name, or tuple with new column definition
   axisTitles,  # semicolon-separated list
+  binning,     # tuple with binning definition
   weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = "",
   additionalFilter  = None
 ):
-  hist = getHistND(inputData, (variable,), binning, setDefaultYAxisTitle(axisTitles), weightVariable, additionalFilter)
+  hist = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
@@ -176,17 +173,17 @@ def plot1D(
 
 # plot 2D distribution of given variables
 def plot2D(
-  inputData,  # RDataFrame
-  xVariable,  # x variable to plot; may be column name, or tuple with new column definition
-  yVariable,  # y variable to plot; may be column name, or tuple with new column definition
-  binning,
+  inputData,   # RDataFrame
+  xVariable,   # x variable to plot; may be column name, or tuple with new column definition
+  yVariable,   # y variable to plot; may be column name, or tuple with new column definition
   axisTitles,  # semicolon-separated list
+  binning,     # tuple with binning definition
   weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = "",
   additionalFilter  = None
 ):
-  hist = getHistND(inputData, (xVariable, yVariable), binning, axisTitles, weightVariable, additionalFilter)
+  hist = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
@@ -195,10 +192,10 @@ def plot2D(
 
 # overlay distributions of variable defined by `variable` for Total, Found, and Missing cases
 def overlayCases(
-  inputData,  # RDataFrame
-  variable,
+  inputData,   # RDataFrame
+  variable,    # variable to plot; may be column name, or tuple with new column definition
   axisTitles,  # semicolon-separated list
-  binning,
+  binning,     # tuple with binning definition
   additionalFilter  = None,
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = ""
@@ -213,7 +210,7 @@ def overlayCases(
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
   for case in FILTER_CASES.keys():
-    hist = getHistND(data, (variable,), binning, setDefaultYAxisTitle(axisTitles), "AccidWeightFactor", FILTER_CASES[case],
+    hist = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor", FILTER_CASES[case],
                      histNameSuffix = case, histTitle = case)
     hist.SetLineColor(colorCases[case])
     if case == "Total":
@@ -306,10 +303,10 @@ def plotTopologyHist(
 # plot distribution of variable defined by `variable` for overall data sample
 # for bggen sample: overlay distributions for the `maxNmbTopologies` topologies with the largest number of combos
 def overlayTopologies(
-  inputData,  # RDataFrame
-  variable,
+  inputData,   # RDataFrame
+  variable,    # variable to plot; may be column name, or tuple with new column definition
   axisTitles,  # semicolon-separated list
-  binning,
+  binning,     # tuple with binning definition
   additionalFilter  = None,
   maxNmbTopologies  = 10,
   pdfFileNamePrefix = "justin_Proton_4pi_",
@@ -328,7 +325,7 @@ def overlayTopologies(
     hists = []
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot):
-      hist = getHistND(caseData, (variable,), binning, setDefaultYAxisTitle(axisTitles), "AccidWeightFactor", (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
+      hist = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor", (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
                        histNameSuffix = f"{case}_{topo}", histTitle = topo)
       if topo == "Total":
         hist.SetLineColor(ROOT.kGray)
@@ -352,6 +349,8 @@ def overlayTopologies(
 
 
 if __name__ == "__main__":
+  ROOT.gROOT.SetBatch(True)
+  ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
   # overlayMissingMassSquared()
@@ -415,7 +414,7 @@ if __name__ == "__main__":
     for energyBin in range(nmbBeamEnergyBins):
       energyBinMin = beamEnergyRange[0] + energyBin * energyBinWidth
       energyBinMax = energyBinMin + energyBinWidth
-      energyFilter = f"({energyBinMin} < BeamEnergy < {energyBinMax})"
+      energyFilter = f"(({energyBinMin} < BeamEnergy) and (BeamEnergy < {energyBinMax}))"
       energyBinData = caseData.Filter(energyFilter)
       plot1D(energyBinData, **histDef, pdfFileNameSuffix = f"_Egamma_{energyBinMin}_{energyBinMax}_{case}")
 
