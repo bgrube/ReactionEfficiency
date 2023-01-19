@@ -11,13 +11,14 @@ ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame
 
 
 FILTER_CASES = {
-  "Total"   : "true",
-  "Found"   : "TrackFound == true",
-  "Missing" : "TrackFound == false"
+  "Total"   : "(true)",
+  "Found"   : "(TrackFound == true)",
+  "Missing" : "(TrackFound == false)"
 }
 
 
 def setupPlotStyle():
+  #TODO remove dependency from external file or add file to repo
   ROOT.gROOT.LoadMacro("~/rootlogon.C")
   ROOT.gROOT.ForceStyle()
   ROOT.gStyle.SetCanvasDefW(600)
@@ -364,9 +365,9 @@ if __name__ == "__main__":
 
   filterTopologies = {
     ""                                             : None,
-    "__2#pi^{#plus}2#pi^{#minus}p"                 : 'ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p"',
-    "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : 'ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]"',
-    "__bkg"                                        : 'ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p"'
+    "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
+    "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
+    "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")'
   }
   for suffix, filter in filterTopologies.items():
     overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
@@ -379,9 +380,9 @@ if __name__ == "__main__":
 
   cutsArgs = [
     {},  # no extra cut
-    {"additionalFilter" : "NmbUnusedShowers == 0", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+    {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
     # # the two cuts below are equivalent to the one above
-    # {"additionalFilter" : "EnergyUnusedShowers == 0", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
+    # {"additionalFilter" : "(EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
     # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
   ]
   for cutArgs in cutsArgs:
@@ -403,6 +404,21 @@ if __name__ == "__main__":
   plot1D(inputData, "MissingMassSquared_Measured",                                 axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
   plot1D(inputData, "AccidWeightFactor",                                           axisTitles = "RF Weight", binning = (1000, -2, 2), weightVariable = None)
 
+  beamEnergyRange   = (3.0, 12.0)  # [GeV]
+  nmbBeamEnergyBins = 9            # 1 GeV bin width
+  energyBinWidth    = (beamEnergyRange[1] - beamEnergyRange[0]) / float(nmbBeamEnergyBins)
+  histDef           = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", "binning" : (250, -0.5, 4.5)}
+  for case, caseFilter in FILTER_CASES.items():
+    caseData = inputData.Filter(caseFilter)
+    plot1D(caseData, **histDef, pdfFileNameSuffix = f"_{case}")
+    # plot distributions for beam-energy bins
+    for energyBin in range(nmbBeamEnergyBins):
+      energyBinMin = beamEnergyRange[0] + energyBin * energyBinWidth
+      energyBinMax = energyBinMin + energyBinWidth
+      energyFilter = f"({energyBinMin} < BeamEnergy < {energyBinMax})"
+      energyBinData = caseData.Filter(energyFilter)
+      plot1D(energyBinData, **histDef, pdfFileNameSuffix = f"_Egamma_{energyBinMin}_{energyBinMax}_{case}")
+
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonP",            axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonPhi",          axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 360, -180, 180))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{p}^{miss}_{measured} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
@@ -412,7 +428,7 @@ if __name__ == "__main__":
   plot1D(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
   plot1D(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100))
   plot1D(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180))
-  unusedTrackData = inputData.Filter("NmbUnusedTracks == 1")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
+  unusedTrackData = inputData.Filter("(NmbUnusedTracks == 1)")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
   plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     axisTitles = "#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",       binning = (400, 0, 9, 400, 0, 9))
   plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)", binning = (360, 0, 180, 360, 0, 180))
   plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",     binning = (360, -180, 180, 360, -180, 180))
