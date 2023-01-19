@@ -144,9 +144,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	//The type for the branch must be included in the brackets
 	//1st function argument is the name of the branch
 	//2nd function argument is the name of the branch that contains the size of the array (for fundamentals only)
-	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
-	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BeamEnergy");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingMassSquared");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonP");
@@ -157,6 +154,9 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonTheta_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonPhi_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
+	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
+	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
 	//TODO write out only best match instead of all candidates?
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthP",           "NmbTruthTracks");
@@ -446,9 +446,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("AccidWeightFactor", locHistAccidWeightFactor);
 
 		// FILL ANY CUSTOM BRANCHES FIRST!!
-		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",              myTObjString(locThrownTopology));
-		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",            locNumUnusedShowers);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers",         locEnergyUnusedShowers);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("BeamEnergy",                  locBeamEnergy);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared",          locMissingMassSquared);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingProtonP",              locMissingProtonP);
@@ -458,6 +455,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingProtonP_Measured",     locMissingProtonP_Measured);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingProtonTheta_Measured", locMissingProtonTheta_Measured);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingProtonPhi_Measured",   locMissingProtonPhi_Measured);
+		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",            locNumUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers",         locEnergyUnusedShowers);
+		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",              myTObjString(locThrownTopology));
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
 
