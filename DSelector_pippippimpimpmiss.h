@@ -60,8 +60,14 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2F* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband;
 
-	bool
-	fillTreeTruthDelta(const TLorentzVector& missingProtonP4);
+	bool fillTreeTruthDelta(
+		const TLorentzVector& missingProtonP4,
+		const std::string&    branchSuffix = "");
+
+	void fillTreeUnusedDelta(
+		const TLorentzVector& missingProtonP4,
+		const TLorentzVector& unusedTrackP4,
+		const std::string&    branchSuffix = "");
 
 	ClassDef(DSelector_pippippimpimpmiss, 0);
 };
