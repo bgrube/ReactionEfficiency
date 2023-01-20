@@ -207,12 +207,11 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingPro
 		if (dThrownWrapper->Get_PID() != Proton) {
 			continue;
 		}
-
 		const TVector3 missingProtonP3    = missingProtonP4.Vect();
 		const double   missingProtonP     = missingProtonP3.Mag();
 		const double   missingProtonTheta = missingProtonP3.Theta() * TMath::RadToDeg();
 		const double   missingProtonPhi   = missingProtonP3.Phi()   * TMath::RadToDeg();
-
+		// get MC truth values
 		const TLorentzVector locMissingProtonP4_Truth    = dThrownWrapper->Get_P4_Measured();
 		const TVector3       locMissingProtonP3_Truth    = locMissingProtonP4_Truth.Vect();
 		const double         locMissingProtonP_Truth     = locMissingProtonP3_Truth.Mag();
@@ -229,7 +228,6 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(const TLorentzVector& missingPro
 		while (locTruthDeltaPhi < -180) {
 			locTruthDeltaPhi += 360;
 		}
-
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthP",           locMissingProtonP_Truth,      locNmbTruthTracks);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthTheta",       locMissingProtonTheta_Truth,  locNmbTruthTracks);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthPhi",         locMissingProtonPhi_Truth,    locNmbTruthTracks);
@@ -501,7 +499,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				while (locUnusedDeltaPhi < -180) {
 					locUnusedDeltaPhi += 360;
 				}
-
 				dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedTracks",   1);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedP",           locUnusedTrackP,      0);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedTheta",       locUnusedTrackTheta,  0);
@@ -510,9 +507,6 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaPOverP", locUnusedDeltaPOverP, 0);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaTheta",  locUnusedDeltaTheta,  0);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaPhi",    locUnusedDeltaPhi,    0);
-				// FILL FLAT TREE
-				fillTreeTruthDelta(locMissingProtonP4);
-				Fill_FlatTree();
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
 			}
@@ -535,11 +529,11 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			if (not locUnusedTrackExists) {
 				// there was no unused track in the event
-				// FILL FLAT TREE
-				fillTreeTruthDelta(locMissingProtonP4);
 				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 0);
-				Fill_FlatTree();
 			}
+			// FILL FLAT TREE
+			fillTreeTruthDelta(locMissingProtonP4);
+			Fill_FlatTree();
 
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
 		}
