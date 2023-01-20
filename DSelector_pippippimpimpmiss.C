@@ -204,6 +204,45 @@ printTrack(const DKinematicData& track)
 }
 
 
+void
+DSelector_pippippimpimpmiss::fillTreeDelta(
+	const TLorentzVector& missingProtonP4,
+	const TLorentzVector& otherTrackP4,
+	const int             arrayIndex,
+	const string&         branchPrefix,
+	const string&         branchSuffix)
+{
+	// kinematic variables of missing proton
+	const TVector3 locMissingProtonP3    = missingProtonP4.Vect();
+	const double   locMissingProtonP     = locMissingProtonP3.Mag();
+	const double   locMissingProtonTheta = locMissingProtonP3.Theta() * TMath::RadToDeg();
+	const double   locMissingProtonPhi   = locMissingProtonP3.Phi()   * TMath::RadToDeg();
+	// kinematic variables of other track
+	const TVector3 locOtherTrackP3    = otherTrackP4.Vect();
+	const double   locOtherTrackP     = locOtherTrackP3.Mag();
+	const double   locOtherTrackTheta = locOtherTrackP3.Theta() * TMath::RadToDeg();
+	const double   locOtherTrackPhi   = locOtherTrackP3.Phi()   * TMath::RadToDeg();
+	// calculate deviation from missing-proton momentum in spherical coordinates
+	const double locOtherDeltaP      = locOtherTrackP - locMissingProtonP;
+	const double locOtherDeltaPOverP = locOtherDeltaP / locMissingProtonP;
+	const double locOtherDeltaTheta  = locOtherTrackTheta - locMissingProtonTheta;
+	double       locOtherDeltaPhi    = locOtherTrackPhi - locMissingProtonPhi;
+	while (locOtherDeltaPhi > 180) {
+		locOtherDeltaPhi -= 360;
+	}
+	while (locOtherDeltaPhi < -180) {
+		locOtherDeltaPhi += 360;
+	}
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "P",                          locOtherTrackP,      arrayIndex);
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "Theta",                      locOtherTrackTheta,  arrayIndex);
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "Phi",                        locOtherTrackPhi,    arrayIndex);
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "DeltaP"      + branchSuffix, locOtherDeltaP,      arrayIndex);
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "DeltaPOverP" + branchSuffix, locOtherDeltaPOverP, arrayIndex);
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "DeltaTheta"  + branchSuffix, locOtherDeltaTheta,  arrayIndex);
+	dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "DeltaPhi"    + branchSuffix, locOtherDeltaPhi,    arrayIndex);
+}
+
+
 bool
 DSelector_pippippimpimpmiss::fillTreeTruthDelta(
 	const TLorentzVector& missingProtonP4,
@@ -217,76 +256,15 @@ DSelector_pippippimpimpmiss::fillTreeTruthDelta(
 		if (dThrownWrapper->Get_PID() != Proton) {
 			continue;
 		}
-		const TVector3 locMissingProtonP3    = missingProtonP4.Vect();
-		const double   locMissingProtonP     = locMissingProtonP3.Mag();
-		const double   locMissingProtonTheta = locMissingProtonP3.Theta() * TMath::RadToDeg();
-		const double   locMissingProtonPhi   = locMissingProtonP3.Phi()   * TMath::RadToDeg();
-		// MC truth values of kinematic variables
-		const TLorentzVector locMissingProtonP4_Truth    = dThrownWrapper->Get_P4_Measured();
-		const TVector3       locMissingProtonP3_Truth    = locMissingProtonP4_Truth.Vect();
-		const double         locMissingProtonP_Truth     = locMissingProtonP3_Truth.Mag();
-		const double         locMissingProtonTheta_Truth = locMissingProtonP3_Truth.Theta() * TMath::RadToDeg();
-		const double         locMissingProtonPhi_Truth   = locMissingProtonP3_Truth.Phi()   * TMath::RadToDeg();
-		// calculate deviation from missing proton momentum in spherical coordinates
-		const double locTruthDeltaP      = locMissingProtonP_Truth - locMissingProtonP;
-		const double locTruthDeltaPOverP = locTruthDeltaP / locMissingProtonP;
-		const double locTruthDeltaTheta  = locMissingProtonTheta_Truth - locMissingProtonTheta;
-		double       locTruthDeltaPhi    = locMissingProtonPhi_Truth - locMissingProtonPhi;
-		while (locTruthDeltaPhi > 180) {
-			locTruthDeltaPhi -= 360;
-		}
-		while (locTruthDeltaPhi < -180) {
-			locTruthDeltaPhi += 360;
-		}
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthP",                                  locMissingProtonP_Truth,     locNmbTruthTracks);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthTheta",                              locMissingProtonTheta_Truth, locNmbTruthTracks);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("TruthPhi",                                locMissingProtonPhi_Truth,   locNmbTruthTracks);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"TruthDeltaP"      + branchSuffix, locTruthDeltaP,              locNmbTruthTracks);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"TruthDeltaPOverP" + branchSuffix, locTruthDeltaPOverP,         locNmbTruthTracks);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"TruthDeltaTheta"  + branchSuffix, locTruthDeltaTheta,          locNmbTruthTracks);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"TruthDeltaPhi"    + branchSuffix, locTruthDeltaPhi,            locNmbTruthTracks);
+		const TLorentzVector locMissingProtonP4_Truth = dThrownWrapper->Get_P4_Measured();
+		fillTreeDelta(missingProtonP4, locMissingProtonP4_Truth, locNmbTruthTracks, "Truth", branchSuffix);
+
 		++locNmbTruthTracks;
 	}
 	dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbTruthTracks", locNmbTruthTracks);
 	return locNmbTruthTracks > 0;
 }
 
-
-void
-DSelector_pippippimpimpmiss::fillTreeUnusedDelta(
-	const TLorentzVector& missingProtonP4,
-	const TLorentzVector& unusedTrackP4,
-	const string&         branchSuffix)
-{
-	const TVector3 locMissingProtonP3    = missingProtonP4.Vect();
-	const double   locMissingProtonP     = locMissingProtonP3.Mag();
-	const double   locMissingProtonTheta = locMissingProtonP3.Theta() * TMath::RadToDeg();
-	const double   locMissingProtonPhi   = locMissingProtonP3.Phi()   * TMath::RadToDeg();
-	// kinematic variables of unused track
-	const TVector3 locUnusedTrackP3    = unusedTrackP4.Vect();
-	const double   locUnusedTrackP     = locUnusedTrackP3.Mag();
-	const double   locUnusedTrackTheta = locUnusedTrackP3.Theta() * TMath::RadToDeg();
-	const double   locUnusedTrackPhi   = locUnusedTrackP3.Phi()   * TMath::RadToDeg();
-	// calculate deviation from missing proton kin.-fit momentum in spherical coordinates
-	const double locUnusedDeltaP      = locUnusedTrackP - locMissingProtonP;
-	const double locUnusedDeltaPOverP = locUnusedDeltaP / locMissingProtonP;
-	const double locUnusedDeltaTheta  = locUnusedTrackTheta - locMissingProtonTheta;
-	double       locUnusedDeltaPhi    = locUnusedTrackPhi - locMissingProtonPhi;
-	while (locUnusedDeltaPhi > 180) {
-		locUnusedDeltaPhi -= 360;
-	}
-	while (locUnusedDeltaPhi < -180) {
-		locUnusedDeltaPhi += 360;
-	}
-	dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedTracks",                          1);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedP",                                  locUnusedTrackP,      0);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedTheta",                              locUnusedTrackTheta,  0);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedPhi",                                locUnusedTrackPhi,    0);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"UnusedDeltaP"      + branchSuffix, locUnusedDeltaP,      0);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"UnusedDeltaPOverP" + branchSuffix, locUnusedDeltaPOverP, 0);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"UnusedDeltaTheta"  + branchSuffix, locUnusedDeltaTheta,  0);
-	dFlatTreeInterface->Fill_Fundamental<Double_t>((string)"UnusedDeltaPhi"    + branchSuffix, locUnusedDeltaPhi,    0);
-}
 
 Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 {
@@ -530,8 +508,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			if (locUsedSoFar_UnusedTrack.find(locUsedThisCombo_UnusedTrack) == locUsedSoFar_UnusedTrack.end()) {
 				// 4-vector of unused track
 				const TLorentzVector locUnusedTrackP4 = dChargedHypoWrapper->Get_P4_Measured();
-				fillTreeUnusedDelta(locMissingProtonP4,          locUnusedTrackP4);
-				fillTreeUnusedDelta(locMissingProtonP4_Measured, locUnusedTrackP4, "_Measured");
+				// fill tree variables for unused track
+				fillTreeDelta(locMissingProtonP4,          locUnusedTrackP4, 0, "Unused");
+				fillTreeDelta(locMissingProtonP4_Measured, locUnusedTrackP4, 0, "Unused", "_Measured");
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
 			}
@@ -552,13 +531,11 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dHist_MissingMassSquaredVsBeamEnergy->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
 			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
-			if (not locUnusedTrackExists) {
-				// there was no unused track in the event
-				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 0);
-			}
-			// FILL FLAT TREE
+			dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", (locUnusedTrackExists) ? 1 : 0);  // indicate whether there was an unused track in the event or not
+			// fill tree variables for truth track
 			fillTreeTruthDelta(locMissingProtonP4);
 			fillTreeTruthDelta(locMissingProtonP4_Measured, "_Measured");
+			// FILL FLAT TREE
 			Fill_FlatTree();
 
 			locUsedSoFar_MissingMass.insert(locUsedThisCombo_MissingMass);
