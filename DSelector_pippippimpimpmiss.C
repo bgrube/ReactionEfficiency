@@ -113,12 +113,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
-	dHist_MissingMassSquaredVsBeamEnergy                 = new TH2F("MissingMassSquaredVsBeamEnergy",                 ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergy_Found           = new TH2F("MissingMassSquaredVsBeamEnergy_Found",           ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergy_Missing         = new TH2F("MissingMassSquaredVsBeamEnergy_Missing",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergySideband         = new TH2F("MissingMassSquaredVsBeamEnergySideband",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergySideband_Found   = new TH2F("MissingMassSquaredVsBeamEnergySideband_Found",   ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
-	dHist_MissingMassSquaredVsBeamEnergySideband_Missing = new TH2F("MissingMassSquaredVsBeamEnergySideband_Missing", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergy         = new TH2F("MissingMassSquaredVsBeamEnergy",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
+	dHist_MissingMassSquaredVsBeamEnergySideband = new TH2F("MissingMassSquaredVsBeamEnergySideband", ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
 	gDirectory->cd("..");
 
 	/************************** EXAMPLE USER INITIALIZATION: CUSTOM OUTPUT BRANCHES - MAIN TREE *************************/
@@ -153,7 +149,6 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonP_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonTheta_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonPhi_Measured");
-	dFlatTreeInterface->Create_Branch_Fundamental<Bool_t>         ("TrackFound");
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
@@ -515,28 +510,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaPOverP", locUnusedDeltaPOverP, 0);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaTheta",  locUnusedDeltaTheta,  0);
 				dFlatTreeInterface->Fill_Fundamental<Double_t>("UnusedDeltaPhi",    locUnusedDeltaPhi,    0);
-
-				// check whether unused track matches expectation from kinematic fit
-				const bool locPassDeltaPhiCutFlag    = (locMissingProtonTheta < 5) ? true : (fabs(locUnusedDeltaPhi) <= 30);
-				const bool locPassDeltaThetaCutFlag  = (fabs(locUnusedDeltaTheta) <= 30);
-				const bool locPassDeltaPOverPCutFlag = (fabs(locUnusedDeltaPOverP) <= 0.6);
-				if (locPassDeltaPOverPCutFlag and locPassDeltaPhiCutFlag and locPassDeltaThetaCutFlag) {
-					// found matching unused track
-					dHist_MissingMassSquaredVsBeamEnergy_Found->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
-					dHist_MissingMassSquaredVsBeamEnergySideband_Found->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
-					// FILL FLAT TREE
-					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", true);
-					fillTreeTruthDelta(locMissingProtonP4);
-					Fill_FlatTree();
-				} else {
-					// unused track exists but does not match
-					dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
-					dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
-					// FILL FLAT TREE
-					dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
-					fillTreeTruthDelta(locMissingProtonP4);
-					Fill_FlatTree();
-				}
+				// FILL FLAT TREE
+				fillTreeTruthDelta(locMissingProtonP4);
+				Fill_FlatTree();
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
 			}
@@ -559,10 +535,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			if (not locUnusedTrackExists) {
 				// there was no unused track in the event
-				dHist_MissingMassSquaredVsBeamEnergy_Missing->Fill        (locBeamEnergy, locMissingMassSquared_Measured, locHistAccidWeightFactor);
-				dHist_MissingMassSquaredVsBeamEnergySideband_Missing->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 				// FILL FLAT TREE
-				dFlatTreeInterface->Fill_Fundamental<Bool_t>("TrackFound", false);
 				fillTreeTruthDelta(locMissingProtonP4);
 				dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", 0);
 				Fill_FlatTree();

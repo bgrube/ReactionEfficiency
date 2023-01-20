@@ -58,11 +58,7 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH1F* dHist_BeamEnergy;
 
 		TH2F* dHist_MissingMassSquaredVsBeamEnergy;
-		TH2F* dHist_MissingMassSquaredVsBeamEnergy_Found;
-		TH2F* dHist_MissingMassSquaredVsBeamEnergy_Missing;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband;
-		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Found;
-		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband_Missing;
 
 	bool
 	fillTreeTruthDelta(const TLorentzVector& missingProtonP4);

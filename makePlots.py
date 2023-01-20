@@ -18,8 +18,8 @@ TRACK_FOUND_FILTER = "(" \
 # filter expressions for track-found cases
 FILTER_CASES = {
   "Total"   : "(true)",
-  "Found"   : "(TrackFoundFoo == true)",
-  "Missing" : "(TrackFoundFoo == false)"
+  "Found"   : "(TrackFound == true)",
+  "Missing" : "(TrackFound == false)"
 }
 
 
@@ -369,7 +369,7 @@ if __name__ == "__main__":
   # histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
   # treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
   treeName     = "pippippimpimpmiss"
-  inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFoundFoo", TRACK_FOUND_FILTER)
+  inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", TRACK_FOUND_FILTER)
 
   filterTopologies = {
     ""                                             : None,
