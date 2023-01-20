@@ -7,10 +7,19 @@ import pandas
 import ROOT
 
 
+# simplified version of Paul's criteria
+TRACK_FOUND_FILTER = "(" \
+  + "(NmbUnusedTracks == 1)" \
+  + " and ((MissingProtonTheta < 5) or (abs(UnusedDeltaPhi[0]) <= 30))" \
+  + " and (abs(UnusedDeltaTheta[0]) <= 30)" \
+  + " and (abs(UnusedDeltaPOverP[0]) <= 0.6)" \
+  + ")"
+
+# filter expressions for track-found cases
 FILTER_CASES = {
   "Total"   : "(true)",
-  "Found"   : "(TrackFound == true)",
-  "Missing" : "(TrackFound == false)"
+  "Found"   : "(TrackFoundFoo == true)",
+  "Missing" : "(TrackFoundFoo == false)"
 }
 
 
@@ -355,12 +364,12 @@ if __name__ == "__main__":
 
   # overlayMissingMassSquared()
 
-  # histFileName = "pippippimpimpmiss.root"
-  # treeFileName = "pippippimpimpmiss_flatTree.root"
-  histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
-  treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
+  histFileName = "pippippimpimpmiss.root"
+  treeFileName = "pippippimpimpmiss_flatTree.root"
+  # histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  # treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
   treeName     = "pippippimpimpmiss"
-  inputData    = ROOT.RDataFrame(treeName, treeFileName)
+  inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFoundFoo", TRACK_FOUND_FILTER)
 
   filterTopologies = {
     ""                                             : None,
