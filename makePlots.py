@@ -7,12 +7,18 @@ import pandas
 import ROOT
 
 
-# simplified version of Paul's criteria
-TRACK_FOUND_FILTER = "(" \
+# simplified versions of Paul's criteria
+UNUSED_TRACK_FOUND_CONDITION = "(" \
   + "(NmbUnusedTracks == 1)" \
   + " and ((MissingProtonTheta < 5) or (abs(UnusedDeltaPhi[0]) <= 30))" \
   + " and (abs(UnusedDeltaTheta[0]) <= 30)" \
   + " and (abs(UnusedDeltaPOverP[0]) <= 0.6)" \
+  + ")"
+UNUSED_TRACK_FOUND_CONDITION_MEASURED = "(" \
+  + "(NmbUnusedTracks == 1)" \
+  + " and ((MissingProtonTheta_Measured < 5) or (abs(UnusedDeltaPhi_Measured[0]) <= 30))" \
+  + " and (abs(UnusedDeltaTheta_Measured[0]) <= 30)" \
+  + " and (abs(UnusedDeltaPOverP_Measured[0]) <= 0.6)" \
   + ")"
 
 # filter expressions for track-found cases
@@ -369,7 +375,7 @@ if __name__ == "__main__":
   # histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
   # treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
   treeName     = "pippippimpimpmiss"
-  inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", TRACK_FOUND_FILTER)
+  inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION)
 
   filterTopologies = {
     ""                                             : None,
