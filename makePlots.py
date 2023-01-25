@@ -212,6 +212,7 @@ def overlayCases(
   axisTitles,  # semicolon-separated list
   binning,     # tuple with binning definition
   additionalFilter  = None,
+  weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = ""
 ):
@@ -225,7 +226,7 @@ def overlayCases(
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
   for case in FILTER_CASES.keys():
-    hist = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor", FILTER_CASES[case],
+    hist = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, FILTER_CASES[case],
                      histNameSuffix = case, histTitle = case)
     hist.SetLineColor(colorCases[case])
     if case == "Total":
@@ -271,12 +272,12 @@ def plotTopologyHist(
 ):
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   colorCases = {
-    # "Total"   : ROOT.kGray,
-    # "Found"   : ROOT.kGreen + 2,
-    # "Missing" : ROOT.kRed + 1
-    "Total"   : ROOT.kBlue,
+    "Total"   : ROOT.kGray,
     "Found"   : ROOT.kGreen + 2,
     "Missing" : ROOT.kRed + 1
+    # "Total"   : ROOT.kBlue,
+    # "Found"   : ROOT.kGreen + 2,
+    # "Missing" : ROOT.kRed + 1
   }
   # get histogram data
   topoHists = {}
@@ -364,74 +365,100 @@ def overlayTopologies(
 
 
 if __name__ == "__main__":
+  #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
   ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
   # overlayMissingMassSquared()
 
-  histFileName = "pippippimpimpmiss.root"
-  treeFileName = "pippippimpimpmiss_flatTree.root"
-  # histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
-  # treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
+  # histFileName = "pippippimpimpmiss.root"
+  # treeFileName = "pippippimpimpmiss_flatTree.root"
+  histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
+  treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
+  isMonteCarlo = False
+  isBggenMc    = True
+  # histFileName = "pippippimpimpmiss.030730.root"
+  # treeFileName = "pippippimpimpmiss_flatTree.030730.root"
+  # isMonteCarlo = False
+  # isBggenMc    = False
   treeName     = "pippippimpimpmiss"
   inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION)
 
-  filterTopologies = {
-    ""                                             : None,
-    "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
-    "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
-    "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")'
-  }
-  for suffix, filter in filterTopologies.items():
-    overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(inputData, "TruthDeltaPOverP", axisTitles = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
-    overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
+  #TODO determine isMonteCarlo and isBggenMc flags from data
+  if isMonteCarlo:
+    filterTopologies = {
+      ""                                             : None,
+      "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
+      "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
+      "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")'
+    }
+    for suffix, filter in filterTopologies.items():
+      overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+      overlayCases(inputData, "TruthDeltaPOverP", axisTitles = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+      overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
+      overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
-  plotTopologyHist(inputData, normalize = False)
-  plotTopologyHist(inputData, normalize = True)
+    if isBggenMc:
+      plotTopologyHist(inputData, normalize = False)
+      plotTopologyHist(inputData, normalize = True)
 
-  cutsArgs = [
-    {},  # no extra cut
-    {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
-    # # the two cuts below are equivalent to the one above
-    # {"additionalFilter" : "(EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
-    # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
-  ]
-  for cutArgs in cutsArgs:
-    overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), **cutArgs)
-    overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       **cutArgs)
-    # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
-    overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
-    overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
+      cutsArgs = [
+        {},  # no extra cut
+        {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+        # # the two cuts below are equivalent to the one above
+        # {"additionalFilter" : "(EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
+        # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
+      ]
+      for cutArgs in cutsArgs:
+        overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), **cutArgs)
+        overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       **cutArgs)
+        # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
+        overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
+        overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  **cutArgs)
 
   sideBandArgs = {"weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor"), "pdfFileNameSuffix" : "_Sb"}
   sideBandYTitle = "Number of Combos (RF-Sideband)"
+  plot1D(inputData, "AccidWeightFactor",                                           axisTitles = "RF Weight", binning = (1000, -2, 2), weightVariable = None)
   # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2})",                   binning = (100, 0, 2))
   # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
   # plot1D(inputData, "MissingMassSquared",                        axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}",                   binning = (225, -0.5, 4))
   # plot1D(inputData, "MissingMassSquared",                        axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
   plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/c^{2})",                   binning = (100, 0, 2))
   plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
-  plot1D(inputData, "MissingMassSquared_Measured",                                 axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}",                   binning = (225, -0.5, 4))
-  plot1D(inputData, "MissingMassSquared_Measured",                                 axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
-  plot1D(inputData, "AccidWeightFactor",                                           axisTitles = "RF Weight", binning = (1000, -2, 2), weightVariable = None)
 
-  beamEnergyRange   = (3.0, 12.0)  # [GeV]
-  nmbBeamEnergyBins = 9            # 1 GeV bin width
-  energyBinWidth    = (beamEnergyRange[1] - beamEnergyRange[0]) / float(nmbBeamEnergyBins)
-  histDef           = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", "binning" : (250, -0.5, 4.5)}
+  # missing-mass squared distributions
+  mm2HistDef         = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}",                   "binning" : (125, -0.5, 4.5)}
+  mm2HistDefSideBand = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, "binning" : (125, -0.5, 4.5), "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor")}
+  overlayCases(inputData, **mm2HistDef)
+  overlayCases(inputData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_Sb")
+  # plot overall distributions for each case
   for case, caseFilter in FILTER_CASES.items():
     caseData = inputData.Filter(caseFilter)
-    plot1D(caseData, **histDef, pdfFileNameSuffix = f"_{case}")
-    # plot distributions for beam-energy bins
-    for energyBin in range(nmbBeamEnergyBins):
-      energyBinMin = beamEnergyRange[0] + energyBin * energyBinWidth
-      energyBinMax = energyBinMin + energyBinWidth
-      energyFilter = f"(({energyBinMin} < BeamEnergy) and (BeamEnergy < {energyBinMax}))"
-      energyBinData = caseData.Filter(energyFilter)
-      plot1D(energyBinData, **histDef, pdfFileNameSuffix = f"_Egamma_{energyBinMin}_{energyBinMax}_{case}")
+    plot1D(caseData, **mm2HistDef,         pdfFileNameSuffix = f"_{case}")
+    plot1D(caseData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_{case}_Sb")
+  kinematicBinnings  = [
+    # beam energy
+    {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" : 9,  "range" : (3.0, 12.0)},
+    # momentum of missing proton
+    {"variable" : "MissingProtonP",     "label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c", "nmbBins" : 10, "range" : (0, 3.5)},
+    # polar angle of missing proton
+    {"variable" : "MissingProtonTheta", "label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg",   "nmbBins" : 13, "range" : (0, 65)},
+    # azimuthal angle of missing proton
+    {"variable" : "MissingProtonPhi",   "label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg",   "nmbBins" : 10, "range" : (-180, +180)}
+  ]
+  for kinematicBinning in kinematicBinnings:
+    kinBinVariable = kinematicBinning["variable"]
+    nmbKinBins     = kinematicBinning["nmbBins"]
+    kinBinRange    = kinematicBinning["range"]
+    kinBinWidth    = (kinBinRange[1] - kinBinRange[0]) / float(nmbKinBins)
+    # plot distributions for kinematic bins
+    for kinBinIndex in range(nmbKinBins):
+      kinBinMin = kinBinRange[0] + kinBinIndex * kinBinWidth
+      kinBinMax = kinBinMin + kinBinWidth
+      kinBinFilter = f"(({kinBinMin} < {kinBinVariable}) and ({kinBinVariable} < {kinBinMax}))"
+      kinBinData = caseData.Filter(kinBinFilter)
+      overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}")
 
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonP",            axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonPhi",          axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 360, -180, 180))
@@ -442,6 +469,10 @@ if __name__ == "__main__":
   plot1D(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
   plot1D(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100))
   plot1D(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180))
+  overlayCases(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6))
+  overlayCases(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
+  overlayCases(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100))
+  overlayCases(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180))
   unusedTrackData = inputData.Filter("(NmbUnusedTracks == 1)")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
   plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     axisTitles = "#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",       binning = (400, 0, 9, 400, 0, 9))
   plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)", binning = (360, 0, 180, 360, 0, 180))
