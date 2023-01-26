@@ -60,10 +60,10 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   # fit fucntions and its components
   funcs = {
     "doubleGaussianPol2" : doubleGaussianPol2,
-    "signal" : signal,
-    "gaussian1" : gaussian1,
-    "gaussian2" : gaussian2,
-    "background" : background
+    "signal"             : signal,
+    "gaussian1"          : gaussian1,
+    "gaussian2"          : gaussian2,
+    "background"         : background
   }
   # set member variables of functors
   for func in funcs.values():
@@ -74,7 +74,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
     fitRange = (hist.GetXaxis().GetXmin(), hist.GetXaxis().GetXmax())
   fitFunc = ROOT.TF1("doubleGaussianPol2", funcs["doubleGaussianPol2"], fitRange[0], fitRange[1],
     8 if funcs["doubleGaussianPol2"]._forceCommonGaussianMean else 9)
-  commonParNames = ("p_{0}", "p_{1}", "p_{2}", "A", "r", "#sigma_{1}", "#sigma_{2}")
+  commonParNames = ("p_{0}", "p_{1}", "p_{2}", "A", "#hat{r}", "#sigma_{1}", "#sigma_{2}")
   fitParameters = ((*commonParNames, "#mu") if forceCommonGaussianMean else (*commonParNames, "#mu_{1}", "#mu_{2}"))
   fitFunc.SetParNames(*fitParameters)
 
@@ -104,7 +104,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
       raise ValueError(f"code cannot handle particles of type '{particle}'")
   fitFunc.SetParameter("A", hist.Integral(hist.FindBin(fitRange[0]), hist.FindBin(fitRange[1])))
   fitFunc.SetParLimits(fitFunc.GetParNumber("A"), 0, 2 * fitFunc.GetParameter("A"))  # ensure positive parameter value
-  fitFunc.FixParameter(fitFunc.GetParNumber("r"), 0)
+  fitFunc.FixParameter(fitFunc.GetParNumber("#hat{r}"), 0)
   if forceCommonGaussianMean:
     fitFunc.SetParameter("#mu", meanStartVal)
   else:
@@ -120,8 +120,8 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   hist.Fit(fitFunc, "RQN")
 
   # second fitting stage: use double Gaussian on top of pol0
-  fitFunc.ReleaseParameter(fitFunc.GetParNumber("r"))
-  fitFunc.SetParameter("r", 0.75)  # nudge it, otherwise it does not move from zero
+  fitFunc.ReleaseParameter(fitFunc.GetParNumber("#hat{r}"))
+  fitFunc.SetParameter("#hat{r}", 0.75)  # nudge it, otherwise it does not move from zero
   if not forceCommonGaussianMean:
     fitFunc.ReleaseParameter(fitFunc.GetParNumber("#mu_{2}"))
   fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{2}"))
