@@ -258,7 +258,7 @@ def getTopologyHist(
     topoHistSorted = df.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
     # print(type(topoHistSorted), topoHistSorted)
     # print("INDEX", type(topoHistSorted.index), topoHistSorted.index)
-    # print("VAKUES", type(topoHistSorted.values), topoHistSorted.values)
+    # print("VALUES", type(topoHistSorted.values), topoHistSorted.values)
     return (list(topoHistSorted.index), topoHistSorted.values)
 
 
@@ -275,12 +275,9 @@ def plotTopologyHist(
     "Total"   : ROOT.kGray,
     "Found"   : ROOT.kGreen + 2,
     "Missing" : ROOT.kRed + 1
-    # "Total"   : ROOT.kBlue,
-    # "Found"   : ROOT.kGreen + 2,
-    # "Missing" : ROOT.kRed + 1
   }
   # get histogram data
-  topoHists = {}
+  topoHists = {}  # dictionary of dictionaries { case : { topology :  } }
   for case in FILTER_CASES.keys():
     caseData = data.Filter(FILTER_CASES[case])
     topoHists[case] = getTopologyHist(caseData)
@@ -297,8 +294,8 @@ def plotTopologyHist(
     if normalize:
       hist.Scale(100 / hist.Integral())
     hist.SetLineColor(colorCases[case])
-    # if case == "Total":
-    #   hist.SetFillColor(colorCases[case])
+    if case == "Total":
+      hist.SetFillColor(colorCases[case])
     hists[case] = hist
     hStack.Add(hist)
     print(f"{case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
@@ -372,16 +369,13 @@ if __name__ == "__main__":
 
   # overlayMissingMassSquared()
 
-  # histFileName = "pippippimpimpmiss.root"
-  # treeFileName = "pippippimpimpmiss_flatTree.root"
-  histFileName = "pippippimpimpmiss_bggen_2017_01-ver03.root"
-  treeFileName = "pippippimpimpmiss_flatTree_bggen_2017_01-ver03.root"
-  isMonteCarlo = False
-  isBggenMc    = True
-  # histFileName = "pippippimpimpmiss.030730.root"
-  # treeFileName = "pippippimpimpmiss_flatTree.030730.root"
-  # isMonteCarlo = False
-  # isBggenMc    = False
+  # dataset = None
+  dataset = "bggen_2017_01-ver03"
+  # dataset = "030730"
+  isMonteCarlo = isBggenMc = True
+  # isMonteCarlo = isBggenMc = False
+  histFileName = f"pippippimpimpmiss.{dataset}.root"          if dataset else "pippippimpimpmiss.root"
+  treeFileName = f"pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
   treeName     = "pippippimpimpmiss"
   inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION)
 
