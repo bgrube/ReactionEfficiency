@@ -3,7 +3,6 @@
 
 
 from collections.abc import Iterable
-import pandas
 import ROOT
 
 
@@ -247,19 +246,89 @@ def overlayCases(
   canv.SaveAs(".pdf")
 
 
+# C++ helper functor to work around fact that RDataFrame cannot fill TObjSTring into histogram
+# see https://sft.its.cern.ch/jira/browse/ROOT-10246
+#TODO make this code thread-safe
+# see https://root-forum.cern.ch/t/filling-histograms-in-parallel/35460/3
+# and https://root.cern/doc/master/mt201__parallelHistoFill_8C.html
+CPP_CODE = """
+struct fillHistWithTObjString {
+
+  fillHistWithTObjString(TH1& hist)
+    : _hist(hist)
+  { }
+
+  void
+  operator ()(
+    const TObjString& s,
+    const Double_t    w = 1
+  ) {
+    _hist.Fill(s.GetString().Data(), w);
+    return;
+  }
+
+  TH1& _hist;
+
+};
+"""
+ROOT.gInterpreter.Declare(CPP_CODE)
+
+
 def getTopologyHist(
-  inputData  # RDataFrame
+  inputData,  # RDataFrame
+  weightVariable   = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression = None,
+  histNameSuffix   = ""
 ):
-  # print(inputData.GetColumnType("ThrownTopology"))
-  topos = [str(topo) for topo in inputData.AsNumpy(["ThrownTopology"])["ThrownTopology"]]
-  if len(topos) > 1:
-    weights = inputData.AsNumpy(["AccidWeightFactor"])["AccidWeightFactor"]
-    df = pandas.DataFrame({"ThrownTopology" : topos, "AccidWeightFactor" : weights})
-    topoHistSorted = df.groupby("ThrownTopology")["AccidWeightFactor"].sum().sort_values(ascending = False)
-    # print(type(topoHistSorted), topoHistSorted)
-    # print("INDEX", type(topoHistSorted.index), topoHistSorted.index)
-    # print("VALUES", type(topoHistSorted.values), topoHistSorted.values)
-    return (list(topoHistSorted.index), topoHistSorted.values)
+  #TODO the following does not work without recreating the RDataFrame
+  # switch to single-threaded mode because the above code is not thread-safe (yet)
+  nmbThreads = None
+  if ROOT.IsImplicitMTEnabled():
+    nmbThreads = ROOT.GetThreadPoolSize()
+    ROOT.DisableImplicitMT()
+  # apply additional filters, if defined
+  data = inputData.Filter(filterExpression) if filterExpression else inputData
+  if not isinstance(weightVariable, str) and isinstance(weightVariable, Iterable):
+    # create new weight column
+    data = data.Define(weightVariable[0], weightVariable[1])
+  # create histogram
+  variable = "ThrownTopology"
+  histName = variable
+  if isinstance(weightVariable, str):
+    histName += f"_{weightVariable}"
+  elif isinstance(weightVariable, Iterable):
+    histName += f"_{weightVariable[0]}"
+  if filterExpression:
+    histName += f"_{filterExpression}"
+  if histNameSuffix:
+    histName += f"_{histNameSuffix}"
+  hist = ROOT.TH1F(histName, "", 1, 0, 1)
+  fillHistWithTObjString = ROOT.fillHistWithTObjString(hist)
+  # fill histogram
+  if not weightVariable:
+    data.Foreach(fillHistWithTObjString, [variable])
+  elif isinstance(weightVariable, str):
+    # use existing weight column
+    data.Foreach(fillHistWithTObjString, [variable, weightVariable])
+  elif isinstance(weightVariable, Iterable):
+    # use new weight column
+    data.Foreach(fillHistWithTObjString, [variable, weightVariable[0]])
+  hist.LabelsDeflate("X")
+  hist.LabelsOption(">", "X")  # sort topologies by number od combos
+  # get ordered list of topology names
+  xAxis = hist.GetXaxis()
+  topoNames = [xAxis.GetBinLabel(binIndex) for binIndex in range(1, xAxis.GetNbins() + 1)]
+  # restore multithreading if it was enabled
+  if nmbThreads:
+    ROOT.EnableImplicitMT(nmbThreads)
+  return (topoNames, hist)
+
+
+# helper function that returns dict { bin label : bin content }
+def getCategorialTH1AsDict(hist):
+  xAxis = hist.GetXaxis()
+  return {xAxis.GetBinLabel(binIndex) : hist.GetBinContent(binIndex)
+    for binIndex in range(1, xAxis.GetNbins() + 1)}
 
 
 def plotTopologyHist(
@@ -270,24 +339,29 @@ def plotTopologyHist(
   pdfFileNamePrefix = "justin_Proton_4pi_",
   pdfFileNameSuffix = ""
 ):
-  data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   colorCases = {
     "Total"   : ROOT.kGray,
     "Found"   : ROOT.kGreen + 2,
     "Missing" : ROOT.kRed + 1
   }
   # get histogram data
-  topoHists = {}  # dictionary of dictionaries { case : { topology :  } }
+  topoNames = {}  # dictionary of ordered list of topology names { case : [ topologyName ] }
+  topoHists = {}  # dictionary of topology histograms { case : topologyHist }
   for case in FILTER_CASES.keys():
-    caseData = data.Filter(FILTER_CASES[case])
-    topoHists[case] = getTopologyHist(caseData)
+    caseData = inputData.Filter(FILTER_CASES[case])
+    topoNames[case], topoHists[case] = getTopologyHist(caseData, weightVariable = "AccidWeightFactor", filterExpression = additionalFilter, histNameSuffix = case + ("_norm" if normalize else ""))
   # overlay distributions for cases
   hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
-  hists = {}
-  topoLabels = topoHists["Total"][0]
+  topoLabels = topoNames["Total"]
+  hists = {}  # memorize plots to print
   for case in FILTER_CASES.keys():
-    hist = ROOT.TH1F(f"topologies_{case}{'_norm' if normalize else ''}", case, 1, 0, 1)
-    histValues = dict(zip(topoHists[case][0], topoHists[case][1]))
+    # ensure that bin labels in all histograms have same order as defined by the "Total" histogram
+    hist = ROOT.TH1F(f"{pdfFileNamePrefix}topologies_{case}{'_norm' if normalize else ''}{pdfFileNameSuffix}", case, len(topoLabels), 0, len(topoLabels))
+    xAxis = hist.GetXaxis()
+    for binIndex, binLabel in enumerate(topoLabels):
+      xAxis.SetBinLabel(binIndex + 1, binLabel)
+    # get histogram values as dictionary, i.e. { topology : count }
+    histValues = getCategorialTH1AsDict(topoHists[case])
     # set bin content of histogram
     for binLabel in topoLabels:
       hist.Fill(binLabel, histValues[binLabel] if binLabel in histValues else 0)
@@ -298,18 +372,19 @@ def plotTopologyHist(
       hist.SetFillColor(colorCases[case])
     hists[case] = hist
     hStack.Add(hist)
-    print(f"{case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
+    print(f"plotTopologyHist(): {case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}topologies{'_norm' if normalize else ''}{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
+  hStack.SetMinimum(0)
   hStack.GetXaxis().SetRangeUser(0, maxNmbTopologies)
-  # # add legend
+  # add legend
   legend = canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   # add labels that show number or fraction outside of plot range
   legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "Other topologies:", "")
   for case in FILTER_CASES.keys():
     integralOtherTopos = hists[case].Integral(maxNmbTopologies, hists[case].GetNbinsX())
     legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")
-    legendEntry.SetTextColor(colorCases[case])
+    legendEntry.SetTextColor(ROOT.kBlack if case == "Total" else colorCases[case])
   canv.SaveAs(".pdf")
 
 
@@ -326,12 +401,10 @@ def overlayTopologies(
   pdfFileNameSuffix = "_bggen_topologies"
 ):
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
-  # # get topologies with largest number of combos for total data set
-  # toposToPlot, _ = getTopologyHist(data)
-  # toposToPlot = ["Total"] + toposToPlot[:maxNmbTopologies]
   for case in FILTER_CASES.keys():
     caseData = data.Filter(FILTER_CASES[case])
     # get topologies with largest number of combos for given case
+    #TODO fix call
     toposToPlot, _ = getTopologyHist(caseData)
     toposToPlot = ["Total"] + toposToPlot[:maxNmbTopologies]
     hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{setDefaultYAxisTitle(axisTitles)}")
@@ -364,15 +437,16 @@ def overlayTopologies(
 if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
-  ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
+  #TODO cannot change multithreading for existing data frame
+  # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
   # overlayMissingMassSquared()
 
   # dataset = None
   dataset = "bggen_2017_01-ver03"
-  # dataset = "030730"
   isMonteCarlo = isBggenMc = True
+  # dataset = "030730"
   # isMonteCarlo = isBggenMc = False
   histFileName = f"pippippimpimpmiss.{dataset}.root"          if dataset else "pippippimpimpmiss.root"
   treeFileName = f"pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
@@ -394,8 +468,14 @@ if __name__ == "__main__":
       overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
     if isBggenMc:
-      plotTopologyHist(inputData, normalize = False)
-      plotTopologyHist(inputData, normalize = True)
+
+      cutsArgs = [
+        {},  # no extra cut
+        {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+      ]
+      for cutArgs in cutsArgs:
+        plotTopologyHist(inputData, normalize = False, **cutArgs)
+        plotTopologyHist(inputData, normalize = True,  **cutArgs)
 
       cutsArgs = [
         {},  # no extra cut
