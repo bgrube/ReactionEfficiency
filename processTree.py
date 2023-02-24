@@ -21,15 +21,17 @@ if __name__ == "__main__":
   brufitVariable = "MissingMassSquared_Measured"  # branch name to be written
 
 
-  # add column with "track found flag" and column with event ID (needed by BruFit) and write out new tree
+  # adds columns with "track found flag" and with event ID (needed by BruFit; needs to be of type double)
+  # and writes out new tree with only the needed branches
   # works currently only in single-threaded mode
   # see https://root-forum.cern.ch/t/accessing-entry-information-using-rdataframe/52378
   # and https://root.cern/doc/master/df007__snapshot_8C.html
   branchesToWrite = ROOT.std.vector[ROOT.std.string]([brufitVariable, "TrackFound", "EventID"])
   ROOT.RDataFrame(treeName, inputFileName) \
       .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION) \
-      .Alias("EventID", "rdfentry_") \
-      .Snapshot(treeName, outputFileName, branchesToWrite)
+      .Define("EventID", "(double)rdfentry_") \
+      .Snapshot(treeName, outputFileName, branchesToWrite) \
+      # .Range(0, 100000)
 
   outputFile = ROOT.TFile(outputFileName, "READ")
   tree = outputFile.Get(treeName)
