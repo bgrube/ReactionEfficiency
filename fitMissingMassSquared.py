@@ -30,11 +30,16 @@ if __name__ == "__main__":
   # define `eventID` as event-ID variable; data tree should have a double branch with this name containing a unique event ID number
   fitManager.SetUp().SetIDBranchName(eventIDName)
 
-  # define Gaussian signal PDF `SigPdf`
-  meanStartVal      = 0.9383**2  # (proton mass)^2 [GeV^2]
-  widthStartVal     = 0.5        # [GeV^2]
+  # meanStartVal      = 0.9383**2  # (proton mass)^2 [GeV^2]
+  # widthStartVal     = 0.5        # [GeV^2]
   pdfWeightStartVal = 1
-  fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
+  # # define Gaussian signal PDF `SigPdf`
+  # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
+  # define double Gaussian signal PDF `SigPdf`
+  fitManager.SetUp().FactoryPDF("SUM::SigPdf("
+    f"r_SigPdf[0.57, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0, 0, 2], width1_SigPdf[0.66, 0.01, 2]),"
+                           f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[0.9, 0, 2], width2_SigPdf[0.24, 0.01, 2])"
+    ")")
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", pdfWeightStartVal)
 
   # define 2nd-order Bernstein polynomial as background PDF `BgPdf`
