@@ -17,16 +17,16 @@ def defineSignalPdf(fitManager):
   # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
 
   # define double Gaussian
-  # separate means
-  fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-                          f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
-    ")")
-  # # same mean
+  # # separate means
   # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
   #   ")")
+  # same mean
+  fitManager.SetUp().FactoryPDF("SUM::SigPdf("
+    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+                          f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+    ")")
 
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
@@ -111,7 +111,8 @@ if __name__ == "__main__":
   comboIdName      = "ComboID"
   outputDirName    = "BruFitOutput"
   regenBinnedTrees = False
-  nmbThreadsPerJob = 10
+  # nmbThreadsPerJob = 10
+  nmbThreadsPerJob = 5
 
   # create the sPlot fit manager and set the output directory for fit results, plots, and weights
   fitManager = ROOT.FitManager()
@@ -126,9 +127,23 @@ if __name__ == "__main__":
   defineSignalPdf(fitManager)
   defineBackgroundPdf(fitManager)
 
-  # # define kinematic bins
-  # fitManager.Bins().LoadBinVar("BeamEnergy", 9, 3.0, 12.0)
-  # nmbProofJobs = 9
+  # define kinematic bins
+  fitManager.Bins().LoadBinVar("BeamEnergy", 9, 3.0, 12.0)
+  nmbProofJobs = 9
+
+  # create RF-sideband weights for data to be fitted
+  rfSWeightFileName = f"{outputDirName}/sidebandWeightsData.root"
+  rfSWeightLabel    = "RfSideband"
+  readSidebandWeights(
+    inputFileName    = dataFileName,
+    inputTreeName    = dataTreeName,
+    weightBranchName = "AccidWeightFactor",
+    comboIdName      = comboIdName,
+    sWeightFileName  = rfSWeightFileName,
+    sWeightLabel     = rfSWeightLabel
+  )
+  # apply weights for RF-sideband subtraction
+  fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName)
 
   # load data to be fitted
   dataAreBinned = fitManager.Bins().GetBins().GetVarAxis().size() > 0
@@ -144,27 +159,13 @@ if __name__ == "__main__":
     for binFileName in binFileNames:
       print(f"    {binFileName}")
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
-  # create RF-sideband weights for data to be fitted
-  rfSWeightFileName = f"{outputDirName}/sidebandWeightsData.root"
-  rfSWeightLabel    = "RfSideband"
-  readSidebandWeights(
-    inputFileName    = dataFileName,
-    inputTreeName    = dataTreeName,
-    weightBranchName = "AccidWeightFactor",
-    comboIdName      = comboIdName,
-    sWeightFileName  = rfSWeightFileName,
-    sWeightLabel     = rfSWeightLabel
-  )
-  # apply weights for RF-sideband subtraction
-  fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName)
 
   #TODO add constraints for fugde parameters
 
   # perform fit an plot fit result
   setRooFitOptions(fitManager)
-  ROOT.Here.Go(fitManager)
-  # fitManager.SetRedirectOutput()  # redirect console output to files
-  # # ln -s /group/halld/Software/builds/Linux_CentOS7.7-x86_64-gcc4.8.5/root/root-6.24.04/lib/RooStats.pcm /u/home/bgrube/.proof/cache/libRooStats_rdict.pcm
-  # ROOT.Proof.Go(fitManager, nmbProofJobs)
+  # ROOT.Here.Go(fitManager)
+  fitManager.SetRedirectOutput()  # redirect console output to files
+  ROOT.Proof.Go(fitManager, nmbProofJobs)
 
   ROOT.gBenchmark.Show("Total")
