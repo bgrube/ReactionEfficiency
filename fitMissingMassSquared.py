@@ -114,7 +114,7 @@ if __name__ == "__main__":
   nmbThreadsPerJob = 10
 
   # create the sPlot fit manager and set the output directory for fit results, plots, and weights
-  fitManager = ROOT.sPlot()
+  fitManager = ROOT.FitManager()
   fitManager.SetUp().SetOutDir(outputDirName)
   # define fit variable and set fit range
   fitManager.SetUp().LoadVariable(f"{fitVariable}[{fitRange}]")
