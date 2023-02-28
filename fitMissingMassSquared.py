@@ -12,33 +12,35 @@ makePlots.setupPlotStyle()
 
 
 def defineSignalPdf(fitManager):
-  # # define Gaussian signal PDF `SigPdf`
+  print("Defining signal PDF 'SigPdf'", flush = True)
+  # # define Gaussian
   # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
 
-  # define double Gaussian signal PDF `SigPdf`
-  # # separate means
-  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
-  #   ")")
-  # same mean
+  # define double Gaussian
+  # separate means
   fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-                          f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+                          f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
     ")")
+  # # same mean
+  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
+  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  #   ")")
 
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
 
 
 def defineBackgroundPdf(fitManager):
-  # # define 2nd-order positive definite polynomial as background PDF `BgPdf`
+  print("Defining background PDF 'BgPdf'", flush = True)
+  # # define 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BgPdf[0, -100, 100], p1_BgPdf[0, -100, 100], p2_BgPdf[0, -100, 100]}})")
 
-  # # define 2nd-order Chebychev polynomial as background PDF `BgPdf`
+  # # define 2nd-order Chebychev polynomial
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BgPdf({fitVariable}, {{p0_BgPdf[0, -1, 1], p1_BgPdf[0, -1, 1], p2_BgPdf[0, -1, 1]}})")
 
-  # define 2nd-order Bernstein polynomial as background PDF `BgPdf`
+  # define 2nd-order Bernstein polynomial
   # see https://root.cern.ch/doc/master/classRooBernstein.html
   fitManager.SetUp().FactoryPDF(f"Bernstein::BgPdf({fitVariable}, {{p0_BgPdf[0, 0, 1], p1_BgPdf[0, 0, 1], p2_BgPdf[0, 0, 1]}})")
 
@@ -59,10 +61,46 @@ def binnedTreeFilesIn(outputDirName):
   return binFileNames
 
 
+def readSidebandWeights(
+  inputFileName,
+  inputTreeName,
+  weightBranchName,
+  comboIdName,
+  sWeightFileName,
+  sWeightLabel,  # label used to access weights
+  cut = "(1)"    # default: no cut
+):
+  print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
+  f" and writing them to '{sWeightFileName}' with label '{sWeightLabel}'"
+  + (f" while applying cut(s) '{cut}'" if cut != "(1)" else ""), flush = True)
+  currentDir = ROOT.gDirectory
+  inputFile = ROOT.TFile.Open(inputFileName, "READ")
+  inputTree = inputFile.Get(inputTreeName)
+  currentDir.cd()
+  weights = ROOT.Weights("HSsWeights")  # name of the Weights object
+  weights.SetFile(sWeightFileName)
+  weights.SetSpecies(sWeightLabel)
+  weights.SetIDName(comboIdName)
+  weights.WeightBySelection(inputTree, cut, weightBranchName)
+  weights.SortWeights()
+  weights.Save()
+
+
+def setRooFitOptions(fitManager):
+  print("Setting RooFit options", flush = True)
+  # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
+                                                                # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelizes calculation of likelihood using the given number of cores
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
+
+
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
-  # ROOT.EnableImplicitMT(10)  # activate implicit multi-threading for RooFit; disable using ROOT.DisableImplicitMT()
+  ROOT.gBenchmark.Start("Total")
 
   # dataset         = "030730"
   dataset          = "bggen_2017_01-ver03"
@@ -70,23 +108,27 @@ if __name__ == "__main__":
   dataTreeName     = "pippippimpimpmiss"
   fitVariable      = "MissingMassSquared_Measured"  # this is also the name of the branches in the data tree and the template-data trees for signal and background
   fitRange         = "-0.5, 4"  # [(GeV/c)^2]
-  eventIDName      = "EventID"
+  comboIdName      = "ComboID"
   outputDirName    = "BruFitOutput"
   regenBinnedTrees = False
+  nmbThreadsPerJob = 10
 
   # create the sPlot fit manager and set the output directory for fit results, plots, and weights
   fitManager = ROOT.sPlot()
   fitManager.SetUp().SetOutDir(outputDirName)
   # define fit variable and set fit range
   fitManager.SetUp().LoadVariable(f"{fitVariable}[{fitRange}]")
-  # define `eventID` as event-ID variable; data tree should have a double branch with this name containing a unique event ID number
-  fitManager.SetUp().SetIDBranchName(eventIDName)
+  # define combo-ID variable
+  # the data tree must have a double branch of the given name containing a unique combo-ID number
+  fitManager.SetUp().SetIDBranchName(comboIdName)
 
+  # define fit model
   defineSignalPdf(fitManager)
   defineBackgroundPdf(fitManager)
 
   # # define kinematic bins
   # fitManager.Bins().LoadBinVar("BeamEnergy", 9, 3.0, 12.0)
+  # nmbProofJobs = 9
 
   # load data to be fitted
   dataAreBinned = fitManager.Bins().GetBins().GetVarAxis().size() > 0
@@ -102,17 +144,27 @@ if __name__ == "__main__":
     for binFileName in binFileNames:
       print(f"    {binFileName}")
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
+  # create RF-sideband weights for data to be fitted
+  rfSWeightFileName = f"{outputDirName}/sidebandWeightsData.root"
+  rfSWeightLabel    = "RfSideband"
+  readSidebandWeights(
+    inputFileName    = dataFileName,
+    inputTreeName    = dataTreeName,
+    weightBranchName = "AccidWeightFactor",
+    comboIdName      = comboIdName,
+    sWeightFileName  = rfSWeightFileName,
+    sWeightLabel     = rfSWeightLabel
+  )
+  # apply weights for RF-sideband subtraction
+  fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName)
 
-  # set fit options
-  # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
-                                                                # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(10))       # parallelizes calculation of likelihood using the given number of cores
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(10))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))      # times CPU and wall clock consumption of fit steps
+  #TODO add constraints for fugde parameters
+
   # perform fit an plot fit result
+  setRooFitOptions(fitManager)
   ROOT.Here.Go(fitManager)
   # fitManager.SetRedirectOutput()  # redirect console output to files
   # # ln -s /group/halld/Software/builds/Linux_CentOS7.7-x86_64-gcc4.8.5/root/root-6.24.04/lib/RooStats.pcm /u/home/bgrube/.proof/cache/libRooStats_rdict.pcm
-  # ROOT.Proof.Go(fitManager, 9)
+  # ROOT.Proof.Go(fitManager, nmbProofJobs)
+
+  ROOT.gBenchmark.Show("Total")
