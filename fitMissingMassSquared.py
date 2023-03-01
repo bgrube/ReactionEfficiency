@@ -11,7 +11,10 @@ import makePlots  # defines helper functions to generate histograms from data tr
 makePlots.setupPlotStyle()
 
 
-def defineSignalPdf(fitManager):
+def defineSignalPdf(
+  fitManager,
+  fitVariable
+):
   print("Defining signal PDF 'SigPdf'", flush = True)
   # # define Gaussian
   # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
@@ -32,7 +35,10 @@ def defineSignalPdf(fitManager):
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
 
 
-def defineBackgroundPdf(fitManager):
+def defineBackgroundPdf(
+  fitManager,
+  fitVariable
+):
   print("Defining background PDF 'BgPdf'", flush = True)
   # # define 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BgPdf[0, -100, 100], p1_BgPdf[0, -100, 100], p2_BgPdf[0, -100, 100]}})")
@@ -100,28 +106,22 @@ def setRooFitOptions(
   fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
 
 
-if __name__ == "__main__":
-  ROOT.gROOT.SetBatch(True)
-  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
-  ROOT.gBenchmark.Start("Total")
-
-  # dataset          = "030730"
-  dataset           = "bggen_2017_01-ver03"
-  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
-  dataTreeName      = "pippippimpimpmiss"
-  fitVariable       = "MissingMassSquared_Measured"  # this is also the name of the branches in the data tree and the template-data trees for signal and background
-  fitRange          = "-0.5, 4.0"  # [(GeV/c)^2]
-  comboIdName       = "ComboID"
-  outputDirName     = "BruFitOutput"
-  kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
-    ("BeamEnergy", 9, 3.0, 12.0)
-  ]
-  cut               = "(TrackFound == 0)"
-  regenBinnedTrees  = False
-  nmbThreadsPerJob  = 5
+def performFit(
+  dataFileName,
+  outputDirName,
+  kinematicBinnings,
+  cut               = "(1)",
+  dataTreeName      = "pippippimpimpmiss",
+  fitVariable       = "MissingMassSquared_Measured",  # this is also the name of the branches in the data tree and the template-data trees for signal and background
+  fitRange          = "-0.5, 4.0",  # [(GeV/c)^2]
+  comboIdName       = "ComboID",
+  regenBinnedTrees  = False,
+  nmbThreadsPerJob  = 5,
   nmbProofJobs      = 9
+):
+  ROOT.gBenchmark.Start("Total time for fit")
 
-  # create the sPlot fit manager and set the output directory for fit results, plots, and weights
+  # create the fit manager and set the output directory for fit results, plots, and weights
   fitManager = ROOT.FitManager()
   fitManager.SetUp().SetOutDir(outputDirName)
   # define fit variable and set fit range
@@ -131,8 +131,8 @@ if __name__ == "__main__":
   fitManager.SetUp().SetIDBranchName(comboIdName)
 
   # define fit model
-  defineSignalPdf(fitManager)
-  defineBackgroundPdf(fitManager)
+  defineSignalPdf(fitManager, fitVariable)
+  defineBackgroundPdf(fitManager, fitVariable)
 
   # define kinematic bins
   for binning in kinematicBinnings:
@@ -171,8 +171,30 @@ if __name__ == "__main__":
 
   # perform fit an plot fit result
   setRooFitOptions(fitManager, nmbThreadsPerJob)
-  # ROOT.Here.Go(fitManager)
-  fitManager.SetRedirectOutput()  # redirect console output to files
-  ROOT.Proof.Go(fitManager, nmbProofJobs)
+  if kinematicBinnings:
+    fitManager.SetRedirectOutput()  # redirect console output to files
+    ROOT.Proof.Go(fitManager, nmbProofJobs)
+  else:
+    ROOT.Here.Go(fitManager)
 
-  ROOT.gBenchmark.Show("Total")
+  ROOT.gBenchmark.Show("Total time for fit")
+
+
+if __name__ == "__main__":
+  ROOT.gROOT.SetBatch(True)
+  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
+
+  # dataset           = "030730",
+  dataset           = "bggen_2017_01-ver03"
+  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
+  outputDirName     = "BruFitOutput"
+  kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
+    ("BeamEnergy", 9, 3.0, 12.0)
+  ]
+
+  performFit(
+    dataFileName,
+    outputDirName,
+    kinematicBinnings,
+    "(TrackFound == 0)"
+  )
