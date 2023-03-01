@@ -86,7 +86,10 @@ def readSidebandWeights(
   weights.Save()
 
 
-def setRooFitOptions(fitManager):
+def setRooFitOptions(
+  fitManager,
+  nmbThreadsPerJob
+):
   print("Setting RooFit options", flush = True)
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
   fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
@@ -102,17 +105,21 @@ if __name__ == "__main__":
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total")
 
-  # dataset         = "030730"
-  dataset          = "bggen_2017_01-ver03"
-  dataFileName     = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
-  dataTreeName     = "pippippimpimpmiss"
-  fitVariable      = "MissingMassSquared_Measured"  # this is also the name of the branches in the data tree and the template-data trees for signal and background
-  fitRange         = "-0.5, 4"  # [(GeV/c)^2]
-  comboIdName      = "ComboID"
-  outputDirName    = "BruFitOutput"
-  regenBinnedTrees = False
-  # nmbThreadsPerJob = 10
-  nmbThreadsPerJob = 5
+  # dataset          = "030730"
+  dataset           = "bggen_2017_01-ver03"
+  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
+  dataTreeName      = "pippippimpimpmiss"
+  fitVariable       = "MissingMassSquared_Measured"  # this is also the name of the branches in the data tree and the template-data trees for signal and background
+  fitRange          = "-0.5, 4.0"  # [(GeV/c)^2]
+  comboIdName       = "ComboID"
+  outputDirName     = "BruFitOutput"
+  kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
+    ("BeamEnergy", 9, 3.0, 12.0)
+  ]
+  cut               = "(TrackFound == 0)"
+  regenBinnedTrees  = False
+  nmbThreadsPerJob  = 5
+  nmbProofJobs      = 9
 
   # create the sPlot fit manager and set the output directory for fit results, plots, and weights
   fitManager = ROOT.FitManager()
@@ -128,8 +135,8 @@ if __name__ == "__main__":
   defineBackgroundPdf(fitManager)
 
   # define kinematic bins
-  fitManager.Bins().LoadBinVar("BeamEnergy", 9, 3.0, 12.0)
-  nmbProofJobs = 9
+  for binning in kinematicBinnings:
+    fitManager.Bins().LoadBinVar(*binning)
 
   # create RF-sideband weights for data to be fitted
   rfSWeightFileName = f"{outputDirName}/sidebandWeightsData.root"
@@ -140,16 +147,16 @@ if __name__ == "__main__":
     weightBranchName = "AccidWeightFactor",
     comboIdName      = comboIdName,
     sWeightFileName  = rfSWeightFileName,
-    sWeightLabel     = rfSWeightLabel
+    sWeightLabel     = rfSWeightLabel,
+    cut              = cut
   )
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName)
 
   # load data to be fitted
-  dataAreBinned = fitManager.Bins().GetBins().GetVarAxis().size() > 0
-  binFileNames = binnedTreeFilesIn(outputDirName) if dataAreBinned else None
+  binFileNames = binnedTreeFilesIn(outputDirName) if kinematicBinnings else None
   if binFileNames is None or regenBinnedTrees:
-    if dataAreBinned:
+    if kinematicBinnings:
       if not regenBinnedTrees:
         print("Could not find (all) binned tree files")
       print("Regenerating binned tree files")
@@ -163,7 +170,7 @@ if __name__ == "__main__":
   #TODO add constraints for fugde parameters
 
   # perform fit an plot fit result
-  setRooFitOptions(fitManager)
+  setRooFitOptions(fitManager, nmbThreadsPerJob)
   # ROOT.Here.Go(fitManager)
   fitManager.SetRedirectOutput()  # redirect console output to files
   ROOT.Proof.Go(fitManager, nmbProofJobs)
