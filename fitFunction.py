@@ -83,7 +83,7 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   # ROOT.Math.MinimizerOptions().SetDefaultPrintLevel(3)
   ROOT.TVirtualFitter.SetMaxIterations(100000)
 
-  # first fitting stage: use single Gaussian on top of pol0
+  # first fitting stage: use single Gaussian on top of pol2
   if fitMissingMassSquared:
     if particle == "Proton":
       meanStartVal = 0.9383**2  # (proton mass)^2 [GeV^2]
@@ -104,40 +104,52 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
       raise ValueError(f"code cannot handle particles of type '{particle}'")
   fitFunc.SetParameter("A", hist.Integral(hist.FindBin(fitRange[0]), hist.FindBin(fitRange[1])))
   fitFunc.SetParLimits(fitFunc.GetParNumber("A"), 0, 2 * fitFunc.GetParameter("A"))  # ensure positive parameter value
-  fitFunc.FixParameter(fitFunc.GetParNumber("#hat{r}"), 0)
+  # fitFunc.FixParameter(fitFunc.GetParNumber("#hat{r}"), 0)
+  fitFunc.SetParameter("#hat{r}", 0.75)
   if forceCommonGaussianMean:
     fitFunc.SetParameter("#mu", meanStartVal)
+    fitFunc.SetParLimits(fitFunc.GetParNumber("#mu"), 0.5, 1.5)
   else:
     fitFunc.SetParameter("#mu_{1}", meanStartVal)
-    fitFunc.FixParameter(fitFunc.GetParNumber("#mu_{2}"), meanStartVal)
+    fitFunc.SetParLimits(fitFunc.GetParNumber("#mu_{1}"), 0.5, 1.5)
+    # fitFunc.FixParameter(fitFunc.GetParNumber("#mu_{2}"), meanStartVal)
+    fitFunc.SetParameter("#mu_{2}", meanStartVal)
+    fitFunc.SetParLimits(fitFunc.GetParNumber("#mu_{2}"), 0.5, 1.5)
   fitFunc.SetParameter("#sigma_{1}", widthStartVal)
   fitFunc.SetParLimits(fitFunc.GetParNumber("#sigma_{1}"), 0, 10)  # ensure positive parameter value
-  fitFunc.FixParameter(fitFunc.GetParNumber("#sigma_{2}"), widthStartVal)
-  fitFunc.SetParameter("p_{0}", 0)
-  fitFunc.FixParameter(fitFunc.GetParNumber("p_{1}"), 0)
-  fitFunc.FixParameter(fitFunc.GetParNumber("p_{2}"), 0)
-  # hist.Fit(fitFunc, "WLRQN")
-  hist.Fit(fitFunc, "RQN")
-
-  # second fitting stage: use double Gaussian on top of pol0
-  fitFunc.ReleaseParameter(fitFunc.GetParNumber("#hat{r}"))
-  fitFunc.SetParameter("#hat{r}", 0.75)  # nudge it, otherwise it does not move from zero
-  if not forceCommonGaussianMean:
-    fitFunc.ReleaseParameter(fitFunc.GetParNumber("#mu_{2}"))
-  fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{2}"))
+  # fitFunc.FixParameter(fitFunc.GetParNumber("#sigma_{2}"), widthStartVal)
+  fitFunc.SetParameter("#sigma_{2}", widthStartVal)
   fitFunc.SetParLimits(fitFunc.GetParNumber("#sigma_{2}"), 0, 10)  # ensure positive parameter value
+  fitFunc.SetParameter("p_{0}", 0)
+  fitFunc.SetParameter("p_{1}", 0)
+  fitFunc.SetParameter("p_{2}", 0)
+  fitFunc.SetParLimits(fitFunc.GetParNumber("p_{0}"), 0, 1e6)  # ensure positive parameter value
+  fitFunc.SetParLimits(fitFunc.GetParNumber("p_{1}"), 0, 1e6)  # ensure positive parameter value
+  fitFunc.SetParLimits(fitFunc.GetParNumber("p_{2}"), 0, 1e6)  # ensure positive parameter value
+  # fitFunc.FixParameter(fitFunc.GetParNumber("p_{1}"), 0)
+  # fitFunc.FixParameter(fitFunc.GetParNumber("p_{2}"), 0)
   # hist.Fit(fitFunc, "WLRQN")
-  hist.Fit(fitFunc, "RQN")
+  # hist.Fit(fitFunc, "RQN")
+
+  # # second fitting stage: use double Gaussian on top of pol0
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("#hat{r}"))
+  # fitFunc.SetParameter("#hat{r}", 0.75)  # nudge it, otherwise it does not move from zero
+  # if not forceCommonGaussianMean:
+  #   fitFunc.ReleaseParameter(fitFunc.GetParNumber("#mu_{2}"))
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{2}"))
+  # fitFunc.SetParLimits(fitFunc.GetParNumber("#sigma_{2}"), 0, 10)  # ensure positive parameter value
+  # # hist.Fit(fitFunc, "WLRQN")
+  # # hist.Fit(fitFunc, "RQN")
 
   # third fitting stage: use double Gaussian on top of pol2
   # fitFunc.ReleaseParameter(fitFunc.GetParNumber("A"))
   # fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{1}"))
   # fitFunc.ReleaseParameter(fitFunc.GetParNumber("#sigma_{2}"))
-  fitFunc.ReleaseParameter(fitFunc.GetParNumber("p_{1}"))
-  fitFunc.ReleaseParameter(fitFunc.GetParNumber("p_{2}"))
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("p_{1}"))
+  # fitFunc.ReleaseParameter(fitFunc.GetParNumber("p_{2}"))
   # fitResult = hist.Fit(fitFunc, "WLRIMSN")
-  # fitResult = hist.Fit(fitFunc, "REIMSN")
-  fitResult = hist.Fit(fitFunc, "REMSN")
+  fitResult = hist.Fit(fitFunc, "REIMSN")
+  # fitResult = hist.Fit(fitFunc, "REMSN")
 
   # fit recovery procedure
   maxNmbRefitAttempts = 5
@@ -146,11 +158,12 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
           and nmbRefitAttempts < maxNmbRefitAttempts):
     nmbRefitAttempts += 1
     print(f"Fit did not converge. Performing refit attempt #{nmbRefitAttempts} of {maxNmbRefitAttempts}.")
-    zeroParNames = ["p_{0}", "p_{1}", "p_{2}"]
-    for parName in zeroParNames:
-      fixZeroPar(fitFunc, parName)
+    # zeroParNames = ["p_{0}", "p_{1}", "p_{2}"]
+    # for parName in zeroParNames:
+    #   fixZeroPar(fitFunc, parName)
     # fitResult = hist.Fit(fitFunc, "WLRIMSN")
-    fitResult = hist.Fit(fitFunc, "REMSN")
+    fitResult = hist.Fit(fitFunc, "REIMSN")
+    # fitResult = hist.Fit(fitFunc, "REMSN")
 
   # add components of fit model to LoF of histogram
   fitFunc.SetLineColor(ROOT.kRed + 1)

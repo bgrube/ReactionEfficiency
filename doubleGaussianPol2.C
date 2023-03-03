@@ -22,8 +22,20 @@ struct doubleGaussianPol2 {
 		const double p1,
 		const double p2)
 	{
-		const double linTerm = p1 + p2 * x;
-		return p0 * p0 + linTerm * linTerm;
+		// const double linTerm = p1 + p2 * x;
+		// return p0 * p0 + linTerm * linTerm;
+
+		// linear combination of degree-2 Bernstein polynomials
+		// see https://root.cern/doc/master/classRooBernstein.html#details
+		// and http://www.idav.ucdavis.edu/education/CAGDNotes/Bernstein-Polynomials.pdf
+		// rescale fit range to interval [0, 1]
+		const double xMin  = -0.5;  // [GeV^2]
+		const double xMax  =  4.0;  // [GeV^2]
+		const double xNorm = (x - xMin) / (xMax - xMin);
+		const double B_02  = (1 - xNorm) * (1 - xNorm);
+		const double B_12  = 2 * xNorm * (1 - xNorm);
+		const double B_22  = xNorm * xNorm;
+		return p0 * B_02 + p1 * B_12 + p2 * B_22;
 	}
 
 	double operator() (double* vars, double* pars)
