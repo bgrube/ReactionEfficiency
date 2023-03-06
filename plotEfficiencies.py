@@ -2,11 +2,11 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+import array
 import itertools
-# import os
+import numpy as np
 
 from uncertainties import ufloat
-from uncertainties import umath
 
 import ROOT
 
@@ -18,6 +18,13 @@ makePlots.setupPlotStyle()
 YIELD_PAR_NAMES = {
   "Signal"     : "Yld_SigPdf",
   "Background" : "Yld_BgPdf"
+}
+
+BINNING_VAR_PLOT_INFO = {
+  "BeamEnergy"         : {"label" : "E_{beam}",                      "unit" : "GeV"},
+  "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c"},
+  "MissingProtonTheta" : {"label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg"},
+  "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"}
 }
 
 
@@ -79,14 +86,13 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
 
-  # dataset           = "030730",
-  # dataset           = "bggen_2017_01-ver03"
-  # dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
-  outputDirName     = "BruFitOutput"
-  # kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
-  #   ("BeamEnergy", 9, 3.0, 12.0)
-  # ]
-  dataSets = ["Total", "Found", "Missing"]
+  # particle      = "Pi-"
+  # particle      = "Pi+"
+  particle      = "Proton"
+  # channel       = "2pi"
+  channel       = "4pi"
+  outputDirName = "BruFitOutput"
+  dataSets      = ["Total", "Found", "Missing"]
 
   binVarNames = {}
   yields      = {}
@@ -97,3 +103,36 @@ if __name__ == "__main__":
 
   efficiencies = calculateEfficiencies(binVarNames, yields)
   print(efficiencies)
+
+  # plot efficiency for 1-dimensional binning
+  pdfFileNameSuffix = ""
+  markerSize = 0.75
+  assert len(binVarNames["Found"]) == 1, f"This function cannot plot binning with {len(binVarNames['Found'])} variables"
+  binVarName  = binVarNames["Found"][0]
+  assert binVarName in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binVarName}'"
+  binVarLabel = BINNING_VAR_PLOT_INFO[binVarName]["label"]
+  binVarUnit  = BINNING_VAR_PLOT_INFO[binVarName]["unit"]
+  graphVals = [(efficiency[binVarName], efficiency["Efficiency"]) for efficiency in efficiencies]
+  xVals = array.array('d', [graphVal[0]               for graphVal in graphVals])
+  yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphVals])
+  yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphVals])
+  print(xVals, yVals, yErrs)
+  efficienciesKinBinsGraph = ROOT.TGraphErrors(len(graphVals), xVals, yVals, ROOT.nullptr, yErrs)
+  efficienciesKinBinsGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
+  efficienciesKinBinsGraph.SetMarkerStyle(ROOT.kFullCircle)
+  efficienciesKinBinsGraph.SetMarkerSize(markerSize)
+  efficienciesKinBinsGraph.GetXaxis().SetTitle(f"{binVarLabel} ({binVarUnit})")
+  efficienciesKinBinsGraph.GetYaxis().SetTitle("Efficiency")
+  efficienciesKinBinsGraph.SetMinimum(0)
+  efficienciesKinBinsGraph.SetMaximum(1)
+  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binVarName}{pdfFileNameSuffix}", "")
+  efficienciesKinBinsGraph.Draw("AP")
+  # # indicate value from fit of overall distributions
+  line = ROOT.TLine()
+  # line.SetLineStyle(ROOT.kDashed)
+  # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
+  # indicate weighted average of efficiencies in kinematic bins
+  meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
+  line.SetLineColor(ROOT.kRed + 1)
+  line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), meanEff, efficienciesKinBinsGraph.GetXaxis().GetXmax(), meanEff)
+  canv.SaveAs(f"{outputDirName}/{canv.GetName()}.pdf")
