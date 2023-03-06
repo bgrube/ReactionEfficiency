@@ -21,7 +21,9 @@ YIELD_PAR_NAMES = {
 }
 
 
-# returns list of dictionaries with all yields [ { <bin var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> } ]
+# returns
+#     tuple with binning variables (<binning var>, ... )
+#     list of dict with yields [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ]
 def readYieldsFromFitResults(fitResultDirName):
   # get binning
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
@@ -55,6 +57,24 @@ def readYieldsFromFitResults(fitResultDirName):
   return binVarNames, yields
 
 
+# calculates efficiencies and returns list of dictionaries with efficiencies [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
+def calculateEfficiencies(
+  binVarNames,  # dict of tuples { <dataset> : (<binning var>, ... ), ... }
+  yields        # dict of list of dict { <dataset:> [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ], ... }
+):
+  assert binVarNames["Total"] == binVarNames["Found"] == binVarNames["Missing"], "Datasets have different kind of kinematic bins"
+  assert len(yields["Total"]) == len(yields["Found"]) == len(yields["Missing"]), "Datasets have different number of kinematic bins"
+  efficiencies = []
+  for binIndex, yieldFound in enumerate(yields["Found"]):
+    yieldMissing = yields["Missing"][binIndex]
+    # copy kinematic bin info
+    efficiency = {binVarName : yieldFound[binVarName] for binVarName in binVarNames["Found"]}
+    # calculate efficiency
+    efficiency["Efficiency"] = yieldFound["Signal"] / (yieldFound["Signal"] + yieldMissing["Signal"])
+    efficiencies.append(efficiency)
+  return efficiencies
+
+
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
@@ -75,16 +95,5 @@ if __name__ == "__main__":
     binVarNames[dataSet], yields[dataSet] = readYieldsFromFitResults(f"{outputDirName}/{dataSet}")
   #TODO implement case when no binning is present
 
-  assert binVarNames["Total"] == binVarNames["Found"] == binVarNames["Missing"], "Datasets have different kind of kinematic bins"
-  assert len(yields["Total"]) == len(yields["Found"]) == len(yields["Missing"]), "Datasets have different number of kinematic bins"
-  # calculate efficiencies for all kinematic bins
-  efficiencies = []  # list of dictionaries with all efficiencies [ { <bin var> : <bin center>, ..., "Efficiency" : <value> } ]
-  for binIndex, yieldFound in enumerate(yields["Found"]):
-    yieldMissing = yields["Missing"][binIndex]
-    # print(yieldFound, yieldMissing, binVarNames["Found"])
-    # copy kinematic bin info
-    efficiency = {binVarName : yieldFound[binVarName] for binVarName in binVarNames["Found"]}
-    efficiency["Efficiency"] = yieldFound["Signal"] / (yieldFound["Signal"] + yieldMissing["Signal"])
-    print(efficiency)
-    efficiencies.append(efficiency)
+  efficiencies = calculateEfficiencies(binVarNames, yields)
   print(efficiencies)
