@@ -74,11 +74,11 @@ def readSidebandWeights(
   comboIdName,
   sWeightFileName,
   sWeightLabel,  # label used to access weights
-  cut = "(1)"    # default: no cut
+  cut = None
 ):
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f" and writing them to '{sWeightFileName}' with label '{sWeightLabel}'"
-  + (f" while applying cut(s) '{cut}'" if cut != "(1)" else ""), flush = True)
+  + (f" while applying cut(s) '{cut}'" if not cut is None else ""), flush = True)
   currentDir = ROOT.gDirectory
   inputFile = ROOT.TFile.Open(inputFileName, "READ")
   inputTree = inputFile.Get(inputTreeName)
@@ -87,7 +87,7 @@ def readSidebandWeights(
   weights.SetFile(sWeightFileName)
   weights.SetSpecies(sWeightLabel)
   weights.SetIDName(comboIdName)
-  weights.WeightBySelection(inputTree, cut, weightBranchName)
+  weights.WeightBySelection(inputTree, ("(1)" if cut is None else cut), weightBranchName)
   weights.SortWeights()
   weights.Save()
 
@@ -110,7 +110,7 @@ def performFit(
   dataFileName,
   outputDirName,
   kinematicBinnings,
-  cut               = "(1)",
+  cut               = None,
   dataTreeName      = "pippippimpimpmiss",
   fitVariable       = "MissingMassSquared_Measured",  # this is also the name of the branches in the data tree and the template-data trees for signal and background
   fitRange          = "-0.5, 4.0",  # [(GeV/c)^2]
@@ -119,6 +119,9 @@ def performFit(
   nmbThreadsPerJob  = 5,
   nmbProofJobs      = 9
 ):
+  print(f"fitting data in '{dataFileName}'" + (" " if cut is None else f"applying cut '{cut}'")
+    + f"using binning '{kinematicBinnings}' and writing output to '{outputDirName}'")
+  print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
   ROOT.gBenchmark.Start("Total time for fit")
 
   # create the fit manager and set the output directory for fit results, plots, and weights
@@ -153,18 +156,19 @@ def performFit(
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName)
 
-  # load data to be fitted
+  # load and bin data to be fitted
   binFileNames = binnedTreeFilesIn(outputDirName) if kinematicBinnings else None
   if binFileNames is None or regenBinnedTrees:
     if kinematicBinnings:
-      if not regenBinnedTrees:
-        print("Could not find (all) binned tree files")
-      print("Regenerating binned tree files")
+      if regenBinnedTrees:
+        print("Forcing regeneration of binned tree files", flush = True)
+      else:
+        print("Could not find (all) binned tree files; regenerating binned tree files", flush = True)
     fitManager.LoadData(dataTreeName, dataFileName, "Data")
   else:
-    print("Using existing binned tree files:")
+    print("Using existing binned tree files:", flush = True)
     for binFileName in binFileNames:
-      print(f"    {binFileName}")
+      print(f"    {binFileName}", flush = True)
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
   #TODO add constraints for fugde parameters
@@ -173,10 +177,13 @@ def performFit(
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinnings:
     fitManager.SetRedirectOutput()  # redirect console output to files
+    print(f"running {nmbProofJobs} each with {nmbThreadsPerJob} threads in parallel", flush = True)
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
+    print(f"running {nmbThreadsPerJob} threads in parallel", flush = True)
     ROOT.Here.Go(fitManager)
 
+  fitManager.WriteThis()  # write to disk
   ROOT.gBenchmark.Show("Total time for fit")
 
 
@@ -189,12 +196,20 @@ if __name__ == "__main__":
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
   outputDirName     = "BruFitOutput"
   kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
-    ("BeamEnergy", 9, 3.0, 12.0)
+    ("BeamEnergy",       9,  3.0, 12.0),
+    ("MissingProtonPhi", 3, -180, +180)
   ]
 
-  performFit(
-    dataFileName,
-    outputDirName,
-    kinematicBinnings,
-    "(TrackFound == 0)"
-  )
+  dataSets = {
+    "Total"   : None,
+    "Found"   : "(TrackFound == 1)",
+    "Missing" : "(TrackFound == 0)"
+  }
+
+  for dataSetName, cut in dataSets.items():
+    performFit(
+      dataFileName,
+      f"{outputDirName}/{dataSetName}",
+      kinematicBinnings,
+      cut
+    )
