@@ -22,7 +22,10 @@ if __name__ == "__main__":
     "MissingMassSquared_Measured",  # fit variable
     "AccidWeightFactor",  # weight for removal of RF accidentals
     # binning variables
-    "BeamEnergy"
+    "BeamEnergy",
+    "MissingProtonP",
+    "MissingProtonTheta",
+    "MissingProtonPhi"
   ]
   print(f"Converting tree '{treeName}' in '{inputFileName}' to BruFit format")
 
