@@ -30,19 +30,20 @@ def readYieldsFromFitResults(fitResultDirName):
   print("Found binning:")
   bins.PrintAxis()
   axes         = bins.GetVarAxis()
+  binVarNames  = tuple(axis.GetName() for axis in axes)
   binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
   # read yields from files with fit results
   yields = []
   axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
     axisBinCenters    = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
-    yieldsInBin       = {axes[axisIndex].GetName() : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)}  # store axis name and bin center
+    yieldsInBin       = {binVarNames[axisIndex] : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)}  # store axis name and bin center
     binIndex          = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only up to 6 binning dimensions
     fitResultFileName = binFileNames[binIndex].replace("TreeData.root", "ResultsHSMinuit2.root")
     print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
-    fitResultFile     = ROOT.TFile.Open(fitResultFileName, "READ")
-    fitResult         = fitResultFile.Get("MinuitResult")
-    fitPars           = fitResult.floatParsFinal()
+    fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
+    fitResult     = fitResultFile.Get("MinuitResult")
+    fitPars       = fitResult.floatParsFinal()
     for yieldType, yieldParName in YIELD_PAR_NAMES.items():
       yieldParIndex = fitPars.index(yieldParName)
       if yieldParIndex < 0:
@@ -51,7 +52,7 @@ def readYieldsFromFitResults(fitResultDirName):
       yieldsInBin[yieldType] = ufloat(yieldPar.getVal(), yieldPar.getError())  # store yields
     print(f"Read yields for kinematic bin #{binIndex}: {yieldsInBin}")
     yields.append(yieldsInBin)
-  return yields
+  return binVarNames, yields
 
 
 if __name__ == "__main__":
@@ -65,9 +66,25 @@ if __name__ == "__main__":
   # kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
   #   ("BeamEnergy", 9, 3.0, 12.0)
   # ]
-
   dataSets = ["Total", "Found", "Missing"]
-  yields = {}
+
+  binVarNames = {}
+  yields      = {}
   for dataSet in dataSets:
-    yields[dataSet] = readYieldsFromFitResults(f"{outputDirName}/{dataSet}")
-  print(yields)
+    print(f"Loading yields for '{dataSet}' dataset")
+    binVarNames[dataSet], yields[dataSet] = readYieldsFromFitResults(f"{outputDirName}/{dataSet}")
+  #TODO implement case when no binning is present
+
+  assert binVarNames["Total"] == binVarNames["Found"] == binVarNames["Missing"], "Datasets have different kind of kinematic bins"
+  assert len(yields["Total"]) == len(yields["Found"]) == len(yields["Missing"]), "Datasets have different number of kinematic bins"
+  # calculate efficiencies for all kinematic bins
+  efficiencies = []  # list of dictionaries with all efficiencies [ { <bin var> : <bin center>, ..., "Efficiency" : <value> } ]
+  for binIndex, yieldFound in enumerate(yields["Found"]):
+    yieldMissing = yields["Missing"][binIndex]
+    # print(yieldFound, yieldMissing, binVarNames["Found"])
+    # copy kinematic bin info
+    efficiency = {binVarName : yieldFound[binVarName] for binVarName in binVarNames["Found"]}
+    efficiency["Efficiency"] = yieldFound["Signal"] / (yieldFound["Signal"] + yieldMissing["Signal"])
+    print(efficiency)
+    efficiencies.append(efficiency)
+  print(efficiencies)
