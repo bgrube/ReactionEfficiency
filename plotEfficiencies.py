@@ -28,7 +28,7 @@ BINNING_VAR_PLOT_INFO = {
 }
 
 
-# returns
+# reads yields from fit results and returns
 #     tuple with binning variables (<binning var>, ... )
 #     list of dict with yields [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ]
 def readYieldsFromFitResults(fitResultDirName):
@@ -64,7 +64,7 @@ def readYieldsFromFitResults(fitResultDirName):
   return binVarNames, yields
 
 
-# calculates efficiencies and returns list of dictionaries with efficiencies [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
+# calculates efficiencies and returns list of dict with efficiencies [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
 def calculateEfficiencies(
   binVarNames,  # dict of tuples { <dataset> : (<binning var>, ... ), ... }
   yields        # dict of list of dict { <dataset:> [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ], ... }
@@ -78,8 +78,47 @@ def calculateEfficiencies(
     efficiency = {binVarName : yieldFound[binVarName] for binVarName in binVarNames["Found"]}
     # calculate efficiency
     efficiency["Efficiency"] = yieldFound["Signal"] / (yieldFound["Signal"] + yieldMissing["Signal"])
+    print(f"Effiency = {efficiency}")
     efficiencies.append(efficiency)
   return efficiencies
+
+
+# plot efficiency for 1-dimensional binning
+def plotEfficiencies1D(
+  binVarNames,   # dict of tuples { <dataset> : (<binning var>, ... ), ... }
+  efficiencies,  # list of dict [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
+  pdfFileNameSuffix = "",
+  markerSize        = 0.75
+):
+  assert len(binVarNames["Found"]) == 1, f"This function cannot plot binning with {len(binVarNames['Found'])} variables"
+  binVarName  = binVarNames["Found"][0]
+  assert binVarName in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binVarName}'"
+  binVarLabel = BINNING_VAR_PLOT_INFO[binVarName]["label"]
+  binVarUnit  = BINNING_VAR_PLOT_INFO[binVarName]["unit"]
+  graphVals = [(efficiency[binVarName], efficiency["Efficiency"]) for efficiency in efficiencies]
+  xVals = array.array('d', [graphVal[0]               for graphVal in graphVals])
+  yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphVals])
+  yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphVals])
+  # print(xVals, yVals, yErrs)
+  efficienciesKinBinsGraph = ROOT.TGraphErrors(len(graphVals), xVals, yVals, ROOT.nullptr, yErrs)
+  efficienciesKinBinsGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
+  efficienciesKinBinsGraph.SetMarkerStyle(ROOT.kFullCircle)
+  efficienciesKinBinsGraph.SetMarkerSize(markerSize)
+  efficienciesKinBinsGraph.GetXaxis().SetTitle(f"{binVarLabel} ({binVarUnit})")
+  efficienciesKinBinsGraph.GetYaxis().SetTitle("Efficiency")
+  efficienciesKinBinsGraph.SetMinimum(0)
+  efficienciesKinBinsGraph.SetMaximum(1)
+  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binVarName}{pdfFileNameSuffix}", "")
+  efficienciesKinBinsGraph.Draw("AP")
+  # # indicate value from fit of overall distributions
+  line = ROOT.TLine()
+  # line.SetLineStyle(ROOT.kDashed)
+  # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
+  # indicate weighted average of efficiencies in kinematic bins
+  meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
+  line.SetLineColor(ROOT.kRed + 1)
+  line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), meanEff, efficienciesKinBinsGraph.GetXaxis().GetXmax(), meanEff)
+  canv.SaveAs(f"{outputDirName}/{canv.GetName()}.pdf")
 
 
 if __name__ == "__main__":
@@ -102,37 +141,5 @@ if __name__ == "__main__":
   #TODO implement case when no binning is present
 
   efficiencies = calculateEfficiencies(binVarNames, yields)
-  print(efficiencies)
 
-  # plot efficiency for 1-dimensional binning
-  pdfFileNameSuffix = ""
-  markerSize = 0.75
-  assert len(binVarNames["Found"]) == 1, f"This function cannot plot binning with {len(binVarNames['Found'])} variables"
-  binVarName  = binVarNames["Found"][0]
-  assert binVarName in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binVarName}'"
-  binVarLabel = BINNING_VAR_PLOT_INFO[binVarName]["label"]
-  binVarUnit  = BINNING_VAR_PLOT_INFO[binVarName]["unit"]
-  graphVals = [(efficiency[binVarName], efficiency["Efficiency"]) for efficiency in efficiencies]
-  xVals = array.array('d', [graphVal[0]               for graphVal in graphVals])
-  yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphVals])
-  yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphVals])
-  print(xVals, yVals, yErrs)
-  efficienciesKinBinsGraph = ROOT.TGraphErrors(len(graphVals), xVals, yVals, ROOT.nullptr, yErrs)
-  efficienciesKinBinsGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
-  efficienciesKinBinsGraph.SetMarkerStyle(ROOT.kFullCircle)
-  efficienciesKinBinsGraph.SetMarkerSize(markerSize)
-  efficienciesKinBinsGraph.GetXaxis().SetTitle(f"{binVarLabel} ({binVarUnit})")
-  efficienciesKinBinsGraph.GetYaxis().SetTitle("Efficiency")
-  efficienciesKinBinsGraph.SetMinimum(0)
-  efficienciesKinBinsGraph.SetMaximum(1)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binVarName}{pdfFileNameSuffix}", "")
-  efficienciesKinBinsGraph.Draw("AP")
-  # # indicate value from fit of overall distributions
-  line = ROOT.TLine()
-  # line.SetLineStyle(ROOT.kDashed)
-  # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
-  # indicate weighted average of efficiencies in kinematic bins
-  meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
-  line.SetLineColor(ROOT.kRed + 1)
-  line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), meanEff, efficienciesKinBinsGraph.GetXaxis().GetXmax(), meanEff)
-  canv.SaveAs(f"{outputDirName}/{canv.GetName()}.pdf")
+  plotEfficiencies1D(binVarNames, efficiencies)
