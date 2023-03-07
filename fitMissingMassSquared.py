@@ -39,20 +39,19 @@ def defineBackgroundPdf(
   fitManager,
   fitVariable
 ):
-  #!TODO rename Bg -> Bkg
-  print("Defining background PDF 'BgPdf'", flush = True)
+  print("Defining background PDF 'BkgPdf'", flush = True)
   # # define 2nd-order positive-definite polynomial
-  # fitManager.SetUp().FactoryPDF(f"GenericPdf::BgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BgPdf[0, -100, 100], p1_BgPdf[0, -100, 100], p2_BgPdf[0, -100, 100]}})")
+  # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
 
   # # define 2nd-order Chebychev polynomial
-  # fitManager.SetUp().FactoryPDF(f"Chebychev::BgPdf({fitVariable}, {{p0_BgPdf[0, -1, 1], p1_BgPdf[0, -1, 1], p2_BgPdf[0, -1, 1]}})")
+  # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1], p2_BkgPdf[0, -1, 1]}})")
 
   # define 2nd-order Bernstein polynomial
   # see https://root.cern.ch/doc/master/classRooBernstein.html
-  fitManager.SetUp().FactoryPDF(f"Bernstein::BgPdf({fitVariable}, {{p0_BgPdf[0, 0, 1], p1_BgPdf[0, 0, 1], p2_BgPdf[0, 0, 1]}})")
+  fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
 
   sigPdfWeightStartVal = 1.0
-  fitManager.SetUp().LoadSpeciesPDF("BgPdf", sigPdfWeightStartVal)
+  fitManager.SetUp().LoadSpeciesPDF("BkgPdf", sigPdfWeightStartVal)
 
 
 def binnedTreeFilesIn(outputDirName):

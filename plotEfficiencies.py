@@ -17,7 +17,7 @@ makePlots.setupPlotStyle()
 
 YIELD_PAR_NAMES = {
   "Signal"     : "Yld_SigPdf",
-  "Background" : "Yld_BgPdf"
+  "Background" : "Yld_BkgPdf"
 }
 
 BINNING_VAR_PLOT_INFO = {
@@ -110,7 +110,7 @@ def plotEfficiencies1D(
   efficienciesKinBinsGraph.SetMaximum(1)
   canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binVarName}{pdfFileNameSuffix}", "")
   efficienciesKinBinsGraph.Draw("AP")
-  # # indicate value from fit of overall distributions
+  #TODO? # indicate value from fit of overall distributions
   line = ROOT.TLine()
   # line.SetLineStyle(ROOT.kDashed)
   # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
