@@ -39,6 +39,7 @@ def defineBackgroundPdf(
   fitManager,
   fitVariable
 ):
+  #!TODO rename Bg -> Bkg
   print("Defining background PDF 'BgPdf'", flush = True)
   # # define 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BgPdf[0, -100, 100], p1_BgPdf[0, -100, 100], p2_BgPdf[0, -100, 100]}})")
@@ -119,10 +120,11 @@ def performFit(
   nmbThreadsPerJob  = 5,
   nmbProofJobs      = 9
 ):
-  print(f"fitting data in '{dataFileName}'" + (" " if cut is None else f"applying cut '{cut}'")
-    + f"using binning '{kinematicBinnings}' and writing output to '{outputDirName}'")
+  print(f"fitting data in '{dataFileName}'" + ("" if cut is None else f" applying cut '{cut}'")
+    + f" using binning '{kinematicBinnings}' and writing output to '{outputDirName}'")
   print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
-  ROOT.gBenchmark.Start("Total time for fit")
+  gBenchmarkLabel = f"Total time for fit in '{outputDirName}'"
+  ROOT.gBenchmark.Start(gBenchmarkLabel)
 
   # create the fit manager and set the output directory for fit results, plots, and weights
   fitManager = ROOT.FitManager()
@@ -184,10 +186,11 @@ def performFit(
     ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
-  ROOT.gBenchmark.Show("Total time for fit")
+  ROOT.gBenchmark.Show(gBenchmarkLabel)
 
 
 if __name__ == "__main__":
+  os.nice(18)  # run with second highest niceness level
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
 
@@ -196,8 +199,8 @@ if __name__ == "__main__":
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
   outputDirName     = "BruFitOutput"
   kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
-    ("BeamEnergy",       9,  3.0, 12.0),
-    ("MissingProtonPhi", 3, -180, +180)
+    ("BeamEnergy",       9,  3.0, 12.0)
+    # ("MissingProtonPhi", 3, -180, +180)
   ]
 
   dataSets = {
