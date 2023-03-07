@@ -88,6 +88,8 @@ def plotEfficiencies1D(
   binVarNames,   # dict of tuples { <dataset> : (<binning var>, ... ), ... }
   efficiencies,  # list of dict [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
   pdfFileNameSuffix = "",
+  particle          = "Proton",
+  channel           = "4pi",
   markerSize        = 0.75
 ):
   assert len(binVarNames["Found"]) == 1, f"This function cannot plot binning with {len(binVarNames['Found'])} variables"
@@ -125,11 +127,6 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
 
-  # particle      = "Pi-"
-  # particle      = "Pi+"
-  particle      = "Proton"
-  # channel       = "2pi"
-  channel       = "4pi"
   outputDirName = "BruFitOutput"
   dataSets      = ["Total", "Found", "Missing"]
 
