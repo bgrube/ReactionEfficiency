@@ -78,7 +78,7 @@ def readSidebandWeights(
 ):
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f" and writing them to '{sWeightFileName}' with label '{sWeightLabel}'"
-  + (f" while applying cut(s) '{cut}'" if not cut is None else ""), flush = True)
+  + ("" if cut is None else f" while applying cut(s) '{cut}'"), flush = True)
   currentDir = ROOT.gDirectory
   inputFile = ROOT.TFile.Open(inputFileName, "READ")
   inputTree = inputFile.Get(inputTreeName)
@@ -104,6 +104,7 @@ def setRooFitOptions(
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
   fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
   fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(False))  # do not run MINOS
 
 
 def performFit(
@@ -117,12 +118,13 @@ def performFit(
   comboIdName       = "ComboID",
   regenBinnedTrees  = False,
   nmbThreadsPerJob  = 5,
-  nmbProofJobs      = 9
+  nmbProofJobs      = 9  #TODO? automatically determine number of PROOF jobs
 ):
   print(f"fitting data in '{dataFileName}'" + ("" if cut is None else f" applying cut '{cut}'")
-    + f" using binning '{kinematicBinnings}' and writing output to '{outputDirName}'")
+    + (" using no binning" if kinematicBinnings is None else f" using binning '{kinematicBinnings}'")
+    + f" and writing output to '{outputDirName}'")
   print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
-  gBenchmarkLabel = f"Total time for fit in '{outputDirName}'"
+  gBenchmarkLabel = f"Time for fit in '{outputDirName}'"
   ROOT.gBenchmark.Start(gBenchmarkLabel)
 
   # create the fit manager and set the output directory for fit results, plots, and weights
@@ -139,8 +141,9 @@ def performFit(
   defineBackgroundPdf(fitManager, fitVariable)
 
   # define kinematic bins
-  for binning in kinematicBinnings:
-    fitManager.Bins().LoadBinVar(*binning)
+  if kinematicBinnings:
+    for binning in kinematicBinnings:
+      fitManager.Bins().LoadBinVar(*binning)
 
   # create RF-sideband weights for data to be fitted
   rfSWeightFileName = f"{outputDirName}/sidebandWeightsData.root"
@@ -175,6 +178,8 @@ def performFit(
   #TODO add constraints for fugde parameters
 
   # perform fit an plot fit result
+  if not kinematicBinnings:
+    nmbThreadsPerJob = 2 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinnings:
     fitManager.SetRedirectOutput()  # redirect console output to files
@@ -192,6 +197,7 @@ if __name__ == "__main__":
   os.nice(18)  # run with second highest niceness level
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
+  ROOT.gBenchmark.Start("Total execution time")
 
   # dataset           = "030730",
   dataset           = "bggen_2017_01-ver03"
@@ -209,9 +215,20 @@ if __name__ == "__main__":
   }
 
   for dataSetName, cut in dataSets.items():
+    # fit overall distribution
     performFit(
       dataFileName,
       f"{outputDirName}/{dataSetName}",
-      kinematicBinnings,
-      cut
+      kinematicBinnings = None,
+      cut = cut
     )
+    if kinematicBinnings:
+      # fit kinematic bins
+      performFit(
+        dataFileName,
+        f"{outputDirName}/{dataSetName}",
+        kinematicBinnings,
+        cut
+      )
+
+  ROOT.gBenchmark.Show("Total execution time")
