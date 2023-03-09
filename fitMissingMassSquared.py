@@ -20,16 +20,16 @@ def defineSignalPdf(
   # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
 
   # define double Gaussian
-  # # separate means
-  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
-  #   ")")
-  # same mean
+  # separate means
   fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-                          f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+                          f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
     ")")
+  # # same mean
+  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
+  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  #   ")")
 
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
@@ -43,12 +43,18 @@ def defineBackgroundPdf(
   # # define 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
 
-  # # define 2nd-order Chebychev polynomial
+  # define Chebychev polynomial
+  fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{}})")
+  # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 100]}})")
+  # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1], p2_BkgPdf[0, -1, 1]}})")
 
-  # define 2nd-order Bernstein polynomial
-  # see https://root.cern.ch/doc/master/classRooBernstein.html
-  fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
+  # # define Bernstein polynomial
+  # # see https://root.cern.ch/doc/master/classRooBernstein.html
+  # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{}})")
+  # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1]}})")
+  # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1]}})")
+  # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
 
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", sigPdfWeightStartVal)
@@ -104,7 +110,8 @@ def setRooFitOptions(
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
   fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
   fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(False))  # do not run MINOS
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS
 
 
 def performFit(
@@ -183,7 +190,7 @@ def performFit(
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinnings:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    print(f"running {nmbProofJobs} each with {nmbThreadsPerJob} threads in parallel", flush = True)
+    print(f"running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel", flush = True)
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
     print(f"running {nmbThreadsPerJob} threads in parallel", flush = True)
@@ -203,9 +210,11 @@ if __name__ == "__main__":
   dataset           = "bggen_2017_01-ver03"
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
   outputDirName     = "BruFitOutput"
-  kinematicBinnings = [  # list of tuples [ (variable, nmb of bins, min value, max value) ]
-    ("BeamEnergy",       9,  3.0, 12.0)
-    # ("MissingProtonPhi", 3, -180, +180)
+  kinematicBinnings = [  # list of tuples: [ (variable, nmb of bins, min value, max value) ]
+    # ("BeamEnergy",          9,    3.0,   12.0)
+    ("MissingProtonP",     10,    0.0,    3.5)
+    # ("MissingProtonTheta", 13,    0.0,   65.0)
+    # ("MissingProtonPhi",   10, -180.0, +180.0)
   ]
 
   dataSets = {
@@ -214,6 +223,9 @@ if __name__ == "__main__":
     "Missing" : "(TrackFound == 0)"
   }
 
+  #TODO calculate chi^2
+  # see https://root.cern/doc/master/rf109__chi2residpull_8py.html
+  # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
   for dataSetName, cut in dataSets.items():
     # fit overall distribution
     performFit(
