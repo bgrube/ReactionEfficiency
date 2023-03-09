@@ -11,9 +11,7 @@ from uncertainties import ufloat
 
 import ROOT
 
-import makePlots  # defines helper functions to generate histograms from data trees
-
-makePlots.setupPlotStyle()
+import makePlots
 
 
 YIELD_PAR_NAMES = {
@@ -28,6 +26,17 @@ BINNING_VAR_PLOT_INFO = {
   "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"}
 }
 
+
+# returns ROOT.Bins object
+def getBinningFromFile(fitResultDirName):
+  binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
+  if not os.path.isfile(binningFileName):
+    return None
+  print(f"Loading binning from file '{binningFileName}'")
+  bins = ROOT.Bins("HSBins", binningFileName)
+  print("Found binning:")
+  bins.PrintAxis()
+  return bins
 
 
 # reads yields from fit results in given file and returns
@@ -61,12 +70,8 @@ def readYieldsFromFitDir(fitResultDirName):
     print(f"Read overall yields: {yieldsInBin}")
     yields.append(yieldsInBin)  # first entry
   # get binning from file
-  binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
-  if os.path.isfile(binningFileName):
-    print(f"Loading binning from file '{binningFileName}'")
-    bins = ROOT.Bins("HSBins", binningFileName)
-    print("Found binning:")
-    bins.PrintAxis()
+  bins = getBinningFromFile(fitResultDirName)
+  if bins is not None:
     axes         = bins.GetVarAxis()
     binVarNames  = tuple(axis.GetName() for axis in axes)
     binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
@@ -150,6 +155,7 @@ def plotEfficiencies1D(
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
+  makePlots.setupPlotStyle()
 
   outputDirName = "BruFitOutput"
   dataSets      = ["Total", "Found", "Missing"]
