@@ -152,7 +152,8 @@ def drawZeroLine(xAxis, yAxis, style = ROOT.kDashed, color = ROOT.kBlack):
 # plots fit results for kinematic bins and saves PDF in same directory as fit-result file
 def plotFitResult(
   fitResultFileName,
-  binName = ""
+  binName = "",
+  outputDirName = None
 ):
   print(f"Plotting fit result in '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
@@ -168,17 +169,24 @@ def plotFitResult(
     # only remove filled frame
     paramBox.SetBorderSize(0)
     paramBox.SetFillStyle(0)
-  canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/" + ("Overall" if binName == "" else "") + f"{canv.GetName()}.pdf")
+  pdfFileName = ("Overall" if binName == "" else "") + f"{canv.GetName()}.pdf"
+  if outputDirName:
+    canv.SaveAs(f"{outputDirName}/{pdfFileName}")
+  else:
+    canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/{pdfFileName}")
   fitResultFile.Close()
 
 
 # plots fit results for all kinematic bins
-def plotFitResults(bins):
+def plotFitResults(
+  bins,
+  outputDirName = None
+):
   # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
   binNames = [str(binName) for binName in bins.GetBinNames()]
   fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
   for index, fitResultFileName  in enumerate(fitResultFileNames):
-    plotFitResult(fitResultFileName, binNames[index])
+    plotFitResult(fitResultFileName, binNames[index], outputDirName)
 
 
 # returns
@@ -260,7 +268,7 @@ if __name__ == "__main__":
       assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
     binVarNames = binVarNamesInDataSet
     if bins is not None:
-      plotFitResults(bins)
+      plotFitResults(bins, fitResultDirName)
       parValues[dataSet], parNamesInDataSet = readParValuesFromFitDir(bins, binVarNames)
       if parNames is not None:
         assert parNamesInDataSet == parNames, f"The parameter set {parNamesInDataSet} of dataset '{dataSet}' is different from the parameter set {parNames} of the previous one"
