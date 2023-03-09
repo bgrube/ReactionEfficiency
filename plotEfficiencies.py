@@ -19,6 +19,7 @@ YIELD_PAR_NAMES = {
   "Background" : "Yld_BkgPdf"
 }
 
+#TODO move to plotFitResults
 BINNING_VAR_PLOT_INFO = {
   "BeamEnergy"         : {"label" : "E_{beam}",                      "unit" : "GeV"},
   "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c"},
@@ -27,6 +28,7 @@ BINNING_VAR_PLOT_INFO = {
 }
 
 
+#TODO move to plotFitResults
 # returns
 #     ROOT.Bins object in from binning file in given directory
 #     tuple with binning variables (<binning var>, ... )
@@ -43,6 +45,7 @@ def getBinningFromFile(fitResultDirName):
   return bins, binVarNames
 
 
+#TODO move to plotFitResults
 # returns list of dicts with file names of fit results [ { <binning var> : <bin center>, ..., "FitResultFileName" : <name> }, ... ]
 def getFitResultFileNames(
   bins,
@@ -61,6 +64,7 @@ def getFitResultFileNames(
   return fitResultFileNames
 
 
+#TODO move to plotFitResults
 # reads yields from fit result in given file and returns dict with yields { "Signal" : <yield>, "Background" : <yield> }
 def readYieldsFromFitFile(fitResultFileName):
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
@@ -78,6 +82,7 @@ def readYieldsFromFitFile(fitResultFileName):
   return yieldsInBin
 
 
+#TODO move to plotFitResults
 # reads yields from fit results in given directory and returns
 #     list of dicts with yields [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ]
 #     tuple with binning variables (<binning var>, ... )
@@ -125,6 +130,7 @@ def calculateEfficiencies(
   return efficiencies
 
 
+#TODO move to plotFitResults
 # returns
 #     arrays of x, y, and y-uncertainty values
 #     x-axis label and unit
