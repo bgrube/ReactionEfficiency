@@ -93,6 +93,8 @@ def readParValuesFromFitFile(
       fitPar = fitPars[fitParIndex]
       parValuesInBin[fitPar.GetName()] = ufloat(fitPar.getVal(), fitPar.getError())
   parNamesInBin = tuple(parValuesInBin.keys())
+  for i in range(fitResult.numStatusHistory()):
+    print(f"    Fit result status {i}: {fitResult.statusCodeHistory(i)} = {fitResult.statusLabelHistory(i)}")
   fitResultFile.Close()
   return parValuesInBin, parNamesInBin
 
