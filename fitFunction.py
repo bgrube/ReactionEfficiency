@@ -121,13 +121,13 @@ def fitDistribution(hist, particle, fitRange = None, forceCommonGaussianMean = F
   fitFunc.SetParameter("#sigma_{2}", widthStartVal)
   fitFunc.SetParLimits(fitFunc.GetParNumber("#sigma_{2}"), 0, 10)  # ensure positive parameter value
   fitFunc.SetParameter("p_{0}", 0)
-  fitFunc.SetParameter("p_{1}", 0)
-  fitFunc.SetParameter("p_{2}", 0)
+  # fitFunc.SetParameter("p_{1}", 0)
+  # fitFunc.SetParameter("p_{2}", 0)
   fitFunc.SetParLimits(fitFunc.GetParNumber("p_{0}"), 0, 1e6)  # ensure positive parameter value
-  fitFunc.SetParLimits(fitFunc.GetParNumber("p_{1}"), 0, 1e6)  # ensure positive parameter value
-  fitFunc.SetParLimits(fitFunc.GetParNumber("p_{2}"), 0, 1e6)  # ensure positive parameter value
-  # fitFunc.FixParameter(fitFunc.GetParNumber("p_{1}"), 0)
-  # fitFunc.FixParameter(fitFunc.GetParNumber("p_{2}"), 0)
+  # fitFunc.SetParLimits(fitFunc.GetParNumber("p_{1}"), 0, 1e6)  # ensure positive parameter value
+  # fitFunc.SetParLimits(fitFunc.GetParNumber("p_{2}"), 0, 1e6)  # ensure positive parameter value
+  fitFunc.FixParameter(fitFunc.GetParNumber("p_{1}"), 0)
+  fitFunc.FixParameter(fitFunc.GetParNumber("p_{2}"), 0)
   # hist.Fit(fitFunc, "WLRQN")
   # hist.Fit(fitFunc, "RQN")
 
