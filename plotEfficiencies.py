@@ -27,16 +27,34 @@ BINNING_VAR_PLOT_INFO = {
 }
 
 
-# returns ROOT.Bins object
+# returns ROOT.Bins object in from binning file in given directory
 def getBinningFromFile(fitResultDirName):
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
-    return None
+    return None, None
   print(f"Loading binning from file '{binningFileName}'")
   bins = ROOT.Bins("HSBins", binningFileName)
   print("Found binning:")
   bins.PrintAxis()
-  return bins
+  axes        = bins.GetVarAxis()
+  binVarNames = tuple(axis.GetName() for axis in axes)
+  return bins, binVarNames
+
+
+# returns list of dicts with file names of fit results [ { <binning var> : <bin center>, ..., "FitResultFileName" : <name> }, ... ]
+def getFitResultFileNames(bins):
+  fitResultFileNames = []
+  axes         = bins.GetVarAxis()
+  binVarNames  = tuple(axis.GetName() for axis in axes)
+  binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
+  axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
+  for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
+    axisBinCenters    = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
+    binIndex          = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only for up to 6 binning dimensions
+    fitResultFileName = {"FitResultFileName" : binFileNames[binIndex].replace("TreeData.root", "ResultsHSMinuit2.root")}
+    fitResultFileName.update({binVarNames[axisIndex] : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)})
+    fitResultFileNames.append(fitResultFileName)
+  return fitResultFileNames
 
 
 # reads yields from fit results in given file and returns
@@ -53,15 +71,15 @@ def readYieldsFromFitFile(fitResultFileName):
       raise IndexError(f"Cannot find parameter '{yieldParName}' in fit parameters {fitPars} in file '{fitResultFileName}'")
     yieldPar = fitPars[yieldParIndex]
     yieldsInBin[yieldType] = ufloat(yieldPar.getVal(), yieldPar.getError())  # store yields
+  fitResultFile.Close()
   return yieldsInBin
 
 
 # reads yields from fit results in given directory and returns
 #     tuple with binning variables (<binning var>, ... )
-#     list of dict with yields [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ]
+#     list of dicts with yields [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ]
 def readYieldsFromFitDir(fitResultDirName):
-  binVarNames = None
-  yields      = []
+  yields = []
   # read overall yields from fit-result file
   fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
   if os.path.isfile(fitResultFileName):
@@ -70,29 +88,21 @@ def readYieldsFromFitDir(fitResultDirName):
     print(f"Read overall yields: {yieldsInBin}")
     yields.append(yieldsInBin)  # first entry
   # get binning from file
-  bins = getBinningFromFile(fitResultDirName)
+  bins, binVarNames = getBinningFromFile(fitResultDirName)
   if bins is not None:
-    axes         = bins.GetVarAxis()
-    binVarNames  = tuple(axis.GetName() for axis in axes)
-    binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
-    # read yields from files with fit results in kinematic bins
-    axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
-    for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
-      axisBinCenters    = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
-      binIndex          = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only up to 6 binning dimensions
-      fitResultFileName = binFileNames[binIndex].replace("TreeData.root", "ResultsHSMinuit2.root")
-      yieldsInBin       = readYieldsFromFitFile(fitResultFileName)
-      # add axis name and bin center
-      yieldsInBin.update({binVarNames[axisIndex] : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)})
-      print(f"Read yields for kinematic bin #{binIndex}: {yieldsInBin}")
+    for fitResultFileName in getFitResultFileNames(bins):
+      yieldsInBin = readYieldsFromFitFile(fitResultFileName["FitResultFileName"])
+      # copy axis name and bin center
+      yieldsInBin.update({key : fitResultFileName[key] for key in fitResultFileName if key != "FitResultFileName"})
+      print(f"Read yields for kinematic bin: {yieldsInBin}")
       yields.append(yieldsInBin)
-  return binVarNames, yields
+  return yields, binVarNames
 
 
 # calculates efficiencies and returns list of dict with efficiencies [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
 def calculateEfficiencies(
   binVarNames,  # dict of tuples { <dataset> : (<binning var>, ... ), ... }
-  yields        # dict of list of dict { <dataset:> [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ], ... }
+  yields        # dict of lists of dicts { <dataset:> [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ], ... }
 ):
   assert binVarNames["Total"] == binVarNames["Found"] == binVarNames["Missing"], "Datasets have different kind of kinematic bins"
   assert len(yields["Total"]) == len(yields["Found"]) == len(yields["Missing"]), "Datasets have different number of kinematic bins"
@@ -115,7 +125,7 @@ def calculateEfficiencies(
 # plot efficiency for 1-dimensional binning
 def plotEfficiencies1D(
   binVarNames,   # dict of tuples { <dataset> : (<binning var>, ... ), ... }
-  efficiencies,  # list of dict [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
+  efficiencies,  # list of dicts [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
   pdfFileNameSuffix = "",
   particle          = "Proton",
   channel           = "4pi",
@@ -123,7 +133,7 @@ def plotEfficiencies1D(
 ):
   binVarName  = binVarNames["Found"][0]
   assert binVarName in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binVarName}'"
-  print(f"Plotting efficiency as function of binning variable '{binVarName}'")
+  print(f"Plotting efficiency as a function of binning variable '{binVarName}'")
   binVarLabel = BINNING_VAR_PLOT_INFO[binVarName]["label"]
   binVarUnit  = BINNING_VAR_PLOT_INFO[binVarName]["unit"]
   graphVals = [(efficiency[binVarName], efficiency["Efficiency"]) for efficiency in efficiencies if binVarName in efficiency]
@@ -164,7 +174,7 @@ if __name__ == "__main__":
   yields      = {}
   for dataSet in dataSets:
     print(f"Loading yields for '{dataSet}' dataset")
-    binVarNames[dataSet], yields[dataSet] = readYieldsFromFitDir(f"{outputDirName}/{dataSet}")
+    yields[dataSet], binVarNames[dataSet] = readYieldsFromFitDir(f"{outputDirName}/{dataSet}")
 
   efficiencies = calculateEfficiencies(binVarNames, yields)
   if efficiencies:

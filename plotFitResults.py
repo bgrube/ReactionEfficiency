@@ -10,8 +10,9 @@ ROOT.PyConfig.DisableRootLogon = True
 import plotEfficiencies
 
 
-def plotFitResults(fitResultDirName):
-  bins = plotEfficiencies.getBinningFromFile(fitResultDirName)
+# plots fit results for kinematic bins
+def plotFitResults(bins):
+  # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
   binNames = [str(binName) for binName in bins.GetBinNames()]
   fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
   for index, fitResultFileName  in enumerate(fitResultFileNames):
@@ -25,7 +26,7 @@ def plotFitResults(fitResultDirName):
     dataFitPad.GetListOfPrimitives().Remove(paramBox)
     # paramBox.SetBorderSize(0)
     # paramBox.SetFillStyle(0)
-    canv.SaveAs(f"{fitResultDirName}/{canv.GetName()}.pdf")
+    canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/{canv.GetName()}.pdf")
     fitResultFile.Close()
 
 
@@ -38,5 +39,6 @@ if __name__ == "__main__":
   fitVariable   = "MissingMassSquared_Measured"  #TODO read this from ROOT.Setup
 
   for dataSet in dataSets:
-    # plot fit results for kinematic bins
-    plotFitResults(f"{outputDirName}/{dataSet}")
+    bins, binVarNames = plotEfficiencies.getBinningFromFile(f"{outputDirName}/{dataSet}")
+    if bins is not None:
+      plotFitResults(bins)
