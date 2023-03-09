@@ -11,7 +11,13 @@ ROOT.PyConfig.DisableRootLogon = True
 from uncertainties import ufloat
 
 import plotEfficiencies
-from plotEfficiencies import BINNING_VAR_PLOT_INFO
+
+
+DATASET_COLORS = {
+  "Total"   : ROOT.kBlack,
+  "Found"   : ROOT.kGreen + 2,
+  "Missing" : ROOT.kRed + 1
+}
 
 
 # plots fit results for kinematic bins
@@ -54,20 +60,20 @@ def readParValuesFromFitFile(fitResultFileName):
 #!TODO unify this and the above function with readYieldsFromFitDir() in plotEfficiencies
 # reads parameter values from fit results in given directory and returns
 #     tuple with binning variables (<binning var>, ... )
-#     list of dicts with parameter values [ { <binning var> : <bin center>, ..., <par name> : <par value>, ... ]
+#     list of dicts with parameter values [ { <binning var> : <bin center>, ..., <par name> : <par value>, ... }, ... ]
 def readParValuesFromFitDir(bins, binVarNames):
-  parValues = []  # list of dicts with parameter values [ { <binning var> : <bin center>, ..., <par name> : <par value>, ... ]
+  parValues = []
   parNames = None  # used to compare parameter names in current and previous bin
   for fitResultFileName in plotEfficiencies.getFitResultFileNames(bins, binVarNames):
     parValuesInBin, parNamesInBin = readParValuesFromFitFile(fitResultFileName["FitResultFileName"])
-    # ensure that the parameters set of the fit function is the same in all kinematic bins 
+    # ensure that the parameters set of the fit function is the same in all kinematic bins
     if parNames is not None:
       assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
+    parNames = parNamesInBin
     # copy axis name and bin center
     parValuesInBin.update({key : fitResultFileName[key] for key in fitResultFileName if key != "FitResultFileName"})
     print(f"Read parameter values for kinematic bin: {parValuesInBin}")
     parValues.append(parValuesInBin)
-    parNames = parNamesInBin
   return parValues, parNames
 
 
@@ -80,10 +86,9 @@ def drawZeroLine(xAxis, yAxis, style = ROOT.kDashed, color = ROOT.kBlack):
     return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
 
 
-#TODO overlay data sets
-# plot parameter value for 1-dimensional binning
+# overlay parameter value for datasets for 1-dimensional binning
 def plotParValue1D(
-  parValues,      # list of dicts with parameter values [ { <binning var> : <bin center>, ..., <par name> : <par value>, ... ]
+  parValues,      # dict of lists of dicts with parameter values { <dataset> : [ { <binning var> : <bin center>, ..., <par name> : <par value>, ... }, ... ], ... }
   parName,        # name of parameter to plot
   binVarNames,    # tuple with binning variables (<binning var>, ... )
   outputDirName,  # directory name the PDF file will be written to
@@ -94,17 +99,25 @@ def plotParValue1D(
 ):
   binVarName  = binVarNames[0]
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binVarName}'")
-  xVals, yVals, yErrs, binVarLabel, binVarUnit = plotEfficiencies.getDataPointArrays1D(binVarName, parName, parValues)
-  # print(xVals, yVals, yErrs)
-  parValueGraph = ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
-  parValueGraph.SetTitle(f"Fit parameter {parName}")
-  parValueGraph.SetMarkerStyle(ROOT.kFullCircle)
-  parValueGraph.SetMarkerSize(markerSize)
-  parValueGraph.GetXaxis().SetTitle(f"{binVarLabel} ({binVarUnit})")
-  parValueGraph.GetYaxis().SetTitle(parName)
+  parValueMultiGraph = ROOT.TMultiGraph()
+  parValueGraphs = {}  # store graphs here to keep them in memory
+  for dataSet in parValues:
+    xVals, yVals, yErrs, binVarLabel, binVarUnit = plotEfficiencies.getDataPointArrays1D(binVarName, parName, parValues[dataSet])
+    # print(dataSet, xVals, yVals, yErrs, binVarLabel, binVarUnit)
+    graph = parValueGraphs[dataSet] = ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
+    graph.SetTitle(dataSet)
+    graph.SetMarkerStyle(ROOT.kCircle)
+    graph.SetMarkerSize(markerSize)
+    graph.SetMarkerColor(DATASET_COLORS[dataSet])
+    graph.SetLineColor(DATASET_COLORS[dataSet])
+    parValueMultiGraph.Add(graph)
+  parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
+  parValueMultiGraph.GetXaxis().SetTitle(f"{binVarLabel} ({binVarUnit})")
+  parValueMultiGraph.GetYaxis().SetTitle(parName)
   canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binVarName}{pdfFileNameSuffix}", "")
-  parValueGraph.Draw("AP")
-  drawZeroLine(parValueGraph.GetXaxis(), parValueGraph.GetYaxis())
+  parValueMultiGraph.Draw("APZ")
+  canv.BuildLegend()
+  drawZeroLine(parValueMultiGraph.GetXaxis(), parValueMultiGraph.GetYaxis())
   canv.SaveAs(f"{outputDirName}/{canv.GetName()}.pdf")
 
 
@@ -116,10 +129,19 @@ if __name__ == "__main__":
   dataSets      = ["Total", "Found", "Missing"]
   fitVariable   = "MissingMassSquared_Measured"  #TODO read this from ROOT.Setup
 
+  parValues   = {}
+  parNames    = None
+  binVarNames = None
   for dataSet in dataSets:
-    bins, binVarNames = plotEfficiencies.getBinningFromFile(f"{outputDirName}/{dataSet}")
+    bins, binVarNamesInDataSet = plotEfficiencies.getBinningFromFile(f"{outputDirName}/{dataSet}")
+    if binVarNames is not None:
+      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
+    binVarNames = binVarNamesInDataSet
     if bins is not None:
       plotFitResults(bins)
-      parValues, parNames = readParValuesFromFitDir(bins, binVarNames)
-      for parName in parNames:
-        plotParValue1D(parValues, parName, binVarNames, outputDirName, f"_{dataSet}")
+      parValues[dataSet], parNamesInDataSet = readParValuesFromFitDir(bins, binVarNames)
+      if parNames is not None:
+        assert parNamesInDataSet == parNames, f"The parameter set {parNamesInDataSet} of dataset '{dataSet}' is different from the parameter set {parNames} of the previous one"
+      parNames = parNamesInDataSet
+  for parName in parNames:
+    plotParValue1D(parValues, parName, binVarNames, outputDirName)
