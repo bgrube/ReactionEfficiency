@@ -22,6 +22,9 @@ struct doubleGaussianPol2 {
 		const double p1,
 		const double p2)
 	{
+		// pol0
+		return p0;
+
 		// const double linTerm = p1 + p2 * x;
 		// return p0 * p0 + linTerm * linTerm;
 
