@@ -29,6 +29,8 @@ DATASET_COLORS = {
   "Missing" : ROOT.kRed + 1
 }
 
+REMOVE_PARAM_BOX = False
+
 
 # returns
 #     ROOT.Bins object in from binning file in given directory
@@ -147,24 +149,36 @@ def drawZeroLine(xAxis, yAxis, style = ROOT.kDashed, color = ROOT.kBlack):
     return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
 
 
-# plots fit results for kinematic bins
+# plots fit results for kinematic bins and saves PDF in same directory as fit-result file
+def plotFitResult(
+  fitResultFileName,
+  binName = ""
+):
+  print(f"Plotting fit result in '{fitResultFileName}'")
+  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
+  canvName = f"{binName}_{fitVariable}"
+  canv = fitResultFile.Get(canvName)
+  # remove TPaveText with fit parameters
+  dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
+  paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binName}TotalPDF_paramBox")
+  if REMOVE_PARAM_BOX:
+    # remove box completely
+    dataFitPad.GetListOfPrimitives().Remove(paramBox)
+  else:
+    # only remove filled frame
+    paramBox.SetBorderSize(0)
+    paramBox.SetFillStyle(0)
+  canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/" + ("Overall" if binName == "" else "") + f"{canv.GetName()}.pdf")
+  fitResultFile.Close()
+
+
+# plots fit results for all kinematic bins
 def plotFitResults(bins):
   # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
   binNames = [str(binName) for binName in bins.GetBinNames()]
   fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
   for index, fitResultFileName  in enumerate(fitResultFileNames):
-    fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
-    print(f"Plotting fit result in '{fitResultFileName}'")
-    canvName = f"{binNames[index]}_{fitVariable}"
-    canv = fitResultFile.Get(canvName)
-    # remove TPaveText with fit parameters
-    dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
-    paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binNames[index]}TotalPDF_paramBox")
-    dataFitPad.GetListOfPrimitives().Remove(paramBox)
-    # paramBox.SetBorderSize(0)
-    # paramBox.SetFillStyle(0)
-    canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/{canv.GetName()}.pdf")
-    fitResultFile.Close()
+    plotFitResult(fitResultFileName, binNames[index])
 
 
 # returns
@@ -235,7 +249,13 @@ if __name__ == "__main__":
   parNames    = None
   binVarNames = None
   for dataSet in dataSets:
-    bins, binVarNamesInDataSet = getBinningFromFile(f"{outputDirName}/{dataSet}")
+    fitResultDirName = f"{outputDirName}/{dataSet}"
+    # plot overall fit results
+    fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
+    if os.path.isfile(fitResultFileName):
+      plotFitResult(fitResultFileName)
+    # plot fit results in kinematic bins
+    bins, binVarNamesInDataSet = getBinningFromFile(fitResultDirName)
     if binVarNames is not None:
       assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
     binVarNames = binVarNamesInDataSet
