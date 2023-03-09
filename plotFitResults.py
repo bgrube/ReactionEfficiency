@@ -64,26 +64,6 @@ def getFitResultFileNames(
   return fitResultFileNames
 
 
-# plots fit results for kinematic bins
-def plotFitResults(bins):
-  # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
-  binNames = [str(binName) for binName in bins.GetBinNames()]
-  fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
-  for index, fitResultFileName  in enumerate(fitResultFileNames):
-    fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
-    print(f"Plotting fit result in '{fitResultFileName}'")
-    canvName = f"{binNames[index]}_{fitVariable}"
-    canv = fitResultFile.Get(canvName)
-    # remove TPaveText with fit parameters
-    dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
-    paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binNames[index]}TotalPDF_paramBox")
-    dataFitPad.GetListOfPrimitives().Remove(paramBox)
-    # paramBox.SetBorderSize(0)
-    # paramBox.SetFillStyle(0)
-    canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/{canv.GetName()}.pdf")
-    fitResultFile.Close()
-
-
 # reads fit result in given file and returns
 #    dict with parameter values { <par name> : <par value>, ... }
 #    tuple with parameter names
@@ -165,6 +145,26 @@ def drawZeroLine(xAxis, yAxis, style = ROOT.kDashed, color = ROOT.kBlack):
     zeroLine.SetLineStyle(style)
     zeroLine.SetLineColor(color)
     return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+
+
+# plots fit results for kinematic bins
+def plotFitResults(bins):
+  # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
+  binNames = [str(binName) for binName in bins.GetBinNames()]
+  fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
+  for index, fitResultFileName  in enumerate(fitResultFileNames):
+    fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
+    print(f"Plotting fit result in '{fitResultFileName}'")
+    canvName = f"{binNames[index]}_{fitVariable}"
+    canv = fitResultFile.Get(canvName)
+    # remove TPaveText with fit parameters
+    dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
+    paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binNames[index]}TotalPDF_paramBox")
+    dataFitPad.GetListOfPrimitives().Remove(paramBox)
+    # paramBox.SetBorderSize(0)
+    # paramBox.SetFillStyle(0)
+    canv.SaveAs(f"{os.path.dirname(fitResultFileName)}/{canv.GetName()}.pdf")
+    fitResultFile.Close()
 
 
 # returns
