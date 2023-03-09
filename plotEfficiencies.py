@@ -128,16 +128,15 @@ def calculateEfficiencies(
 # returns
 #     arrays of x, y, and y-uncertainty values
 #     x-axis label and unit
-def getParValueArrays1D(
+def getDataPointArrays1D(
   binVarName,  # name of the binning variable, i.e. x-axis
   valueName,   # name of value, i.e. y-axis
   values       # list of dicts with data values [ { <binning var> : <bin center>, ..., <value name> : <value> }, ... ]
 ):
   assert binVarName in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binVarName}'"
-  print(f"Plotting efficiency as a function of binning variable '{binVarName}'")
   binVarLabel = BINNING_VAR_PLOT_INFO[binVarName]["label"]
   binVarUnit  = BINNING_VAR_PLOT_INFO[binVarName]["unit"]
-  graphVals = [(value[binVarName], value[valueName]) for value in values if (binVarName in value) and (valueName) in value]
+  graphVals = [(value[binVarName], value[valueName]) for value in values if (binVarName in value) and (valueName in value)]
   if not graphVals:
     print("No data to plot")
     return
@@ -149,15 +148,17 @@ def getParValueArrays1D(
 
 # plots efficiency for 1-dimensional binning
 def plotEfficiencies1D(
-  efficiencies,  # list of dicts with efficiencies [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
-  binVarNames,   # dict of tuples with binning variables { <dataset> : (<binning var>, ... ), ... }
+  efficiencies,   # list of dicts with efficiencies [ { <binning var> : <bin center>, ..., "Efficiency" : <value> }, ... ]
+  binVarNames,    # dict of tuples with binning variables { <dataset> : (<binning var>, ... ), ... }
+  outputDirName,  # directory name the PDF file will be written to
   pdfFileNameSuffix = "",
   particle          = "Proton",
   channel           = "4pi",
   markerSize        = 0.75
 ):
   binVarName  = binVarNames["Found"][0]
-  xVals, yVals, yErrs, binVarLabel, binVarUnit = getParValueArrays1D(binVarName, "Efficiency", efficiencies)
+  print(f"Plotting efficiency as a function of binning variable '{binVarName}'")
+  xVals, yVals, yErrs, binVarLabel, binVarUnit = getDataPointArrays1D(binVarName, "Efficiency", efficiencies)
   # print(xVals, yVals, yErrs)
   efficiencyGraph = ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
   efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
@@ -199,4 +200,4 @@ if __name__ == "__main__":
     if "Overall" in efficiencies[0]:
       print(f"Overall efficiency for fits in directory '{outputDirName}' is {efficiencies[0]['Efficiency']}")
     if binVarNames["Found"] and (len(binVarNames["Found"]) == 1):
-      plotEfficiencies1D(efficiencies, binVarNames)
+      plotEfficiencies1D(efficiencies, binVarNames, outputDirName)
