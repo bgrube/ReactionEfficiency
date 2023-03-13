@@ -159,7 +159,7 @@ def plotFitResult(
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{binName}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
-  # remove TPaveText with fit parameters
+  # improve TPaveText with fit parameters
   dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
   paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binName}TotalPDF_paramBox")
   if REMOVE_PARAM_BOX:
@@ -274,6 +274,8 @@ if __name__ == "__main__":
         assert parNamesInDataSet == parNames, f"The parameter set {parNamesInDataSet} of dataset '{dataSet}' is different from the parameter set {parNames} of the previous one"
       parNames = parNamesInDataSet
 
-  makePlots.setupPlotStyle()
-  for parName in parNames:
-    plotParValue1D(parValues, parName, binVarNames, outputDirName)
+  # plot fit parameters as 1D function of binning variable
+  if parNames is not None:
+    makePlots.setupPlotStyle()
+    for parName in parNames:
+      plotParValue1D(parValues, parName, binVarNames, outputDirName)
