@@ -11,35 +11,92 @@ import makePlots  # defines helper functions to generate histograms from data tr
 makePlots.setupPlotStyle()
 
 
-def defineSignalPdf(
-  fitManager,
-  fitVariable
+def readWeights(
+  inputFileName,
+  inputTreeName,
+  weightBranchName,
+  comboIdName,
+  sWeightLabel,       # label used when applying weights
+  sWeightFileName,    # ROOT file name to which weight object will be written
+  sWeightObjectName,  # name of weight object saved to ROOT file
+  cut = None          # optional selection cut to apply
 ):
+  print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
+  f", writing them to key '{sWeightObjectName}' in file '{sWeightFileName}', and assigning label '{sWeightLabel}'"
+  + ("" if cut is None else f" while applying cut(s) '{cut}'"), flush = True)
+  currentDir = ROOT.gDirectory
+  inputFile = ROOT.TFile.Open(inputFileName, "READ")
+  inputTree = inputFile.Get(inputTreeName)
+  currentDir.cd()
+  weights = ROOT.Weights(sWeightObjectName)  # name of the Weights object
+  weights.SetFile(sWeightFileName)
+  weights.SetSpecies(sWeightLabel)
+  weights.SetIDName(comboIdName)
+  weights.WeightBySelection(inputTree, ("(1)" if cut is None else cut), weightBranchName)
+  weights.SortWeights()
+  weights.Save()
+
+
+def defineSigPdf(
+  fitManager,
+  fitVariable,
+  outputDirName = None,
+  **sideBandWeightKwArgs  # keyword arguments for histogram PDF passed on to readWeights()
+):
+  #TODO make different PDFs selectable
   print("Defining signal PDF 'SigPdf'", flush = True)
-  # # define Gaussian
+
+  # # define single Gaussian
   # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
 
-  # define double Gaussian
-  # separate means
-  fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-    f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-                          f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
-    ")")
+  # # define double Gaussian
+  # # separate means
+  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
+  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  #   ")")
   # # same mean
   # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
   #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
   #                         f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
   #   ")")
 
+  # create RF-sideband weights for histogram PDF
+  rfSWeightLabel      = "RfSideband"
+  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsSigPdf.root"
+  rfSWeightObjectName = f"{rfSWeightLabel}WeightsSigPdf"
+  readWeights(
+    sWeightLabel      = rfSWeightLabel,
+    sWeightFileName   = rfSWeightFileName,
+    sWeightObjectName = rfSWeightObjectName,
+    **sideBandWeightKwArgs
+  )
+  # define histogram PDF with fudge parameters that allow small deviations from the given shape
+  fitManager.SetUp().FactoryPDF(
+    f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1, 0.5, 1.5])"
+    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed
+  )
+  # constrain PDF fudge parameters
+  # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
+  #     Gaussian mean = initial value
+  #     Gaussian sigma = max / 5 for smear
+  #     Gaussian sigma = range / 10 for offset and scale
+  sigPdf = fitManager.SetUp().WS().pdf("SigPdf")
+  fitManager.SetUp().AddGausConstraint(sigPdf.AlphaConstraint())  # constrain smear
+  fitManager.SetUp().AddGausConstraint(sigPdf.OffConstraint())    # constrain offset
+  fitManager.SetUp().AddGausConstraint(sigPdf.ScaleConstraint())  # constrain scale
+
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
 
 
-def defineBackgroundPdf(
+def defineBkgPdf(
   fitManager,
   fitVariable
 ):
+  #TODO make different PDFs selectable
   print("Defining background PDF 'BkgPdf'", flush = True)
+
   # # define 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
 
@@ -56,6 +113,10 @@ def defineBackgroundPdf(
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
 
+  # # define histogram PDF
+  # fitManager.SetUp().FactoryPDF(f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 1], offset_BkgPdf[0, -0.5, 0.5], scale_BkgPdf[1, 0.5, 1.5])")
+  # loadHistPdfData = True
+
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", sigPdfWeightStartVal)
 
@@ -71,31 +132,6 @@ def binnedTreeFilesIn(outputDirName):
     if not os.path.isfile(binFileName):
       return None
   return binFileNames
-
-
-def readSidebandWeights(
-  inputFileName,
-  inputTreeName,
-  weightBranchName,
-  comboIdName,
-  sWeightFileName,
-  sWeightLabel,  # label used to access weights
-  cut = None
-):
-  print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
-  f" and writing them to '{sWeightFileName}' with label '{sWeightLabel}'"
-  + ("" if cut is None else f" while applying cut(s) '{cut}'"), flush = True)
-  currentDir = ROOT.gDirectory
-  inputFile = ROOT.TFile.Open(inputFileName, "READ")
-  inputTree = inputFile.Get(inputTreeName)
-  currentDir.cd()
-  weights = ROOT.Weights("HSsWeights")  # name of the Weights object
-  weights.SetFile(sWeightFileName)
-  weights.SetSpecies(sWeightLabel)
-  weights.SetIDName(comboIdName)
-  weights.WeightBySelection(inputTree, ("(1)" if cut is None else cut), weightBranchName)
-  weights.SortWeights()
-  weights.Save()
 
 
 def setRooFitOptions(
@@ -115,17 +151,21 @@ def setRooFitOptions(
 
 
 def performFit(
-  dataFileName,
-  outputDirName,
-  kinematicBinnings,
-  cut               = None,
-  dataTreeName      = "pippippimpimpmiss",
-  fitVariable       = "MissingMassSquared_Measured",  # this is also the name of the branches in the data tree and the template-data trees for signal and background
-  fitRange          = "-0.5, 4.0",  # [(GeV/c)^2]
-  comboIdName       = "ComboID",
-  regenBinnedTrees  = False,
-  nmbThreadsPerJob  = 5,
-  nmbProofJobs      = 9  #TODO? automatically determine number of PROOF jobs
+  dataFileName,       # path to data to fit
+  outputDirName,      # where to write all output files
+  kinematicBinnings,  # list of tuples with binning info [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
+  cut                     = None,                 # optional selection cut(s) to apply to data and template histograms
+  dataTreeName            = "pippippimpimpmiss",  # tree name of data to fit
+  templateDataSigFileName = None,                 # path to template data for signal histogram
+  templateDataSigTreeName = "pippippimpimpmiss",  # tree name of data for signal histogram template
+  templateDataBkgFileName = None,                 # path to template data for background histogram
+  templateDataBkgTreeName = "pippippimpimpmiss",  # tree name of data for background histogram template
+  fitVariable             = "MissingMassSquared_Measured",  # branch name that contains data to fit and template-data for signal and background, respectively
+  fitRange                = "-0.25, 3.75",  # [(GeV/c)^2]
+  comboIdName             = "ComboID",  # branch name with unique ID for each combo
+  regenBinnedTrees        = False,  # if set, force regeneration of files with binned trees
+  nmbThreadsPerJob        = 5,
+  nmbProofJobs            = 9  #TODO? automatically determine number of PROOF jobs
 ):
   print(f"fitting data in '{dataFileName}'" + ("" if cut is None else f" applying cut '{cut}'")
     + (" using no binning" if kinematicBinnings is None else f" using binning '{kinematicBinnings}'")
@@ -143,9 +183,21 @@ def performFit(
   # the data tree must have a double branch of the given name containing a unique combo-ID number
   fitManager.SetUp().SetIDBranchName(comboIdName)
 
-  # define fit model
-  defineSignalPdf(fitManager, fitVariable)
-  defineBackgroundPdf(fitManager, fitVariable)
+  # define fit-model components
+  histPdfData = {
+    "SigPdf" : {"FileName" : templateDataSigFileName, "TreeName" : templateDataSigTreeName},
+    "BkgPdf" : {"FileName" : templateDataBkgFileName, "TreeName" : templateDataBkgTreeName}
+  }
+  defineSigPdf(
+    fitManager, fitVariable,
+    outputDirName    = outputDirName,
+    inputFileName    = histPdfData["SigPdf"]["FileName"],
+    inputTreeName    = histPdfData["SigPdf"]["TreeName"],
+    weightBranchName = "AccidWeightFactor",
+    comboIdName      = comboIdName,
+    cut              = cut
+  )
+  defineBkgPdf(fitManager, fitVariable)
 
   # define kinematic bins
   if kinematicBinnings:
@@ -153,19 +205,21 @@ def performFit(
       fitManager.Bins().LoadBinVar(*binning)
 
   # create RF-sideband weights for data to be fitted
-  rfSWeightFileName = f"{outputDirName}/sidebandWeightsData.root"
-  rfSWeightLabel    = "RfSideband"
-  readSidebandWeights(
-    inputFileName    = dataFileName,
-    inputTreeName    = dataTreeName,
-    weightBranchName = "AccidWeightFactor",
-    comboIdName      = comboIdName,
-    sWeightFileName  = rfSWeightFileName,
-    sWeightLabel     = rfSWeightLabel,
-    cut              = cut
+  rfSWeightLabel      = "RfSideband"
+  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsData.root"
+  rfSWeightObjectName = f"{rfSWeightLabel}WeightsData"
+  readWeights(
+    inputFileName     = dataFileName,
+    inputTreeName     = dataTreeName,
+    weightBranchName  = "AccidWeightFactor",
+    comboIdName       = comboIdName,
+    sWeightLabel      = rfSWeightLabel,
+    sWeightFileName   = rfSWeightFileName,
+    sWeightObjectName = rfSWeightObjectName,
+    cut               = cut
   )
   # apply weights for RF-sideband subtraction
-  fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName)
+  fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
 
   # load and bin data to be fitted
   binFileNames = binnedTreeFilesIn(outputDirName) if kinematicBinnings else None
@@ -182,11 +236,21 @@ def performFit(
       print(f"    {binFileName}", flush = True)
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
-  #TODO add constraints for fugde parameters
+  # load data for template histograms
+  #TODO move into defineSigPdf()
+  modelComponentPdfs = fitManager.SetUp().PDFs()
+  for histPdfName in histPdfData:
+    assert modelComponentPdfs.index(histPdfName) >= 0, f"Cannot find '{histPdfName}' in model components"
+    if modelComponentPdfs.find(histPdfName).IsA().GetName() == "HS::FIT::RooHSEventsHistPDF":
+      # model component is a histogram PDF
+      fileName = histPdfData[histPdfName]["FileName"]
+      treeName = histPdfData[histPdfName]["TreeName"]
+      print(f"Loading data for histogram PDF '{histPdfName}' from tree '{treeName}' in file '{fileName}'", flush = True)
+      fitManager.LoadSimulated(treeName, fileName, histPdfName)
 
-  # perform fit an plot fit result
+  # perform fit and plot fit result
   if not kinematicBinnings:
-    nmbThreadsPerJob = 2 * nmbThreadsPerJob
+    nmbThreadsPerJob = 8 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinnings:
     fitManager.SetRedirectOutput()  # redirect console output to files
@@ -209,8 +273,8 @@ if __name__ == "__main__":
   # dataset           = "030730",
   dataset           = "bggen_2017_01-ver03"
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
-  outputDirName     = "BruFitOutput"
-  kinematicBinnings = [  # list of tuples: [ (variable, nmb of bins, min value, max value) ]
+  outputDirName     = "./BruFitOutput"
+  kinematicBinnings = [
     # ("BeamEnergy",          9,    3.0,   12.0)
     ("MissingProtonP",     10,    0.0,    3.5)
     # ("MissingProtonTheta", 13,    0.0,   65.0)
@@ -232,7 +296,8 @@ if __name__ == "__main__":
       dataFileName,
       f"{outputDirName}/{dataSetName}",
       kinematicBinnings = None,
-      cut = cut
+      cut = cut,
+      templateDataSigFileName = dataFileName
     )
     if kinematicBinnings:
       # fit kinematic bins
@@ -240,7 +305,8 @@ if __name__ == "__main__":
         dataFileName,
         f"{outputDirName}/{dataSetName}",
         kinematicBinnings,
-        cut
+        cut,
+        templateDataSigFileName = dataFileName
       )
 
   ROOT.gBenchmark.Show("Total execution time")
