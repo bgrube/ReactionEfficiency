@@ -89,9 +89,7 @@ def readParValuesFromFitFile(
       parValuesInBin[fitParKey] = ufloat(fitPar.getVal(), fitPar.getError())
   else:
     # read all parameters
-    for fitParIndex in range(fitPars.getSize()):
-      fitPar = fitPars[fitParIndex]
-      parValuesInBin[fitPar.GetName()] = ufloat(fitPar.getVal(), fitPar.getError())
+    parValuesInBin.update({fitPar.GetName() : ufloat(fitPar.getVal(), fitPar.getError()) for fitPar in fitPars})
   parNamesInBin = tuple(parValuesInBin.keys())
   for i in range(fitResult.numStatusHistory()):
     print(f"    Fit result status {i}: {fitResult.statusCodeHistory(i)} = {fitResult.statusLabelHistory(i)}")
