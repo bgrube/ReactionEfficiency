@@ -40,7 +40,9 @@ def readWeights(
 def defineSigPdf(
   fitManager,
   fitVariable,
-  outputDirName = None,
+  outputDirName        = None,
+  templateDataFileName = None,
+  templateDataTreeName = None,
   **sideBandWeightKwArgs  # keyword arguments for histogram PDF passed on to readWeights()
 ):
   #TODO make different PDFs selectable
@@ -66,6 +68,8 @@ def defineSigPdf(
   rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsSigPdf.root"
   rfSWeightObjectName = f"{rfSWeightLabel}WeightsSigPdf"
   readWeights(
+    inputFileName     = templateDataFileName,
+    inputTreeName     = templateDataTreeName,
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
@@ -85,6 +89,10 @@ def defineSigPdf(
   fitManager.SetUp().AddGausConstraint(sigPdf.AlphaConstraint())  # constrain smear
   fitManager.SetUp().AddGausConstraint(sigPdf.OffConstraint())    # constrain offset
   fitManager.SetUp().AddGausConstraint(sigPdf.ScaleConstraint())  # constrain scale
+  # load data for template histograms
+  print(f"Loading data for histogram PDF 'SigPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
+  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
+  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "SigPdf")
 
   sigPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
@@ -190,12 +198,12 @@ def performFit(
   }
   defineSigPdf(
     fitManager, fitVariable,
-    outputDirName    = outputDirName,
-    inputFileName    = histPdfData["SigPdf"]["FileName"],
-    inputTreeName    = histPdfData["SigPdf"]["TreeName"],
-    weightBranchName = "AccidWeightFactor",
-    comboIdName      = comboIdName,
-    cut              = cut
+    outputDirName        = outputDirName,
+    templateDataFileName = templateDataSigFileName,
+    templateDataTreeName = templateDataSigTreeName,
+    weightBranchName     = "AccidWeightFactor",
+    comboIdName          = comboIdName,
+    cut                  = cut
   )
   defineBkgPdf(fitManager, fitVariable)
 
@@ -235,18 +243,6 @@ def performFit(
     for binFileName in binFileNames:
       print(f"    {binFileName}", flush = True)
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
-
-  # load data for template histograms
-  #TODO move into defineSigPdf()
-  modelComponentPdfs = fitManager.SetUp().PDFs()
-  for histPdfName in histPdfData:
-    assert modelComponentPdfs.index(histPdfName) >= 0, f"Cannot find '{histPdfName}' in model components"
-    if modelComponentPdfs.find(histPdfName).IsA().GetName() == "HS::FIT::RooHSEventsHistPDF":
-      # model component is a histogram PDF
-      fileName = histPdfData[histPdfName]["FileName"]
-      treeName = histPdfData[histPdfName]["TreeName"]
-      print(f"Loading data for histogram PDF '{histPdfName}' from tree '{treeName}' in file '{fileName}'", flush = True)
-      fitManager.LoadSimulated(treeName, fileName, histPdfName)
 
   # perform fit and plot fit result
   if not kinematicBinnings:
