@@ -249,7 +249,7 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
 
-  outputDirName = "BruFitOutput"
+  outputDirName = "./BruFitOutput"
   dataSets      = ["Total", "Found", "Missing"]
   fitVariable   = "MissingMassSquared_Measured"  #TODO get this info from BruFit's ROOT.Setup
 
@@ -273,9 +273,8 @@ if __name__ == "__main__":
       if parNames is not None:
         assert parNamesInDataSet == parNames, f"The parameter set {parNamesInDataSet} of dataset '{dataSet}' is different from the parameter set {parNames} of the previous one"
       parNames = parNamesInDataSet
-
-  # plot fit parameters as 1D function of binning variable
-  if parNames is not None:
-    makePlots.setupPlotStyle()
-    for parName in parNames:
-      plotParValue1D(parValues, parName, binVarNames, outputDirName)
+    # plot fit parameters as 1D function of binning variable
+    if parNames is not None:
+      makePlots.setupPlotStyle()
+      for parName in parNames:
+        plotParValue1D(parValues, parName, binVarNames, fitResultDirName)
