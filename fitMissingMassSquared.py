@@ -10,7 +10,7 @@ import makePlots  # defines helper functions to generate histograms from data tr
 
 makePlots.setupPlotStyle()
 
-
+#TODO convert functions to class with member functions
 def readWeights(
   inputFileName,
   inputTreeName,
@@ -43,7 +43,9 @@ def defineSigPdf(
   outputDirName        = None,
   templateDataFileName = None,
   templateDataTreeName = None,
-  **sideBandWeightKwArgs  # keyword arguments for histogram PDF passed on to readWeights()
+  weightBranchName     = None,
+  comboIdName          = None,
+  cut                  = None
 ):
   #TODO make different PDFs selectable
   print("Defining signal PDF 'SigPdf'", flush = True)
@@ -70,19 +72,33 @@ def defineSigPdf(
   readWeights(
     inputFileName     = templateDataFileName,
     inputTreeName     = templateDataTreeName,
+    weightBranchName  = weightBranchName,
+    comboIdName       = comboIdName,
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    **sideBandWeightKwArgs
+    # cut               = cut
+    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 1)'
   )
-  # define histogram PDF with fudge parameters that allow small deviations from the given shape
+  # define histogram PDF with fudge parameters that allow small deviations from the given shape:
+  #     smear  = width of Gaussian the histogram is convoluted with
+  #     offset = shift of histogram in x-direction
+  #     scale  = scaling factor of histogram in x-direction
   fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1, 0.5, 1.5])"
-    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed
+    f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1, 0.5, 1.5])"  # correct
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1, 0.5, 1.5])"  # line at average
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0], scale_SigPdf[1, 0.5, 1.5])"  # line at 0
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1])"  # weird
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0], scale_SigPdf[1])"  # line
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1])"  # line above peak
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0], scale_SigPdf[1, 0.5, 1.5])"  # line
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0], scale_SigPdf[1])"  # line at 0
+    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0.25], scale_SigPdf[1])"  # line at 0
+    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
   )
   # constrain PDF fudge parameters
   # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
-  #     Gaussian mean = initial value
+  #     Gaussian mean  = initial value
   #     Gaussian sigma = max / 5 for smear
   #     Gaussian sigma = range / 10 for offset and scale
   sigPdf = fitManager.SetUp().WS().pdf("SigPdf")
@@ -100,7 +116,13 @@ def defineSigPdf(
 
 def defineBkgPdf(
   fitManager,
-  fitVariable
+  fitVariable,
+  outputDirName        = None,
+  templateDataFileName = None,
+  templateDataTreeName = None,
+  weightBranchName     = None,
+  comboIdName          = None,
+  cut                  = None
 ):
   #TODO make different PDFs selectable
   print("Defining background PDF 'BkgPdf'", flush = True)
@@ -109,7 +131,7 @@ def defineBkgPdf(
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
 
   # define Chebychev polynomial
-  fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{}})")
+  # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 100]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1], p2_BkgPdf[0, -1, 1]}})")
@@ -121,12 +143,46 @@ def defineBkgPdf(
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
 
-  # # define histogram PDF
-  # fitManager.SetUp().FactoryPDF(f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 1], offset_BkgPdf[0, -0.5, 0.5], scale_BkgPdf[1, 0.5, 1.5])")
-  # loadHistPdfData = True
+  #TODO move code to define histogram PDF to separate function
+  # create RF-sideband weights for histogram PDF
+  rfSWeightLabel      = "RfSideband"
+  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsBkgPdf.root"
+  rfSWeightObjectName = f"{rfSWeightLabel}WeightsBkgPdf"
+  readWeights(
+    inputFileName     = templateDataFileName,
+    inputTreeName     = templateDataTreeName,
+    weightBranchName  = weightBranchName,
+    comboIdName       = comboIdName,
+    sWeightLabel      = rfSWeightLabel,
+    sWeightFileName   = rfSWeightFileName,
+    sWeightObjectName = rfSWeightObjectName,
+    # cut               = cut
+    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
+  )
+  # define histogram PDF with fudge parameters that allow small deviations from the given shape:
+  #     smear  = width of Gaussian the histogram is convoluted with
+  #     offset = shift of histogram in x-direction
+  #     scale  = scaling factor of histogram in x-direction
+  fitManager.SetUp().FactoryPDF(
+    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"  # correct
+    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
+  )
+  # constrain PDF fudge parameters
+  # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
+  #     Gaussian mean  = initial value
+  #     Gaussian sigma = max / 5 for smear
+  #     Gaussian sigma = range / 10 for offset and scale
+  bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
+  fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
+  fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain offset
+  fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
+  # load data for template histograms
+  print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
+  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
+  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "BkgPdf")
 
-  sigPdfWeightStartVal = 1.0
-  fitManager.SetUp().LoadSpeciesPDF("BkgPdf", sigPdfWeightStartVal)
+  bkgPdfWeightStartVal = 1.0
+  fitManager.SetUp().LoadSpeciesPDF("BkgPdf", bkgPdfWeightStartVal)
 
 
 def binnedTreeFilesIn(outputDirName):
@@ -191,11 +247,7 @@ def performFit(
   # the data tree must have a double branch of the given name containing a unique combo-ID number
   fitManager.SetUp().SetIDBranchName(comboIdName)
 
-  # define fit-model components
-  histPdfData = {
-    "SigPdf" : {"FileName" : templateDataSigFileName, "TreeName" : templateDataSigTreeName},
-    "BkgPdf" : {"FileName" : templateDataBkgFileName, "TreeName" : templateDataBkgTreeName}
-  }
+  # define components of fit model
   defineSigPdf(
     fitManager, fitVariable,
     outputDirName        = outputDirName,
@@ -205,7 +257,15 @@ def performFit(
     comboIdName          = comboIdName,
     cut                  = cut
   )
-  defineBkgPdf(fitManager, fitVariable)
+  defineBkgPdf(
+    fitManager, fitVariable,
+    outputDirName        = outputDirName,
+    templateDataFileName = templateDataBkgFileName,
+    templateDataTreeName = templateDataBkgTreeName,
+    weightBranchName     = "AccidWeightFactor",
+    comboIdName          = comboIdName,
+    cut                  = cut
+  )
 
   # define kinematic bins
   if kinematicBinnings:
@@ -293,7 +353,8 @@ if __name__ == "__main__":
       f"{outputDirName}/{dataSetName}",
       kinematicBinnings = None,
       cut = cut,
-      templateDataSigFileName = dataFileName
+      templateDataSigFileName = dataFileName,
+      templateDataBkgFileName = dataFileName
     )
     if kinematicBinnings:
       # fit kinematic bins
