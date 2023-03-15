@@ -84,7 +84,8 @@ def readParValuesFromFitFile(
     for fitParKey, fitParName in fitParNamesToRead.items():
       fitParIndex = fitPars.index(fitParName)
       if fitParIndex < 0:
-        raise IndexError(f"Cannot find parameter '{fitParName}' in fit parameters {fitPars} in file '{fitResultFileName}'")
+        print(f"Cannot find parameter '{fitParName}' in fit parameters {fitPars} in file '{fitResultFileName}'. Skipping parameter.")
+        continue
       fitPar = fitPars[fitParIndex]
       parValuesInBin[fitParKey] = ufloat(fitPar.getVal(), fitPar.getError())
   else:
