@@ -34,10 +34,12 @@ if __name__ == "__main__":
   # works currently only in single-threaded mode
   # see https://root-forum.cern.ch/t/accessing-entry-information-using-rdataframe/52378
   # and https://root.cern/doc/master/df007__snapshot_8C.html
+  #TODO convert ThrownTopology only for bggen MC
   rdf = ROOT.RDataFrame(treeName, inputFileName) \
             .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION) \
             .Define("ComboID", "(double)rdfentry_") \
-            .Snapshot(treeName, outputFileName, ROOT.std.vector[ROOT.std.string](branchesToWrite + ["TrackFound", "ComboID"])) \
+            .Define("IsSignal", 'ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p"') \
+            .Snapshot(treeName, outputFileName, ROOT.std.vector[ROOT.std.string](branchesToWrite + ["TrackFound", "ComboID", "IsSignal"])) \
             # .Range(0, 100000)
   print(f"Read {rdf.Count().GetValue()} entries from input tree")
 
