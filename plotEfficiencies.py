@@ -104,7 +104,7 @@ if __name__ == "__main__":
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   makePlots.setupPlotStyle()
 
-  outputDirName = "BruFitOutput"
+  outputDirName = "./BruFitOutput"
   dataSets      = ["Total", "Found", "Missing"]
 
   yields      = {}  # dict of lists of dicts with yields { <dataset:> [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ], ... }
@@ -113,6 +113,7 @@ if __name__ == "__main__":
     print(f"Loading yields for '{dataSet}' dataset")
     yields[dataSet], binVarNames[dataSet] = readYieldsFromFitDir(f"{outputDirName}/{dataSet}")
 
+  #TODO calculate efficiencies also from histogram integrals
   efficiencies = calculateEfficiencies(yields, binVarNames)
   if efficiencies:
     if "Overall" in efficiencies[0]:
