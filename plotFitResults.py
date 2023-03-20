@@ -8,11 +8,11 @@ import ctypes
 import itertools
 import os
 
+from uncertainties import ufloat
+
 import ROOT
 if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
-
-from uncertainties import ufloat
 
 import makePlots
 
@@ -49,19 +49,21 @@ def getBinningFromFile(fitResultDirName):
   return bins, binVarNames
 
 
-# returns list of dicts with file names of fit results [ { <binning var> : <bin center>, ..., "FitResultFileName" : <name> }, ... ]
+# returns list of dicts with file names of fit results [ { <binning var> : <bin center>, ..., "FitResultFileName" : <name>, "BinName" : <name> }, ... ]
 def getFitResultFileNames(
   bins,
   binVarNames  # tuple with binning variables (<binning var>, ... )
 ):
   fitResultFileNames = []
   axes         = bins.GetVarAxis()
-  binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
+  # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
+  binNames     = [str(binName) for binName in bins.GetBinNames()]
+  binFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
   axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
     axisBinCenters         = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
     binIndex               = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only for up to 6 binning dimensions
-    fitResultFileNameInBin = {"FitResultFileName" : binFileNames[binIndex].replace("TreeData.root", "ResultsHSMinuit2.root")}
+    fitResultFileNameInBin = {"FitResultFileName" : binFileNames[binIndex], "BinName" : binNames[binIndex]}
     fitResultFileNameInBin.update({binVarNames[axisIndex] : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)})
     fitResultFileNames.append(fitResultFileNameInBin)
   return fitResultFileNames
@@ -85,6 +87,7 @@ def readParValuesFromFitFile(
     for fitParKey, fitParName in fitParNamesToRead.items():
       fitParIndex = fitPars.index(fitParName)
       if fitParIndex < 0:
+        #TODO try using printStream() with ROOT.cout to improve output
         print(f"Cannot find parameter '{fitParName}' in fit parameters {fitPars} in file '{fitResultFileName}'. Skipping parameter.")
         continue
       fitPar = fitPars[fitParIndex]
