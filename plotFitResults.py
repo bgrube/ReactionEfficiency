@@ -173,10 +173,11 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack):
 # plots fit results for kinematic bins and saves PDF in same directory as fit-result file
 def plotFitResult(
   fitResultFileName,
+  fitVariable,
   binName = "",
   outputDirName = None
 ):
-  print(f"Plotting fit result in '{fitResultFileName}'")
+  print(f"Plotting fit result in file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{binName}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
@@ -202,13 +203,14 @@ def plotFitResult(
 # plots fit results for all kinematic bins
 def plotFitResults(
   bins,
+  fitVariable,
   outputDirName = None
 ):
   # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
   binNames = [str(binName) for binName in bins.GetBinNames()]
   fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
   for index, fitResultFileName  in enumerate(fitResultFileNames):
-    plotFitResult(fitResultFileName, binNames[index], outputDirName)
+    plotFitResult(fitResultFileName, fitVariable, binNames[index], outputDirName)
 
 
 # returns
@@ -283,14 +285,14 @@ if __name__ == "__main__":
     # plot overall fit results
     fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
     if os.path.isfile(fitResultFileName):
-      plotFitResult(fitResultFileName)
+      plotFitResult(fitResultFileName, fitVariable)
     # plot fit results in kinematic bins
     bins, binVarNamesInDataSet = getBinningFromFile(fitResultDirName)
     if binVarNames is not None:
       assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
     binVarNames = binVarNamesInDataSet
     if bins is not None:
-      plotFitResults(bins, fitResultDirName)
+      plotFitResults(bins, fitVariable, fitResultDirName)
       parValues[dataSet], parNamesInDataSet = readParValuesFromFitDir(bins, binVarNames)
       if parNames is not None:
         assert parNamesInDataSet == parNames, f"The parameter set {parNamesInDataSet} of dataset '{dataSet}' is different from the parameter set {parNames} of the previous one"
