@@ -77,6 +77,9 @@ def plotEfficiencies1D(
   binVarName  = binVarNames["Found"][0]
   print(f"Plotting efficiency as a function of binning variable '{binVarName}'")
   xVals, yVals, yErrs, binVarLabel, binVarUnit = plotFitResults.getDataPointArrays1D(binVarName, "Efficiency", efficiencies)
+  # set uncertainties to zero as long as they are not estimated well
+  for i in range(len(yErrs)):
+    yErrs[i] = 0
   # print(xVals, yVals, yErrs)
   efficiencyGraph = ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
   efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
@@ -92,17 +95,17 @@ def plotEfficiencies1D(
   line = ROOT.TLine()
   # line.SetLineStyle(ROOT.kDashed)
   # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
-  # indicate weighted average of efficiencies in kinematic bins
-  meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
-  line.SetLineColor(ROOT.kRed + 1)
-  line.DrawLine(efficiencyGraph.GetXaxis().GetXmin(), meanEff, efficiencyGraph.GetXaxis().GetXmax(), meanEff)
+  # # indicate weighted average of efficiencies in kinematic bins
+  # meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
+  # line.SetLineColor(ROOT.kRed + 1)
+  # line.DrawLine(efficiencyGraph.GetXaxis().GetXmin(), meanEff, efficiencyGraph.GetXaxis().GetXmax(), meanEff)
   canv.SaveAs(f"{outputDirName}/{canv.GetName()}.pdf")
 
 
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
-  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   makePlots.setupPlotStyle()
+  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
 
   outputDirName = "./BruFitOutput"
   dataSets      = ["Total", "Found", "Missing"]
