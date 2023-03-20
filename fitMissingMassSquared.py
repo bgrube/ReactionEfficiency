@@ -8,7 +8,6 @@ import ROOT
 
 import makePlots  # defines helper functions to generate histograms from data trees
 
-makePlots.setupPlotStyle()
 
 #TODO convert functions to class with member functions
 def readWeights(
@@ -164,7 +163,8 @@ def defineBkgPdf(
   #     offset = shift of histogram in x-direction
   #     scale  = scaling factor of histogram in x-direction
   fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"  # correct
+    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+    # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
     + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
   )
   # constrain PDF fudge parameters
@@ -247,6 +247,12 @@ def performFit(
   # the data tree must have a double branch of the given name containing a unique combo-ID number
   fitManager.SetUp().SetIDBranchName(comboIdName)
 
+  # define kinematic bins
+  # !Note! binning needs to be defined before any data are loaded
+  if kinematicBinnings:
+    for binning in kinematicBinnings:
+      fitManager.Bins().LoadBinVar(*binning)
+
   # define components of fit model
   defineSigPdf(
     fitManager, fitVariable,
@@ -257,20 +263,15 @@ def performFit(
     comboIdName          = comboIdName,
     cut                  = cut
   )
-  defineBkgPdf(
-    fitManager, fitVariable,
-    outputDirName        = outputDirName,
-    templateDataFileName = templateDataBkgFileName,
-    templateDataTreeName = templateDataBkgTreeName,
-    weightBranchName     = "AccidWeightFactor",
-    comboIdName          = comboIdName,
-    cut                  = cut
-  )
-
-  # define kinematic bins
-  if kinematicBinnings:
-    for binning in kinematicBinnings:
-      fitManager.Bins().LoadBinVar(*binning)
+  # defineBkgPdf(
+  #   fitManager, fitVariable,
+  #   outputDirName        = outputDirName,
+  #   templateDataFileName = templateDataBkgFileName,
+  #   templateDataTreeName = templateDataBkgTreeName,
+  #   weightBranchName     = "AccidWeightFactor",
+  #   comboIdName          = comboIdName,
+  #   cut                  = cut
+  # )
 
   # create RF-sideband weights for data to be fitted
   rfSWeightLabel      = "RfSideband"
@@ -285,6 +286,7 @@ def performFit(
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
     cut               = cut
+    # cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
   )
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
@@ -323,6 +325,7 @@ def performFit(
 if __name__ == "__main__":
   os.nice(18)  # run with second highest niceness level
   ROOT.gROOT.SetBatch(True)
+  makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total execution time")
 
@@ -347,6 +350,7 @@ if __name__ == "__main__":
   # see https://root.cern/doc/master/rf109__chi2residpull_8py.html
   # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
   for dataSetName, cut in dataSets.items():
+    cut = "(IsSignal == 1)" + ("" if cut is None else f" && ({cut})")
     # fit overall distribution
     performFit(
       dataFileName,
@@ -363,7 +367,8 @@ if __name__ == "__main__":
         f"{outputDirName}/{dataSetName}",
         kinematicBinnings,
         cut,
-        templateDataSigFileName = dataFileName
+        templateDataSigFileName = dataFileName,
+        templateDataBkgFileName = dataFileName
       )
 
   ROOT.gBenchmark.Show("Total execution time")
