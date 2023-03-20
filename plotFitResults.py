@@ -4,6 +4,7 @@
 
 import array
 import collections
+import ctypes
 import itertools
 import os
 
@@ -142,12 +143,31 @@ def readYieldsFromFitDir(fitResultDirName):
 
 
 # helper function that draws zero line when needed
-def drawZeroLine(xAxis, yAxis, style = ROOT.kDashed, color = ROOT.kBlack):
-  if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
-    zeroLine = ROOT.TLine()
-    zeroLine.SetLineStyle(style)
-    zeroLine.SetLineColor(color)
-    return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack):
+  objType = obj.IsA().GetName()
+  if (objType == "TCanvas") or (objType == "TPad"):
+    xMin = ctypes.c_double()
+    xMax = ctypes.c_double()
+    yMin = ctypes.c_double()
+    yMax = ctypes.c_double()
+    obj.GetRangeAxis(xMin, yMin, xMax, yMax)
+    if (yMin.value < 0) and (yMax.value > 0):
+      zeroLine = ROOT.TLine()
+      zeroLine.SetLineStyle(style)
+      zeroLine.SetLineColor(color)
+      return zeroLine.DrawLine(xMin, 0, xMax, 0)
+  elif objType.startswith("TH") or objType.startswith("TGraph") or objType.startswith("TMulti"):
+    xAxis = obj.GetXaxis()
+    yAxis = obj.GetYaxis()
+    if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
+      zeroLine = ROOT.TLine()
+      zeroLine.SetLineStyle(style)
+      zeroLine.SetLineColor(color)
+      return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+    elif (yAxis.GetXmin() > 0) and (yAxis.GetXmax() > 0):
+      obj.SetMinimum(0)
+  else:
+    raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
 
 
 # plots fit results for kinematic bins and saves PDF in same directory as fit-result file
@@ -170,6 +190,7 @@ def plotFitResult(
     # only remove filled frame
     paramBox.SetBorderSize(0)
     paramBox.SetFillStyle(0)
+  drawZeroLine(dataFitPad)
   pdfFileName = ("Overall" if binName == "" else "") + f"{canv.GetName()}.pdf"
   if outputDirName:
     canv.SaveAs(f"{outputDirName}/{pdfFileName}")
@@ -242,7 +263,7 @@ def plotParValue1D(
   canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binVarName}{pdfFileNameSuffix}", "")
   parValueMultiGraph.Draw("APZ")
   canv.BuildLegend()
-  drawZeroLine(parValueMultiGraph.GetXaxis(), parValueMultiGraph.GetYaxis())
+  drawZeroLine(parValueMultiGraph)
   canv.SaveAs(f"{outputDirName}/{canv.GetName()}.pdf")
 
 
@@ -274,8 +295,10 @@ if __name__ == "__main__":
       if parNames is not None:
         assert parNamesInDataSet == parNames, f"The parameter set {parNamesInDataSet} of dataset '{dataSet}' is different from the parameter set {parNames} of the previous one"
       parNames = parNamesInDataSet
-    # plot fit parameters as 1D function of binning variable
+
+  # plot fit parameters as 1D function of binning variable
+  makePlots.setupPlotStyle()
+  for dataSet in dataSets:
     if parNames is not None:
-      makePlots.setupPlotStyle()
       for parName in parNames:
-        plotParValue1D(parValues, parName, binVarNames, fitResultDirName)
+        plotParValue1D(parValues, parName, binVarNames, f"{outputDirName}/{dataSet}")
