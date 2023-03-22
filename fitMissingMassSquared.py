@@ -263,15 +263,15 @@ def performFit(
     comboIdName          = comboIdName,
     cut                  = cut
   )
-  # defineBkgPdf(
-  #   fitManager, fitVariable,
-  #   outputDirName        = outputDirName,
-  #   templateDataFileName = templateDataBkgFileName,
-  #   templateDataTreeName = templateDataBkgTreeName,
-  #   weightBranchName     = "AccidWeightFactor",
-  #   comboIdName          = comboIdName,
-  #   cut                  = cut
-  # )
+  defineBkgPdf(
+    fitManager, fitVariable,
+    outputDirName        = outputDirName,
+    templateDataFileName = templateDataBkgFileName,
+    templateDataTreeName = templateDataBkgTreeName,
+    weightBranchName     = "AccidWeightFactor",
+    comboIdName          = comboIdName,
+    cut                  = cut
+  )
 
   # create RF-sideband weights for data to be fitted
   rfSWeightLabel      = "RfSideband"
@@ -350,7 +350,6 @@ if __name__ == "__main__":
   # see https://root.cern/doc/master/rf109__chi2residpull_8py.html
   # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
   for dataSetName, cut in dataSets.items():
-    cut = "(IsSignal == 1)" + ("" if cut is None else f" && ({cut})")
     # fit overall distribution
     performFit(
       dataFileName,
