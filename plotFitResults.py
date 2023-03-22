@@ -303,7 +303,6 @@ if __name__ == "__main__":
 
   # plot fit parameters as 1D function of binning variable
   makePlots.setupPlotStyle()
-  for dataSet in dataSets:
-    if parNames is not None:
-      for parName in parNames:
-        plotParValue1D(parValues, parName, binVarNames, f"{outputDirName}/{dataSet}")
+  if parNames is not None:
+    for parName in parNames:
+      plotParValue1D(parValues, parName, binVarNames, outputDirName)
