@@ -46,23 +46,23 @@ def defineSigPdf(
   comboIdName          = None,
   cut                  = None
 ):
-  #TODO make different PDFs selectable
+  #TODO implement function that constructs a selectable PDF and can be used construct signal as well as background PDFs
   print("Defining signal PDF 'SigPdf'", flush = True)
 
-  # # define single Gaussian
+  # # single Gaussian
   # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
 
-  # # define double Gaussian
-  # # separate means
-  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
-  #   ")")
-  # # same mean
+  # # double Gaussian
+  # # with same mean
   # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
   #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
   #                         f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
-  #   ")")
+  # ")")
+  # # with separate means
+  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
+  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  # ")")
 
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = "RfSideband"
@@ -79,7 +79,7 @@ def defineSigPdf(
     # cut               = cut
     cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 1)'
   )
-  # define histogram PDF with fudge parameters that allow small deviations from the given shape:
+  # histogram PDF with fudge parameters that allow small deviations from the given shape:
   #     smear  = width of Gaussian the histogram is convoluted with
   #     offset = shift of histogram in x-direction
   #     scale  = scaling factor of histogram in x-direction
@@ -123,63 +123,87 @@ def defineBkgPdf(
   comboIdName          = None,
   cut                  = None
 ):
-  #TODO make different PDFs selectable
   print("Defining background PDF 'BkgPdf'", flush = True)
 
-  # # define 2nd-order positive-definite polynomial
+  # # 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
 
-  # define Chebychev polynomial
+  # Chebychev polynomial
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 100]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1], p2_BkgPdf[0, -1, 1]}})")
 
-  # # define Bernstein polynomial
+  # # Bernstein polynomial
   # # see https://root.cern.ch/doc/master/classRooBernstein.html
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
 
-  #TODO move code to define histogram PDF to separate function
-  # create RF-sideband weights for histogram PDF
-  rfSWeightLabel      = "RfSideband"
-  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsBkgPdf.root"
-  rfSWeightObjectName = f"{rfSWeightLabel}WeightsBkgPdf"
-  readWeights(
-    inputFileName     = templateDataFileName,
-    inputTreeName     = templateDataTreeName,
-    weightBranchName  = weightBranchName,
-    comboIdName       = comboIdName,
-    sWeightLabel      = rfSWeightLabel,
-    sWeightFileName   = rfSWeightFileName,
-    sWeightObjectName = rfSWeightObjectName,
-    # cut               = cut
-    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
-  )
-  # define histogram PDF with fudge parameters that allow small deviations from the given shape:
-  #     smear  = width of Gaussian the histogram is convoluted with
-  #     offset = shift of histogram in x-direction
-  #     scale  = scaling factor of histogram in x-direction
-  fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-    # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
-  )
-  # constrain PDF fudge parameters
-  # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
-  #     Gaussian mean  = initial value
-  #     Gaussian sigma = max / 5 for smear
-  #     Gaussian sigma = range / 10 for offset and scale
-  bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
-  fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
-  fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain offset
-  fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
-  # load data for template histograms
-  print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
-  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
-  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "BkgPdf")
+  # # double Gaussian with separate means
+  # fitManager.SetUp().FactoryPDF("SUM::BkgPdf("
+  #   f"r_BkgPdf[0.5, 0, 1] * Gaussian::BkgPdf_N1({fitVariable}, mean1_BkgPdf[1.1, 0, 2], width1_BkgPdf[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::BkgPdf_N2({fitVariable}, mean2_BkgPdf[0.9, 0, 2], width2_BkgPdf[0.5, 0.01, 2])"   # narrow Gaussian
+  # ")")
+
+  # various implementations of skewed Gaussians
+  # # "logarithmic Gaussian"
+  # # Eq. (9) in NIMA 441 (2000) 401 at https://doi.org/10.1016/S0168-9002(99)00992-4
+  # #TODO does not work; RooFit complains about PDF being -inf; unclear why
+  # fitManager.SetUp().FactoryPDF(f"Novosibirsk::BkgPdf({fitVariable}, peak_BkgPdf[1.1, 0, 2], width_BkgPdf[1.0, 0.01, 2], skew_BkgPdf[-0.5, -2, 2])")
+  # # skew normal PDF (see https://en.wikipedia.org/wiki/Skew_normal_distribution)
+  # fitManager.SetUp().FactoryPDF("EXPR::BkgPdf("
+  #   f"'2 * TMath::Gaus({fitVariable}, peak_BkgPdf, width_BkgPdf, true)"
+  #   f"* TMath::Erfc(skew_BkgPdf * (({fitVariable} - peak_BkgPdf) / width_BkgPdf))',"
+  #   f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.9, 0.01, 2], skew_BkgPdf[-2.5, -5, 5])")
+  # exponentially modified Gaussian PDF (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
+  # smaller skew means higher skewness
+  # max = peak + 1 / skew
+  fitManager.SetUp().FactoryPDF("EXPR::BkgPdf("
+    f"'(skew_BkgPdf / 2) * TMath::Exp((skew_BkgPdf / 2) * (2 * peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - 2 * {fitVariable}))"
+    f"* TMath::Erfc((peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - {fitVariable}) / (sqrt(2) * width_BkgPdf))',"
+    f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.5, 0.01, 2], skew_BkgPdf[2, 0, 15])")
+  #TODO try https://en.wikipedia.org/wiki/Normal-exponential-gamma_distribution
+
+  # #TODO move code to define histogram PDF to separate function
+  # # create RF-sideband weights for histogram PDF
+  # rfSWeightLabel      = "RfSideband"
+  # rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsBkgPdf.root"
+  # rfSWeightObjectName = f"{rfSWeightLabel}WeightsBkgPdf"
+  # readWeights(
+  #   inputFileName     = templateDataFileName,
+  #   inputTreeName     = templateDataTreeName,
+  #   weightBranchName  = weightBranchName,
+  #   comboIdName       = comboIdName,
+  #   sWeightLabel      = rfSWeightLabel,
+  #   sWeightFileName   = rfSWeightFileName,
+  #   sWeightObjectName = rfSWeightObjectName,
+  #   # cut               = cut
+  #   cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
+  # )
+  # # histogram PDF with fudge parameters that allow small deviations from the given shape:
+  # #     smear  = width of Gaussian the histogram is convoluted with
+  # #     offset = shift of histogram in x-direction
+  # #     scale  = scaling factor of histogram in x-direction
+  # fitManager.SetUp().FactoryPDF(
+  #   f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+  #   # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+  #   + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
+  # )
+  # # constrain PDF fudge parameters
+  # # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
+  # #     Gaussian mean  = initial value
+  # #     Gaussian sigma = max / 5 for smear
+  # #     Gaussian sigma = range / 10 for offset and scale
+  # bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
+  # fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
+  # fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain offset
+  # fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
+  # # load data for template histograms
+  # print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
+  # + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
+  # fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "BkgPdf")
 
   bkgPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", bkgPdfWeightStartVal)
@@ -229,7 +253,7 @@ def performFit(
   comboIdName             = "ComboID",  # branch name with unique ID for each combo
   regenBinnedTrees        = False,  # if set, force regeneration of files with binned trees
   nmbThreadsPerJob        = 5,
-  nmbProofJobs            = 9  #TODO? automatically determine number of PROOF jobs
+  nmbProofJobs            = 10  #TODO? automatically determine number of PROOF jobs
 ):
   print(f"fitting data in '{dataFileName}'" + ("" if cut is None else f" applying cut '{cut}'")
     + (" using no binning" if kinematicBinnings is None else f" using binning '{kinematicBinnings}'")
