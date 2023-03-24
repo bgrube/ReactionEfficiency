@@ -70,7 +70,7 @@ def getFitResultFileNames(
   axes         = bins.GetVarAxis()
   # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
   binNames     = [str(binName) for binName in bins.GetBinNames()]
-  binFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
+  binFileNames = [f"{os.path.dirname(str(fileName))}/ResultsHSMinuit2.root" for fileName in bins.GetFileNames()]
   axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
     axisBinCenters         = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
@@ -133,30 +133,6 @@ def readParValuesFromFitDir(bins, binVarNames):
   return parValues, parNames
 
 
-# reads yields from fit results in given directory and returns
-#     list of dicts with yields [ { <binning var> : <bin center>, ..., "Signal" : <yield>, "Background" : <yield> }, ... ]
-#     tuple with binning variables (<binning var>, ... )
-def readYieldsFromFitDir(fitResultDirName):
-  yields = []
-  # read overall yields from fit-result file
-  fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
-  if os.path.isfile(fitResultFileName):
-    yieldsInBin = readYieldsFromFitFile(fitResultFileName)
-    yieldsInBin.update({"Overall" : None})  # tag overall yields with special axis name
-    print(f"Read overall yields: {yieldsInBin}")
-    yields.append(yieldsInBin)  # first entry
-  # get binning from file
-  bins, binVarNames = getBinningFromDir(fitResultDirName)
-  if bins is not None:
-    for fitResultFileName in getFitResultFileNames(bins, binVarNames):
-      yieldsInBin = readYieldsFromFitFile(fitResultFileName["FitResultFileName"])
-      # copy axis name and bin center
-      yieldsInBin.update({key : fitResultFileName[key] for key in fitResultFileName if key != "FitResultFileName"})
-      print(f"Read yields for kinematic bin: {yieldsInBin}")
-      yields.append(yieldsInBin)
-  return yields, binVarNames
-
-
 # helper function that draws zero line when needed
 def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack):
   objType = obj.IsA().GetName()
@@ -185,13 +161,17 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack):
     raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
 
 
-# plots fit results for kinematic bins and saves PDF in same directory as fit-result file
+# plots fit result given directory and saves PDF
 def plotFitResult(
-  fitResultFileName,
+  fitResultDirName,
   fitVariable,
   binName = "",
-  outputDirName = None  # overrides default (i.e. same dir as fit result file) if set
+  outputDirName = None  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ):
+  fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
+  if not os.path.isfile(fitResultFileName):
+    print(f"Cannot find file '{fitResultFileName}'; skipping")
+    return
   print(f"Plotting fit result in file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{binName}_{fitVariable}"
@@ -223,9 +203,9 @@ def plotFitResults(
 ):
   # assume that lists returned by ROOT.Bins.GetBinNames() and ROOT.Bins.GetFileNames() have the same ordering
   binNames = [str(binName) for binName in bins.GetBinNames()]
-  fitResultFileNames = [str(fileName).replace("TreeData.root", "ResultsHSMinuit2.root") for fileName in bins.GetFileNames()]
-  for index, fitResultFileName  in enumerate(fitResultFileNames):
-    plotFitResult(fitResultFileName, fitVariable, binNames[index], outputDirName)
+  fitResultDirNames = [os.path.dirname(str(fileName)) for fileName in bins.GetFileNames()]
+  for index, fitResultDirName  in enumerate(fitResultDirNames):
+    plotFitResult(fitResultDirName, fitVariable, binNames[index], outputDirName)
 
 
 # returns
@@ -260,7 +240,6 @@ def plotParValue1D(
   channel           = "4pi",
   markerSize        = 0.75
 ):
-  assert len(binningVars) == 1, f"1 binning variable expected but {len(binningVars)} given: {binningVars}"
   binVarName  = binningVars[0]
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binVarName}'")
   parValueMultiGraph = ROOT.TMultiGraph()
@@ -298,11 +277,8 @@ if __name__ == "__main__":
   binVarNames = None  # list of lists with binning variables for each binning [ [ <binning var>, ... ], ... ]
   for dataSet in dataSets:
     fitResultDirName  = f"{outputDirName}/{dataSet}"
-    #TODO move definition of fitResultFileName into plotFitResult()
-    fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
-    if os.path.isfile(fitResultFileName):
-      print(f"Plotting overall fit result")
-      plotFitResult(fitResultFileName, fitVariable)
+    print(f"Plotting overall fit result")
+    plotFitResult(fitResultDirName, fitVariable)
     binVarNamesInDataSet = []
     for bins, binningVars in getBinningsFromDir(fitResultDirName):
       binVarNamesInDataSet.append(binningVars)
@@ -326,4 +302,5 @@ if __name__ == "__main__":
   if parNames is not None:
     for parName in parNames:
       for binningVars in binVarNames:
-        plotParValue1D(parValues, parName, binningVars, outputDirName)
+        if len(binningVars) == 1:
+          plotParValue1D(parValues, parName, binningVars, outputDirName)
