@@ -242,7 +242,8 @@ def performFit(
   dataFileName,      # path to data to fit
   outputDirName,     # where to write all output files
   kinematicBinning,  # list of with binning info, one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
-  cut                     = None,                 # optional selection cut(s) to apply to data and template histograms
+  commonCut               = None,                 # optional selection cut(s) applied to data and template histograms
+  dataCut                 = None,                 # optional selection cut(s) applied to data only (in addition to commonCut)
   dataTreeName            = "pippippimpimpmiss",  # tree name of data to fit
   templateDataSigFileName = None,                 # path to template data for signal histogram
   templateDataSigTreeName = "pippippimpimpmiss",  # tree name of data for signal histogram template
@@ -255,17 +256,26 @@ def performFit(
   nmbThreadsPerJob        = 5,
   nmbProofJobs            = 10  #TODO? automatically determine number of PROOF jobs
 ):
-  print(f"fitting data in '{dataFileName}'" + ("" if cut is None else f" applying cut '{cut}'")
-    + (" using no binning" if kinematicBinning is None else f" using binning '{kinematicBinning}'")
-    + f" and writing output to '{outputDirName}'")
-  print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
-  gBenchmarkLabel = f"Time for fit in '{outputDirName}'"
-  ROOT.gBenchmark.Start(gBenchmarkLabel)
-
   # create the fit manager and set the output directory for fit results, plots, and weights
+  fitDirName = None
+  if kinematicBinning is None:
+    fitDirName = outputDirName
+  else:
+    # create subdirectory for binning
+    binningVars = [binning[0] for binning in kinematicBinning]
+    binningDirName = "_".join(binningVars)
+    fitDirName = f"{outputDirName}/{binningDirName}"
+  print(f"fitting data in '{dataFileName}'" + ("" if commonCut is None else f" applying cut '{commonCut}' to data and template histograms")
+    + ("" if dataCut is None else f" and additional cut '{dataCut}' to data")
+    + (" using no binning" if kinematicBinning is None else f" using binning '{kinematicBinning}'")
+    + f" and writing output to '{fitDirName}'")
+  gBenchmarkLabel = f"Time for fit in '{fitDirName}'"
+  ROOT.gBenchmark.Start(gBenchmarkLabel)
   fitManager = ROOT.FitManager()
-  fitManager.SetUp().SetOutDir(outputDirName)
+  fitManager.SetUp().SetOutDir(fitDirName)
+
   # define fit variable and set fit range
+  print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
   fitManager.SetUp().LoadVariable(f"{fitVariable}[{fitRange}]")
   # define combo-ID variable
   # the data tree must have a double branch of the given name containing a unique combo-ID number
@@ -280,26 +290,26 @@ def performFit(
   # define components of fit model
   defineSigPdf(
     fitManager, fitVariable,
-    outputDirName        = outputDirName,
+    outputDirName        = fitDirName,
     templateDataFileName = templateDataSigFileName,
     templateDataTreeName = templateDataSigTreeName,
     weightBranchName     = "AccidWeightFactor",
     comboIdName          = comboIdName,
-    cut                  = cut
+    cut                  = commonCut
   )
   defineBkgPdf(
     fitManager, fitVariable,
-    outputDirName        = outputDirName,
+    outputDirName        = fitDirName,
     templateDataFileName = templateDataBkgFileName,
     templateDataTreeName = templateDataBkgTreeName,
     weightBranchName     = "AccidWeightFactor",
     comboIdName          = comboIdName,
-    cut                  = cut
+    cut                  = commonCut
   )
 
   # create RF-sideband weights for data to be fitted
   rfSWeightLabel      = "RfSideband"
-  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsData.root"
+  rfSWeightFileName   = f"{fitDirName}/rfSidebandWeightsData.root"
   rfSWeightObjectName = f"{rfSWeightLabel}WeightsData"
   readWeights(
     inputFileName     = dataFileName,
@@ -309,14 +319,13 @@ def performFit(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = cut
-    # cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
+    cut               = ("" if commonCut is None else f"({commonCut}) && ") + f"({dataCut})"
   )
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
 
   # load and bin data to be fitted
-  binFileNames = binnedTreeFilesIn(outputDirName) if kinematicBinning else None
+  binFileNames = binnedTreeFilesIn(fitDirName) if kinematicBinning else None
   if binFileNames is None or regenBinnedTrees:
     if kinematicBinning:
       if regenBinnedTrees:
@@ -330,7 +339,7 @@ def performFit(
       print(f"    {binFileName}", flush = True)
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
-  # perform fit and plot fit result
+  # perform fit and create fit-result plots
   if not kinematicBinning:
     nmbThreadsPerJob = 8 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
@@ -347,17 +356,22 @@ def performFit(
 
 
 if __name__ == "__main__":
-  os.nice(18)  # run with second highest niceness level
+  os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
   makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total execution time")
 
-  # dataset           = "030730",
-  dataset           = "bggen_2017_01-ver03"
-  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
+  # dataSample        = "030730",
+  dataSample        = "bggen_2017_01-ver03"
+  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataSample}.root.brufit"
+  # dataCut           = None
+  dataCut           = "(IsSignal == 1)"  # fit bggen signal data
+  # dataCut           = "(IsSignal == 0)"  # fit bggen background data
   outputDirName     = "./BruFitOutput"
   kinematicBinnings = [
+    None,  # no binning -> fit overall distribution
+    # 1D binnings; only one binning par variable name allowed
     [("BeamEnergy",          9,    3.0,   12.0)],
     [("MissingProtonP",     10,    0.0,    3.5)],
     [("MissingProtonTheta", 10,    0.0,   65.0)],
@@ -373,24 +387,16 @@ if __name__ == "__main__":
   #TODO calculate chi^2
   # see https://root.cern/doc/master/rf109__chi2residpull_8py.html
   # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
-  for dataSetName, cut in dataSets.items():
-    # fit overall distribution
-    performFit(
-      dataFileName,
-      f"{outputDirName}/{dataSetName}",
-      kinematicBinning        = None,
-      cut                     = cut,
-      templateDataSigFileName = dataFileName,
-      templateDataBkgFileName = dataFileName
-    )
+  # fit all datasets and bins
+  for dataSetName, dataSetCut in dataSets.items():
     if kinematicBinnings:
       for kinematicBinning in kinematicBinnings:
-        # fit kinematic bins
         performFit(
           dataFileName,
           f"{outputDirName}/{dataSetName}",
           kinematicBinning,
-          cut,
+          commonCut               = dataSetCut,
+          dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
           templateDataBkgFileName = dataFileName
         )
