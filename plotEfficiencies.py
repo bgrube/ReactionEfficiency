@@ -58,7 +58,7 @@ def readDataIntegralsFromFitDir(
     print(f"Read overall integral: {integralOverall}")
     integrals.append(integralOverall)  # first entry
   # get binning from file
-  bins, binVarNames = plotFitResults.getBinningFromFile(fitResultDirName)
+  bins, binVarNames = plotFitResults.getBinningFromDir(fitResultDirName)
   if bins is not None:
     for fitResultFileName in plotFitResults.getFitResultFileNames(bins, binVarNames):
       integralInBin = {"Signal" : readDataIntegralFromFitFile(fitResultFileName["FitResultFileName"], fitVariable, fitResultFileName["BinName"])}
@@ -82,7 +82,7 @@ def readYieldsFromFitDir(fitResultDirName):
     print(f"Read overall yields: {yieldsOverall}")
     yields.append(yieldsOverall)  # first entry
   # get binning from file
-  bins, binVarNames = plotFitResults.getBinningFromFile(fitResultDirName)
+  bins, binVarNames = plotFitResults.getBinningFromDir(fitResultDirName)
   if bins is not None:
     for fitResultFileName in plotFitResults.getFitResultFileNames(bins, binVarNames):
       yieldsInBin, _ = plotFitResults.readParValuesFromFitFile(fitResultFileName["FitResultFileName"], YIELD_PAR_NAMES)
