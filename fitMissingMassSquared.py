@@ -157,53 +157,53 @@ def defineBkgPdf(
   #   f"'2 * TMath::Gaus({fitVariable}, peak_BkgPdf, width_BkgPdf, true)"
   #   f"* TMath::Erfc(skew_BkgPdf * (({fitVariable} - peak_BkgPdf) / width_BkgPdf))',"
   #   f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.9, 0.01, 2], skew_BkgPdf[-2.5, -5, 5])")
-  # exponentially modified Gaussian PDF (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
-  # smaller skew means higher skewness
-  # max = peak + 1 / skew
-  fitManager.SetUp().FactoryPDF("EXPR::BkgPdf("
-    f"'(skew_BkgPdf / 2) * TMath::Exp((skew_BkgPdf / 2) * (2 * peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - 2 * {fitVariable}))"
-    f"* TMath::Erfc((peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - {fitVariable}) / (sqrt(2) * width_BkgPdf))',"
-    f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.5, 0.01, 2], skew_BkgPdf[2, 0, 15])")
+  # # exponentially modified Gaussian PDF (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
+  # # smaller skew means higher skewness
+  # # max = peak + 1 / skew
+  # fitManager.SetUp().FactoryPDF("EXPR::BkgPdf("
+  #   f"'(skew_BkgPdf / 2) * TMath::Exp((skew_BkgPdf / 2) * (2 * peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - 2 * {fitVariable}))"
+  #   f"* TMath::Erfc((peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - {fitVariable}) / (sqrt(2) * width_BkgPdf))',"
+  #   f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.5, 0.01, 2], skew_BkgPdf[2, 0, 15])")
   #TODO try https://en.wikipedia.org/wiki/Normal-exponential-gamma_distribution
 
   # #TODO move code to define histogram PDF to separate function
-  # # create RF-sideband weights for histogram PDF
-  # rfSWeightLabel      = "RfSideband"
-  # rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsBkgPdf.root"
-  # rfSWeightObjectName = f"{rfSWeightLabel}WeightsBkgPdf"
-  # readWeights(
-  #   inputFileName     = templateDataFileName,
-  #   inputTreeName     = templateDataTreeName,
-  #   weightBranchName  = weightBranchName,
-  #   comboIdName       = comboIdName,
-  #   sWeightLabel      = rfSWeightLabel,
-  #   sWeightFileName   = rfSWeightFileName,
-  #   sWeightObjectName = rfSWeightObjectName,
-  #   # cut               = cut
-  #   cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
-  # )
-  # # histogram PDF with fudge parameters that allow small deviations from the given shape:
-  # #     smear  = width of Gaussian the histogram is convoluted with
-  # #     offset = shift of histogram in x-direction
-  # #     scale  = scaling factor of histogram in x-direction
-  # fitManager.SetUp().FactoryPDF(
-  #   f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-  #   # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-  #   + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
-  # )
-  # # constrain PDF fudge parameters
-  # # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
-  # #     Gaussian mean  = initial value
-  # #     Gaussian sigma = max / 5 for smear
-  # #     Gaussian sigma = range / 10 for offset and scale
-  # bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
-  # fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
-  # fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain offset
-  # fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
-  # # load data for template histograms
-  # print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
-  # + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
-  # fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "BkgPdf")
+  # create RF-sideband weights for histogram PDF
+  rfSWeightLabel      = "RfSideband"
+  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsBkgPdf.root"
+  rfSWeightObjectName = f"{rfSWeightLabel}WeightsBkgPdf"
+  readWeights(
+    inputFileName     = templateDataFileName,
+    inputTreeName     = templateDataTreeName,
+    weightBranchName  = weightBranchName,
+    comboIdName       = comboIdName,
+    sWeightLabel      = rfSWeightLabel,
+    sWeightFileName   = rfSWeightFileName,
+    sWeightObjectName = rfSWeightObjectName,
+    # cut               = cut
+    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
+  )
+  # histogram PDF with fudge parameters that allow small deviations from the given shape:
+  #     smear  = width of Gaussian the histogram is convoluted with
+  #     offset = shift of histogram in x-direction
+  #     scale  = scaling factor of histogram in x-direction
+  fitManager.SetUp().FactoryPDF(
+    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+    # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
+  )
+  # constrain PDF fudge parameters
+  # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
+  #     Gaussian mean  = initial value
+  #     Gaussian sigma = max / 5 for smear
+  #     Gaussian sigma = range / 10 for offset and scale
+  bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
+  fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
+  fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain offset
+  fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
+  # load data for template histograms
+  print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
+  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
+  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "BkgPdf")
 
   bkgPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", bkgPdfWeightStartVal)
@@ -239,9 +239,9 @@ def setRooFitOptions(
 
 
 def performFit(
-  dataFileName,       # path to data to fit
-  outputDirName,      # where to write all output files
-  kinematicBinnings,  # list of tuples with binning info [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
+  dataFileName,      # path to data to fit
+  outputDirName,     # where to write all output files
+  kinematicBinning,  # list of with binning info, one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
   cut                     = None,                 # optional selection cut(s) to apply to data and template histograms
   dataTreeName            = "pippippimpimpmiss",  # tree name of data to fit
   templateDataSigFileName = None,                 # path to template data for signal histogram
@@ -256,7 +256,7 @@ def performFit(
   nmbProofJobs            = 10  #TODO? automatically determine number of PROOF jobs
 ):
   print(f"fitting data in '{dataFileName}'" + ("" if cut is None else f" applying cut '{cut}'")
-    + (" using no binning" if kinematicBinnings is None else f" using binning '{kinematicBinnings}'")
+    + (" using no binning" if kinematicBinning is None else f" using binning '{kinematicBinning}'")
     + f" and writing output to '{outputDirName}'")
   print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
   gBenchmarkLabel = f"Time for fit in '{outputDirName}'"
@@ -273,8 +273,8 @@ def performFit(
 
   # define kinematic bins
   # !Note! binning needs to be defined before any data are loaded
-  if kinematicBinnings:
-    for binning in kinematicBinnings:
+  if kinematicBinning:
+    for binning in kinematicBinning:
       fitManager.Bins().LoadBinVar(*binning)
 
   # define components of fit model
@@ -316,9 +316,9 @@ def performFit(
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
 
   # load and bin data to be fitted
-  binFileNames = binnedTreeFilesIn(outputDirName) if kinematicBinnings else None
+  binFileNames = binnedTreeFilesIn(outputDirName) if kinematicBinning else None
   if binFileNames is None or regenBinnedTrees:
-    if kinematicBinnings:
+    if kinematicBinning:
       if regenBinnedTrees:
         print("Forcing regeneration of binned tree files", flush = True)
       else:
@@ -331,10 +331,10 @@ def performFit(
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
   # perform fit and plot fit result
-  if not kinematicBinnings:
+  if not kinematicBinning:
     nmbThreadsPerJob = 8 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
-  if kinematicBinnings:
+  if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
     print(f"running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel", flush = True)
     ROOT.Proof.Go(fitManager, nmbProofJobs)
@@ -358,10 +358,10 @@ if __name__ == "__main__":
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root.brufit"
   outputDirName     = "./BruFitOutput"
   kinematicBinnings = [
-    # ("BeamEnergy",          9,    3.0,   12.0)
-    ("MissingProtonP",     10,    0.0,    3.5)
-    # ("MissingProtonTheta", 13,    0.0,   65.0)
-    # ("MissingProtonPhi",   10, -180.0, +180.0)
+    [("BeamEnergy",          9,    3.0,   12.0)],
+    [("MissingProtonP",     10,    0.0,    3.5)],
+    [("MissingProtonTheta", 10,    0.0,   65.0)],
+    [("MissingProtonPhi",   10, -180.0, +180.0)]
   ]
 
   dataSets = {
@@ -378,20 +378,21 @@ if __name__ == "__main__":
     performFit(
       dataFileName,
       f"{outputDirName}/{dataSetName}",
-      kinematicBinnings = None,
-      cut = cut,
+      kinematicBinning        = None,
+      cut                     = cut,
       templateDataSigFileName = dataFileName,
       templateDataBkgFileName = dataFileName
     )
     if kinematicBinnings:
-      # fit kinematic bins
-      performFit(
-        dataFileName,
-        f"{outputDirName}/{dataSetName}",
-        kinematicBinnings,
-        cut,
-        templateDataSigFileName = dataFileName,
-        templateDataBkgFileName = dataFileName
-      )
+      for kinematicBinning in kinematicBinnings:
+        # fit kinematic bins
+        performFit(
+          dataFileName,
+          f"{outputDirName}/{dataSetName}",
+          kinematicBinning,
+          cut,
+          templateDataSigFileName = dataFileName,
+          templateDataBkgFileName = dataFileName
+        )
 
   ROOT.gBenchmark.Show("Total execution time")
