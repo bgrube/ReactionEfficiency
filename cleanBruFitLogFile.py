@@ -83,4 +83,4 @@ CLING_ERROR_MARKERS = {
 
 if __name__ == "__main__":
   removeFromFiles("./fitMissingMassSquared.log", dict(BRANCH_ERROR_MARKERS, **CLING_ERROR_MARKERS))
-  removeFromFiles("./BruFitOutput/*/*.txt",      dict(BRANCH_ERROR_MARKERS, **CLING_ERROR_MARKERS))
+  removeFromFiles("./BruFitOutput/*/*/*.txt",    dict(BRANCH_ERROR_MARKERS, **CLING_ERROR_MARKERS))
