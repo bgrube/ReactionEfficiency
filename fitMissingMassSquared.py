@@ -80,7 +80,7 @@ def defineSigPdf(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 1)',
+    cut               = " && ".join(filter(None, (cut, "(IsSignal == 1)"))),
   )
   # histogram PDF with fudge parameters that allow (small) deviations from the original shape:
   #     smear = width of Gaussian the histogram is convoluted with
@@ -180,7 +180,7 @@ def defineBkgPdf(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)',
+    cut               = " && ".join(filter(None, (cut, "(IsSignal == 0)"))),
   )
   # histogram PDF with fudge parameters that allow small deviations from the given shape:
   #     smear  = width of Gaussian the histogram is convoluted with
@@ -325,7 +325,7 @@ def performFit(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = ("" if commonCut is None else f"({commonCut}) && ") + f"({dataCut})",
+    cut               = " && ".join(filter(None, (commonCut, dataCut))),
   )
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
