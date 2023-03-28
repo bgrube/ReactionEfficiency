@@ -18,7 +18,7 @@ def readWeights(
   sWeightLabel,       # label used when applying weights
   sWeightFileName,    # ROOT file name to which weight object will be written
   sWeightObjectName,  # name of weight object saved to ROOT file
-  cut = None          # optional selection cut to apply
+  cut = None,         # optional selection cut to apply
 ):
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f", writing them to key '{sWeightObjectName}' in file '{sWeightFileName}', and assigning label '{sWeightLabel}'"
@@ -44,30 +44,34 @@ def defineSigPdf(
   templateDataTreeName = None,
   weightBranchName     = None,
   comboIdName          = None,
-  cut                  = None
+  cut                  = None,
+  smearParRange        = (0, 0.5),       # set to None to fix smear parameter
+  shiftParRange        = (-0.25, 0.25),  # set to None to fix shift parameter; ensure lower and upper range is a multiple of the bin width
+  scaleParRange        = (0.5, 1.5),     # set to None to fix scale parameter
+  pdfName              = "SigPdf",
 ):
   #TODO implement function that constructs a selectable PDF and can be used construct signal as well as background PDFs
-  print("Defining signal PDF 'SigPdf'", flush = True)
+  print(f"Defining signal PDF '{pdfName}'", flush = True)
 
   # # single Gaussian
-  # fitManager.SetUp().FactoryPDF(f"Gaussian::SigPdf({fitVariable}, mean_SigPdf[{meanStartVal}, 0, 2], width_SigPdf[{widthStartVal}, 0.1, 3])")
+  # fitManager.SetUp().FactoryPDF(f"Gaussian::{pdfName}({fitVariable}, mean_{pdfName}[{meanStartVal}, 0, 2], width_{pdfName}[{widthStartVal}, 0.1, 3])")
 
   # # double Gaussian
   # # with same mean
-  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean_SigPdf[{0.9383**2}, 0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean_SigPdf,                    width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  # fitManager.SetUp().FactoryPDF("SUM::{pdfName}("
+  #   f"r_{pdfName}[0.5, 0, 1] * Gaussian::{pdfName}_N1({fitVariable}, mean_{pdfName}[{0.9383**2}, 0, 2], width1_{pdfName}[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::{pdfName}_N2({fitVariable}, mean_{pdfName},                    width2_{pdfName}[0.2, 0.01, 2])"   # narrow Gaussian
   # ")")
   # # with separate means
-  # fitManager.SetUp().FactoryPDF("SUM::SigPdf("
-  #   f"r_SigPdf[0.5, 0, 1] * Gaussian::SigPdf_N1({fitVariable}, mean1_SigPdf[1.0,         0, 2], width1_SigPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::SigPdf_N2({fitVariable}, mean2_SigPdf[{0.9383**2}, 0, 2], width2_SigPdf[0.2, 0.01, 2])"   # narrow Gaussian
+  # fitManager.SetUp().FactoryPDF("SUM::{pdfName}("
+  #   f"r_{pdfName}[0.5, 0, 1] * Gaussian::{pdfName}_N1({fitVariable}, mean1_{pdfName}[1.0,         0, 2], width1_{pdfName}[1.0, 0.01, 2]),"  # wide Gaussian
+  #                         f"Gaussian::{pdfName}_N2({fitVariable}, mean2_{pdfName}[{0.9383**2}, 0, 2], width2_{pdfName}[0.2, 0.01, 2])"   # narrow Gaussian
   # ")")
 
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = "RfSideband"
-  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsSigPdf.root"
-  rfSWeightObjectName = f"{rfSWeightLabel}WeightsSigPdf"
+  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeights{pdfName}.root"
+  rfSWeightObjectName = f"{rfSWeightLabel}Weights{pdfName}"
   readWeights(
     inputFileName     = templateDataFileName,
     inputTreeName     = templateDataTreeName,
@@ -76,41 +80,38 @@ def defineSigPdf(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    # cut               = cut
-    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 1)'
+    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 1)',
   )
-  # histogram PDF with fudge parameters that allow small deviations from the given shape:
-  #     smear  = width of Gaussian the histogram is convoluted with
-  #     offset = shift of histogram in x-direction
-  #     scale  = scaling factor of histogram in x-direction
+  # histogram PDF with fudge parameters that allow (small) deviations from the original shape:
+  #     smear = width of Gaussian the histogram is convoluted with
+  #     shift = shifts histogram in x-direction, i.e. PDF(x - shift)
+  #     scale = scales histogram in x-direction around its maximum value, i.e. PDF(scale * (x - maxPos) + maxPos)
+  smearDef = f"smear_{pdfName}[0" + ("]" if smearParRange is None else f", {smearParRange[0]}, {smearParRange[1]}]")
+  shiftDef = f"shift_{pdfName}[0" + ("]" if shiftParRange is None else f", {shiftParRange[0]}, {shiftParRange[1]}]")
+  scaleDef = f"scale_{pdfName}[1" + ("]" if scaleParRange is None else f", {scaleParRange[0]}, {scaleParRange[1]}]")
   fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1, 0.5, 1.5])"  # correct
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1, 0.5, 1.5])"  # line at average
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0], scale_SigPdf[1, 0.5, 1.5])"  # line at 0
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1])"  # weird
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0, 0, 0.5], offset_SigPdf[0], scale_SigPdf[1])"  # line
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0, -0.25, 0.25], scale_SigPdf[1])"  # line above peak
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0], scale_SigPdf[1, 0.5, 1.5])"  # line
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0], scale_SigPdf[1])"  # line at 0
-    # f"RooHSEventsHistPDF::SigPdf({fitVariable}, smear_SigPdf[0], offset_SigPdf[0.25], scale_SigPdf[1])"  # line at 0
+    f"RooHSEventsHistPDF::{pdfName}({fitVariable}, {smearDef}, {shiftDef}, {scaleDef})"
     + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
   )
   # constrain PDF fudge parameters
-  # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
+  # the constraints are derived from the smear, shift, and scale parameter initial values and limits, i.e.
   #     Gaussian mean  = initial value
   #     Gaussian sigma = max / 5 for smear
-  #     Gaussian sigma = range / 10 for offset and scale
-  sigPdf = fitManager.SetUp().WS().pdf("SigPdf")
-  fitManager.SetUp().AddGausConstraint(sigPdf.AlphaConstraint())  # constrain smear
-  fitManager.SetUp().AddGausConstraint(sigPdf.OffConstraint())    # constrain offset
-  fitManager.SetUp().AddGausConstraint(sigPdf.ScaleConstraint())  # constrain scale
-  # load data for template histograms
-  print(f"Loading data for histogram PDF 'SigPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
+  #     Gaussian sigma = range / 10 for shift and scale
+  pdf = fitManager.SetUp().WS().pdf(pdfName)
+  if smearParRange is not None:
+    fitManager.SetUp().AddGausConstraint(pdf.AlphaConstraint())  # constrain smear
+  if shiftParRange is not None:
+    fitManager.SetUp().AddGausConstraint(pdf.OffConstraint())    # constrain shift
+  if scaleParRange is not None:
+    fitManager.SetUp().AddGausConstraint(pdf.ScaleConstraint())  # constrain scale
+  # load data for template histograms; ensure that calling code has already defined the kinematical binnings
+  print(f"Loading data for histogram PDF '{pdfName}' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
   + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
-  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "SigPdf")
+  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, pdfName)
 
-  sigPdfWeightStartVal = 1.0
-  fitManager.SetUp().LoadSpeciesPDF("SigPdf", sigPdfWeightStartVal)
+  pdfWeightStartVal = 1.0
+  fitManager.SetUp().LoadSpeciesPDF(pdfName, pdfWeightStartVal)
 
 
 def defineBkgPdf(
@@ -121,7 +122,7 @@ def defineBkgPdf(
   templateDataTreeName = None,
   weightBranchName     = None,
   comboIdName          = None,
-  cut                  = None
+  cut                  = None,
 ):
   print("Defining background PDF 'BkgPdf'", flush = True)
 
@@ -179,26 +180,25 @@ def defineBkgPdf(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    # cut               = cut
-    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)'
+    cut               = ("" if cut is None else f"({cut}) && ") + '(IsSignal == 0)',
   )
   # histogram PDF with fudge parameters that allow small deviations from the given shape:
   #     smear  = width of Gaussian the histogram is convoluted with
-  #     offset = shift of histogram in x-direction
+  #     shift = shift of histogram in x-direction
   #     scale  = scaling factor of histogram in x-direction
   fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-    # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], offset_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], shift_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
+    # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], shift_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
     + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
   )
   # constrain PDF fudge parameters
-  # the constraints are derived from the smear, offset, and scale parameter initial values and limits, i.e.
+  # the constraints are derived from the smear, shift, and scale parameter initial values and limits, i.e.
   #     Gaussian mean  = initial value
   #     Gaussian sigma = max / 5 for smear
-  #     Gaussian sigma = range / 10 for offset and scale
+  #     Gaussian sigma = range / 10 for shift and scale
   bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
   fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
-  fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain offset
+  fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain shift
   fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
   # load data for template histograms
   print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
@@ -224,7 +224,7 @@ def binnedTreeFilesIn(outputDirName):
 
 def setRooFitOptions(
   fitManager,
-  nmbThreadsPerJob
+  nmbThreadsPerJob,
 ):
   print("Setting RooFit options", flush = True)
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
@@ -233,7 +233,10 @@ def setRooFitOptions(
   fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelizes calculation of likelihood using the given number of cores
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
   fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))
   fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
+  # fitManager.SetMinimiser(ROOT.Minuit())  # force MINUIT
+  # fitManager.SetMinimiser(ROOT.Minuit2())  # force MINUIT2
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS
 
@@ -254,7 +257,7 @@ def performFit(
   comboIdName             = "ComboID",  # branch name with unique ID for each combo
   regenBinnedTrees        = False,  # if set, force regeneration of files with binned trees
   nmbThreadsPerJob        = 5,
-  nmbProofJobs            = 10  #TODO? automatically determine number of PROOF jobs
+  nmbProofJobs            = 10,  #TODO? automatically determine number of PROOF jobs
 ):
   # create the fit manager and set the output directory for fit results, plots, and weights
   fitDirName = None
@@ -295,7 +298,10 @@ def performFit(
     templateDataTreeName = templateDataSigTreeName,
     weightBranchName     = "AccidWeightFactor",
     comboIdName          = comboIdName,
-    cut                  = commonCut
+    cut                  = commonCut,
+    # smearParRange        = None,  # fix parameter
+    # shiftParRange        = None,  # fix parameter
+    # scaleParRange        = None,  # fix parameter
   )
   defineBkgPdf(
     fitManager, fitVariable,
@@ -319,7 +325,7 @@ def performFit(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = ("" if commonCut is None else f"({commonCut}) && ") + f"({dataCut})"
+    cut               = ("" if commonCut is None else f"({commonCut}) && ") + f"({dataCut})",
   )
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
@@ -358,6 +364,7 @@ def performFit(
 if __name__ == "__main__":
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
+  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")
   makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total execution time")
@@ -398,7 +405,7 @@ if __name__ == "__main__":
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
-          templateDataBkgFileName = dataFileName
+          templateDataBkgFileName = dataFileName,
         )
 
   ROOT.gBenchmark.Show("Total execution time")
