@@ -36,38 +36,50 @@ def readWeights(
   weights.Save()
 
 
-def defineSigPdf(
+# single Gaussian
+def defineGaussianPdf(
   fitManager,
   fitVariable,
-  outputDirName        = None,
-  templateDataFileName = None,
-  templateDataTreeName = None,
-  weightBranchName     = None,
-  comboIdName          = None,
-  cut                  = None,
-  smearParRange        = (0, 0.5),       # set to None to fix smear parameter
-  shiftParRange        = (-0.25, 0.25),  # set to None to fix shift parameter; ensure lower and upper range is a multiple of the bin width
-  scaleParRange        = (0.5, 1.5),     # set to None to fix scale parameter
-  pdfName              = "SigPdf",
+  pdfName,
+  parDefs,  # dict of strings with parameter definitions
 ):
-  #TODO implement function that constructs a selectable PDF and can be used construct signal as well as background PDFs
-  print(f"Defining signal PDF '{pdfName}'", flush = True)
+  fitManager.SetUp().FactoryPDF(f"Gaussian::{pdfName}({fitVariable}, mean_{pdfName}[{parDefs['mean']}], width_{pdfName}[{parDefs['width']}])")
 
-  # # single Gaussian
-  # fitManager.SetUp().FactoryPDF(f"Gaussian::{pdfName}({fitVariable}, mean_{pdfName}[{meanStartVal}, 0, 2], width_{pdfName}[{widthStartVal}, 0.1, 3])")
 
-  # # double Gaussian
-  # # with same mean
-  # fitManager.SetUp().FactoryPDF("SUM::{pdfName}("
-  #   f"r_{pdfName}[0.5, 0, 1] * Gaussian::{pdfName}_N1({fitVariable}, mean_{pdfName}[{0.9383**2}, 0, 2], width1_{pdfName}[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::{pdfName}_N2({fitVariable}, mean_{pdfName},                    width2_{pdfName}[0.2, 0.01, 2])"   # narrow Gaussian
-  # ")")
-  # # with separate means
-  # fitManager.SetUp().FactoryPDF("SUM::{pdfName}("
-  #   f"r_{pdfName}[0.5, 0, 1] * Gaussian::{pdfName}_N1({fitVariable}, mean1_{pdfName}[1.0,         0, 2], width1_{pdfName}[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::{pdfName}_N2({fitVariable}, mean2_{pdfName}[{0.9383**2}, 0, 2], width2_{pdfName}[0.2, 0.01, 2])"   # narrow Gaussian
-  # ")")
+# double Gaussian
+def defineDoubleGaussianPdf(
+  fitManager,
+  fitVariable,
+  pdfName,
+  parDefs,  # dict of strings with parameter definitions
+  commonMean = False,
+):
+  if commonMean:
+    # with same mean
+    fitManager.SetUp().FactoryPDF(f"SUM::{pdfName}("
+      f"r_{pdfName}[{parDefs['r']}] * Gaussian::{pdfName}_N1({fitVariable}, mean_{pdfName}[{parDefs['mean']}], width1_{pdfName}[{parDefs['width1']}]),"
+                                    f"Gaussian::{pdfName}_N2({fitVariable}, mean_{pdfName},                    width2_{pdfName}[{parDefs['width2']}])"
+    ")")
+  else:
+    # with separate means
+    fitManager.SetUp().FactoryPDF(f"SUM::{pdfName}("
+      f"r_{pdfName}[{parDefs['r']}] * Gaussian::{pdfName}_N1({fitVariable}, mean1_{pdfName}[{parDefs['mean1']}], width1_{pdfName}[{parDefs['width1']}]),"
+                                    f"Gaussian::{pdfName}_N2({fitVariable}, mean2_{pdfName}[{parDefs['mean2']}], width2_{pdfName}[{parDefs['width2']}])"
+    ")")
 
+
+def defineHistogramPdf(
+  fitManager,
+  fitVariable,
+  pdfName,
+  parDefs,  # dict of strings with parameter definitions
+  outputDirName,
+  templateDataFileName,
+  templateDataTreeName,
+  weightBranchName,
+  comboIdName,
+  cut,
+):
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = "RfSideband"
   rfSWeightFileName   = f"{outputDirName}/rfSidebandWeights{pdfName}.root"
@@ -80,17 +92,14 @@ def defineSigPdf(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = " && ".join(filter(None, (cut, "(IsSignal == 1)"))),
+    cut               = cut,
   )
   # histogram PDF with fudge parameters that allow (small) deviations from the original shape:
   #     smear = width of Gaussian the histogram is convoluted with
   #     shift = shifts histogram in x-direction, i.e. PDF(x - shift)
   #     scale = scales histogram in x-direction around its maximum value, i.e. PDF(scale * (x - maxPos) + maxPos)
-  smearDef = f"smear_{pdfName}[0" + ("]" if smearParRange is None else f", {smearParRange[0]}, {smearParRange[1]}]")
-  shiftDef = f"shift_{pdfName}[0" + ("]" if shiftParRange is None else f", {shiftParRange[0]}, {shiftParRange[1]}]")
-  scaleDef = f"scale_{pdfName}[1" + ("]" if scaleParRange is None else f", {scaleParRange[0]}, {scaleParRange[1]}]")
   fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::{pdfName}({fitVariable}, {smearDef}, {shiftDef}, {scaleDef})"
+    f"RooHSEventsHistPDF::{pdfName}({fitVariable}, smear_{pdfName}[{parDefs['smear']}], shift_{pdfName}[{parDefs['shift']}], scale_{pdfName}[{parDefs['scale']}])"
     + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
   )
   # constrain PDF fudge parameters
@@ -99,16 +108,74 @@ def defineSigPdf(
   #     Gaussian sigma = max / 5 for smear
   #     Gaussian sigma = range / 10 for shift and scale
   pdf = fitManager.SetUp().WS().pdf(pdfName)
-  if smearParRange is not None:
+  if len(parDefs['smear'].split(",")) == 3:
     fitManager.SetUp().AddGausConstraint(pdf.AlphaConstraint())  # constrain smear
-  if shiftParRange is not None:
+  if len(parDefs['shift'].split(",")) == 3:
     fitManager.SetUp().AddGausConstraint(pdf.OffConstraint())    # constrain shift
-  if scaleParRange is not None:
+  if len(parDefs['scale'].split(",")) == 3:
     fitManager.SetUp().AddGausConstraint(pdf.ScaleConstraint())  # constrain scale
   # load data for template histograms; ensure that calling code has already defined the kinematical binnings
   print(f"Loading data for histogram PDF '{pdfName}' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
   + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
   fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, pdfName)
+
+
+def defineSigPdf(
+  fitManager,
+  fitVariable,
+  pdfType,
+  outputDirName        = None,
+  templateDataFileName = None,
+  templateDataTreeName = None,
+  weightBranchName     = None,
+  comboIdName          = None,
+  cut                  = None,
+  pdfName              = "SigPdf",
+):
+  #TODO implement function that constructs a selectable PDF and can be used construct signal as well as background PDFs
+  print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'", flush = True)
+
+  if pdfType == "Gaussian":
+    defineGaussianPdf(
+      fitManager, fitVariable, pdfName,
+      {
+        "mean"  : f"{0.9383**2}, 0, 2",
+        "width" : "0.3, 0.01, 2",
+      },
+    )
+  elif pdfType.startswith("DoubleGaussian"):
+    defineDoubleGaussianPdf(
+      fitManager, fitVariable, pdfName,
+      {
+        "r"      : "0.5, 0, 1",  # fraction of Gaussian 1
+        "mean"   : f"{0.9383**2}, 0, 2",  # common-mean case
+        "mean1"  :  "1.0,         0, 2",  # separate-means case
+        "mean2"  : f"{0.9383**2}, 0, 2",
+        "width1" : "1.0, 0.01, 2",  # wide Gaussian
+        "width2" : "0.2, 0.01, 2",  # narrow Gaussian
+      },
+      commonMean = pdfType.endswith("SameMean"),
+    )
+  elif pdfType.startswith("Histogram"):
+    defineHistogramPdf(
+      fitManager, fitVariable, pdfName,
+      {
+        "smear" : "0",  # fix parameter
+        # "smear" : "0, 0, 0.5",
+        "shift" : "0",  # fix parameter
+        # "shift" : "0, -0.25, 0.25",
+        "scale" : "1",  # fix parameter
+        # "scale" : "1, 0.5, 1.5",
+      },
+      outputDirName,
+      templateDataFileName,
+      templateDataTreeName,
+      weightBranchName,
+      comboIdName,
+      cut = " && ".join(filter(None, (cut, "(IsSignal == 1)"))),
+    )
+  else:
+    raise ValueError(f"Unknown PDF type '{pdfType}'")
 
   pdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF(pdfName, pdfWeightStartVal)
@@ -245,6 +312,8 @@ def performFit(
   dataFileName,      # path to data to fit
   outputDirName,     # where to write all output files
   kinematicBinning,  # list of with binning info, one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
+  pdfTypeSig              = "Histogram",          # type of signal PDF
+  pdfTypeBkg              = "Histogram",          # type of background PDF
   commonCut               = None,                 # optional selection cut(s) applied to data and template histograms
   dataCut                 = None,                 # optional selection cut(s) applied to data only (in addition to commonCut)
   dataTreeName            = "pippippimpimpmiss",  # tree name of data to fit
@@ -292,19 +361,16 @@ def performFit(
 
   # define components of fit model
   defineSigPdf(
-    fitManager, fitVariable,
+    fitManager, fitVariable, pdfTypeSig,
     outputDirName        = fitDirName,
     templateDataFileName = templateDataSigFileName,
     templateDataTreeName = templateDataSigTreeName,
     weightBranchName     = "AccidWeightFactor",
     comboIdName          = comboIdName,
     cut                  = commonCut,
-    # smearParRange        = None,  # fix parameter
-    # shiftParRange        = None,  # fix parameter
-    # scaleParRange        = None,  # fix parameter
   )
   defineBkgPdf(
-    fitManager, fitVariable,
+    fitManager, fitVariable, # pdfTypeBkg,
     outputDirName        = fitDirName,
     templateDataFileName = templateDataBkgFileName,
     templateDataTreeName = templateDataBkgTreeName,
@@ -365,6 +431,7 @@ if __name__ == "__main__":
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
   # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")
+  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
   makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total execution time")
@@ -402,6 +469,8 @@ if __name__ == "__main__":
           dataFileName,
           f"{outputDirName}/{dataSetName}",
           kinematicBinning,
+          pdfTypeSig              = "Histogram",
+          # pdfTypeBkg              = "Histogram",
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
