@@ -9,7 +9,7 @@ import ROOT
 import makePlots  # defines helper functions to generate histograms from data trees
 
 
-#TODO convert functions to class with member functions
+#TODO convert collection of functions to class with member functions
 def readWeights(
   inputFileName,
   inputTreeName,
@@ -36,7 +36,6 @@ def readWeights(
   weights.Save()
 
 
-# single Gaussian
 def defineGaussianPdf(
   fitManager,
   fitVariable,
@@ -46,7 +45,6 @@ def defineGaussianPdf(
   fitManager.SetUp().FactoryPDF(f"Gaussian::{pdfName}({fitVariable}, mean_{pdfName}[{parDefs['mean']}], width_{pdfName}[{parDefs['width']}])")
 
 
-# double Gaussian
 def defineDoubleGaussianPdf(
   fitManager,
   fitVariable,
@@ -66,6 +64,39 @@ def defineDoubleGaussianPdf(
       f"r_{pdfName}[{parDefs['r']}] * Gaussian::{pdfName}_N1({fitVariable}, mean1_{pdfName}[{parDefs['mean1']}], width1_{pdfName}[{parDefs['width1']}]),"
                                     f"Gaussian::{pdfName}_N2({fitVariable}, mean2_{pdfName}[{parDefs['mean2']}], width2_{pdfName}[{parDefs['width2']}])"
     ")")
+
+
+def defineSkewedGaussianPdf(
+  fitManager,
+  fitVariable,
+  pdfName,
+  parDefs,  # dict of strings with parameter definitions
+  pdfType = "skewNormal",
+):
+  # various implementations of skewed Gaussians
+  if pdfType == "SkewNormal":
+    # skew normal PDF (see https://en.wikipedia.org/wiki/Skew_normal_distribution)
+    fitManager.SetUp().FactoryPDF(f"EXPR::{pdfName}("
+      f"'2 * TMath::Gaus({fitVariable}, peak_{pdfName}, width_{pdfName}, true)"
+      f"* TMath::Erfc(skew_{pdfName} * (({fitVariable} - peak_{pdfName}) / width_{pdfName}))',"
+      f"{fitVariable}, peak_{pdfName}[{parDefs['peak']}], width_{pdfName}[{parDefs['width']}], skew_{pdfName}[{parDefs['skew']}]"
+    ")")
+  elif pdfType == "ExpMod":
+    # exponentially modified Gaussian PDF (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
+    # smaller skew means higher skewness
+    # max = peak + 1 / skew
+    fitManager.SetUp().FactoryPDF(f"EXPR::{pdfName}("
+      f"'(skew_{pdfName} / 2) * TMath::Exp((skew_{pdfName} / 2) * (2 * peak_{pdfName} + skew_{pdfName} * width_{pdfName} * width_{pdfName} - 2 * {fitVariable}))"
+      f"* TMath::Erfc((peak_{pdfName} + skew_{pdfName} * width_{pdfName} * width_{pdfName} - {fitVariable}) / (sqrt(2) * width_{pdfName}))',"
+      f"{fitVariable}, peak_{pdfName}[{parDefs['peak']}], width_{pdfName}[{parDefs['width']}], skew_{pdfName}[{parDefs['skew']}]"
+    ")")
+  elif pdfType == "Log":
+    # "logarithmic Gaussian"
+    # Eq. (9) in NIMA 441 (2000) 401 at https://doi.org/10.1016/S0168-9002(99)00992-4
+    fitManager.SetUp().FactoryPDF(f"Novosibirsk::{pdfName}({fitVariable}, peak_{pdfName}[{parDefs['peak']}], width_{pdfName}[{parDefs['width']}], skew_{pdfName}[{parDefs['skew']}])")
+  else:
+    #TODO try https://en.wikipedia.org/wiki/Normal-exponential-gamma_distribution
+    raise ValueError(f"Unknown skewed Gaussian type '{pdfType}'")
 
 
 def defineHistogramPdf(
@@ -124,17 +155,20 @@ def defineSigPdf(
   fitManager,
   fitVariable,
   pdfType,
+  fixPars = (),  # tuple with fit-parameter names to fix
+  pdfName = "SigPdf",
+  # arguments needed for histogram PDF
   outputDirName        = None,
   templateDataFileName = None,
   templateDataTreeName = None,
   weightBranchName     = None,
   comboIdName          = None,
   cut                  = None,
-  pdfName              = "SigPdf",
 ):
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'", flush = True)
 
-  if pdfType == "Gaussian":
+  pdfTypeArgs = pdfType.split("_")
+  if pdfTypeArgs[0] == "Gaussian":
     defineGaussianPdf(
       fitManager, fitVariable, pdfName,
       {
@@ -142,7 +176,7 @@ def defineSigPdf(
         "width" : "0.3, 0.01, 2",
       },
     )
-  elif pdfType.startswith("DoubleGaussian"):
+  elif pdfTypeArgs[0] == "DoubleGaussian":
     defineDoubleGaussianPdf(
       fitManager, fitVariable, pdfName,
       {
@@ -153,18 +187,15 @@ def defineSigPdf(
         "width1" : "1.0, 0.01, 2",  # wide Gaussian
         "width2" : "0.2, 0.01, 2",  # narrow Gaussian
       },
-      commonMean = pdfType.endswith("SameMean"),
+      commonMean = len(pdfTypeArgs) == 2 and pdfTypeArgs[1] == "SameMean",
     )
-  elif pdfType.startswith("Histogram"):
+  elif pdfTypeArgs[0] == "Histogram":
     defineHistogramPdf(
       fitManager, fitVariable, pdfName,
       {
-        "smear" : "0",  # fix parameter
-        # "smear" : "0, 0, 0.5",
-        "shift" : "0",  # fix parameter
-        # "shift" : "0, -0.25, 0.25",
-        "scale" : "1",  # fix parameter
-        # "scale" : "1, 0.5, 1.5",
+        "smear" : "0" if "smear" in fixPars else "0,  0,    0.5",
+        "shift" : "0" if "shift" in fixPars else "0, -0.25, 0.25",
+        "scale" : "1" if "scale" in fixPars else "1,  0.5,  1.5",
       },
       outputDirName,
       templateDataFileName,
@@ -174,7 +205,7 @@ def defineSigPdf(
       cut = " && ".join(filter(None, (cut, "(IsSignal == 1)"))),
     )
   else:
-    raise ValueError(f"Unknown PDF type '{pdfType}'")
+    raise ValueError(f"Unknown signal PDF type '{pdfTypeArgs[0]}'")
 
   pdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF(pdfName, pdfWeightStartVal)
@@ -184,94 +215,94 @@ def defineBkgPdf(
   fitManager,
   fitVariable,
   pdfType,
+  fixPars = (),  # tuple with fit-parameter names to fix
+  pdfName = "BkgPdf",
+  # arguments needed for histogram PDF
   outputDirName        = None,
   templateDataFileName = None,
   templateDataTreeName = None,
   weightBranchName     = None,
   comboIdName          = None,
   cut                  = None,
-  pdfName              = "BkgPdf",
 ):
   print(f"Defining background PDF '{pdfName}' of type '{pdfType}'", flush = True)
 
+  #TODO add polynomials
   # # 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
-
+  #
   # Chebychev polynomial
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 100]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Chebychev::BkgPdf({fitVariable}, {{p0_BkgPdf[0, -1, 1], p1_BkgPdf[0, -1, 1], p2_BkgPdf[0, -1, 1]}})")
-
+  #
   # # Bernstein polynomial
   # # see https://root.cern.ch/doc/master/classRooBernstein.html
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
-
-  # # double Gaussian with separate means
-  # fitManager.SetUp().FactoryPDF("SUM::BkgPdf("
-  #   f"r_BkgPdf[0.5, 0, 1] * Gaussian::BkgPdf_N1({fitVariable}, mean1_BkgPdf[1.1, 0, 2], width1_BkgPdf[1.0, 0.01, 2]),"  # wide Gaussian
-  #                         f"Gaussian::BkgPdf_N2({fitVariable}, mean2_BkgPdf[0.9, 0, 2], width2_BkgPdf[0.5, 0.01, 2])"   # narrow Gaussian
-  # ")")
-
-  # various implementations of skewed Gaussians
-  # # "logarithmic Gaussian"
-  # # Eq. (9) in NIMA 441 (2000) 401 at https://doi.org/10.1016/S0168-9002(99)00992-4
-  # #TODO does not work; RooFit complains about PDF being -inf; unclear why
-  # fitManager.SetUp().FactoryPDF(f"Novosibirsk::BkgPdf({fitVariable}, peak_BkgPdf[1.1, 0, 2], width_BkgPdf[1.0, 0.01, 2], skew_BkgPdf[-0.5, -2, 2])")
-  # # skew normal PDF (see https://en.wikipedia.org/wiki/Skew_normal_distribution)
-  # fitManager.SetUp().FactoryPDF("EXPR::BkgPdf("
-  #   f"'2 * TMath::Gaus({fitVariable}, peak_BkgPdf, width_BkgPdf, true)"
-  #   f"* TMath::Erfc(skew_BkgPdf * (({fitVariable} - peak_BkgPdf) / width_BkgPdf))',"
-  #   f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.9, 0.01, 2], skew_BkgPdf[-2.5, -5, 5])")
-  # # exponentially modified Gaussian PDF (see https://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution)
-  # # smaller skew means higher skewness
-  # # max = peak + 1 / skew
-  # fitManager.SetUp().FactoryPDF("EXPR::BkgPdf("
-  #   f"'(skew_BkgPdf / 2) * TMath::Exp((skew_BkgPdf / 2) * (2 * peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - 2 * {fitVariable}))"
-  #   f"* TMath::Erfc((peak_BkgPdf + skew_BkgPdf * width_BkgPdf * width_BkgPdf - {fitVariable}) / (sqrt(2) * width_BkgPdf))',"
-  #   f"{fitVariable}, peak_BkgPdf[0.8, 0, 2], width_BkgPdf[0.5, 0.01, 2], skew_BkgPdf[2, 0, 15])")
-  #TODO try https://en.wikipedia.org/wiki/Normal-exponential-gamma_distribution
-
-  # #TODO move code to define histogram PDF to separate function
-  # create RF-sideband weights for histogram PDF
-  rfSWeightLabel      = "RfSideband"
-  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeightsBkgPdf.root"
-  rfSWeightObjectName = f"{rfSWeightLabel}WeightsBkgPdf"
-  readWeights(
-    inputFileName     = templateDataFileName,
-    inputTreeName     = templateDataTreeName,
-    weightBranchName  = weightBranchName,
-    comboIdName       = comboIdName,
-    sWeightLabel      = rfSWeightLabel,
-    sWeightFileName   = rfSWeightFileName,
-    sWeightObjectName = rfSWeightObjectName,
-    cut               = " && ".join(filter(None, (cut, "(IsSignal == 0)"))),
-  )
-  # histogram PDF with fudge parameters that allow small deviations from the given shape:
-  #     smear  = width of Gaussian the histogram is convoluted with
-  #     shift = shift of histogram in x-direction
-  #     scale  = scaling factor of histogram in x-direction
-  fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0, 0, 0.5], shift_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-    # f"RooHSEventsHistPDF::BkgPdf({fitVariable}, smear_BkgPdf[0], shift_BkgPdf[0, -0.25, 0.25], scale_BkgPdf[1, 0.5, 1.5])"
-    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
-  )
-  # constrain PDF fudge parameters
-  # the constraints are derived from the smear, shift, and scale parameter initial values and limits, i.e.
-  #     Gaussian mean  = initial value
-  #     Gaussian sigma = max / 5 for smear
-  #     Gaussian sigma = range / 10 for shift and scale
-  bkgPdf = fitManager.SetUp().WS().pdf("BkgPdf")
-  fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
-  fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain shift
-  fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
-  # load data for template histograms
-  print(f"Loading data for histogram PDF 'BkgPdf' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
-  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
-  fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, "BkgPdf")
+  pdfTypeArgs = pdfType.split("_")
+  if pdfTypeArgs[0] == "DoubleGaussian":
+    defineDoubleGaussianPdf(
+      fitManager, fitVariable, pdfName,
+      {
+        "r"      : "0.5, 0,    1",  # fraction of Gaussian 1
+        "mean"   : "1.4, 0,    2",  # common-mean case
+        "mean1"  : "1.5, 0,    2",  # separate-means case
+        "mean2"  : "1.2, 0,    2",
+        "width1" : "1.0, 0.01, 2",  # wide Gaussian
+        "width2" : "0.4, 0.01, 2",  # narrow Gaussian
+      },
+      commonMean = len(pdfTypeArgs) == 2 and pdfTypeArgs[1] == "SameMean",
+    )
+  elif pdfTypeArgs[0] == "SkewedGaussian":
+    assert len(pdfTypeArgs) == 2, f"Skewed Gaussian PDF requires subtype, i.e. 'SkewedGaussian_<subType>', given PDF type is '{pdfType}'"
+    pdfSubType = pdfTypeArgs[1]
+    parDefs = {}
+    if pdfSubType == "SkewNormal":
+      parDefs = {
+        "peak"  : "0.8,  0,    2",
+        "width" : "0.9,  0.01, 2",
+        "skew"  : "-2.5, -5,   5",
+      }
+    elif pdfSubType == "ExpMod":
+      parDefs = {
+        "peak"  : "0.8, 0,    2",
+        "width" : "0.5, 0.01, 2",
+        "skew"  : "2,   0,    15",
+      }
+    elif pdfSubType == "Log":
+      parDefs = {
+        "peak"  : "1.1,  0,    2",
+        "width" : "1.0,  0.01, 2",
+        "skew"  : "-0.5, -2,   2",
+      }
+    else:
+      raise ValueError(f"Unknown skewed Gaussian PDF subtype '{pdfSubType}'")
+    defineSkewedGaussianPdf(
+      fitManager, fitVariable, pdfName,
+      parDefs,
+      pdfSubType,
+    )
+  elif pdfTypeArgs[0] == "Histogram":
+    defineHistogramPdf(
+      fitManager, fitVariable, pdfName,
+      {
+        "smear" : "0" if "smear" in fixPars else "0,  0,    0.5",
+        "shift" : "0" if "shift" in fixPars else "0, -0.25, 0.25",
+        "scale" : "1" if "scale" in fixPars else "1,  0.5,  1.5",
+      },
+      outputDirName,
+      templateDataFileName,
+      templateDataTreeName,
+      weightBranchName,
+      comboIdName,
+      cut = " && ".join(filter(None, (cut, "(IsSignal == 0)"))),
+    )
+  else:
+    raise ValueError(f"Unknown background PDF type '{pdfTypeArgs[0]}'")
 
   bkgPdfWeightStartVal = 1.0
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", bkgPdfWeightStartVal)
@@ -363,6 +394,7 @@ def performFit(
   # define components of fit model
   defineSigPdf(
     fitManager, fitVariable, pdfTypeSig,
+    fixPars              = ("smear", "shift", "scale"),
     outputDirName        = fitDirName,
     templateDataFileName = templateDataSigFileName,
     templateDataTreeName = templateDataSigTreeName,
@@ -373,6 +405,7 @@ def performFit(
   if pdfTypeBkg is not None:
     defineBkgPdf(
       fitManager, fitVariable, pdfTypeBkg,
+      fixPars              = ("smear", "shift", "scale"),
       outputDirName        = fitDirName,
       templateDataFileName = templateDataBkgFileName,
       templateDataTreeName = templateDataBkgTreeName,
@@ -441,17 +474,17 @@ if __name__ == "__main__":
   # dataSample        = "030730",
   dataSample        = "bggen_2017_01-ver03"
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataSample}.root.brufit"
-  # dataCut           = None
-  dataCut           = "(IsSignal == 1)"  # fit bggen signal data
+  dataCut           = None
+  # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
   outputDirName     = "./BruFitOutput"
   kinematicBinnings = [
     None,  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
-    [("BeamEnergy",          9,    3.0,   12.0)],
-    [("MissingProtonP",     10,    0.0,    3.5)],
-    [("MissingProtonTheta", 10,    0.0,   65.0)],
-    [("MissingProtonPhi",   10, -180.0, +180.0)]
+    [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]
+    [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
+    [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
+    [("MissingProtonPhi",   10, -180.0, +180.0)]   # [deg]
   ]
 
   dataSets = {
@@ -472,7 +505,13 @@ if __name__ == "__main__":
           f"{outputDirName}/{dataSetName}",
           kinematicBinning,
           pdfTypeSig              = "Histogram",
-          pdfTypeBkg              = None,
+          # pdfTypeBkg              = None,
+          # pdfTypeBkg              = "DoubleGaussian",
+          # pdfTypeBkg              = "DoubleGaussian_SameMean",
+          # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
+          # pdfTypeBkg              = "SkewedGaussian_ExpMod",
+          # pdfTypeBkg              = "SkewedGaussian_Log",
+          pdfTypeBkg              = "Histogram",
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
