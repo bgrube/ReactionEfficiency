@@ -132,7 +132,6 @@ def defineSigPdf(
   cut                  = None,
   pdfName              = "SigPdf",
 ):
-  #TODO implement function that constructs a selectable PDF and can be used construct signal as well as background PDFs
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'", flush = True)
 
   if pdfType == "Gaussian":
@@ -184,14 +183,16 @@ def defineSigPdf(
 def defineBkgPdf(
   fitManager,
   fitVariable,
+  pdfType,
   outputDirName        = None,
   templateDataFileName = None,
   templateDataTreeName = None,
   weightBranchName     = None,
   comboIdName          = None,
   cut                  = None,
+  pdfName              = "BkgPdf",
 ):
-  print("Defining background PDF 'BkgPdf'", flush = True)
+  print(f"Defining background PDF '{pdfName}' of type '{pdfType}'", flush = True)
 
   # # 2nd-order positive-definite polynomial
   # fitManager.SetUp().FactoryPDF(f"GenericPdf::BkgPdf('@1 * @1 + (@2 + @3 * @0) * (@2 + @3 * @0)', {{{fitVariable}, p0_BkgPdf[0, -100, 100], p1_BkgPdf[0, -100, 100], p2_BkgPdf[0, -100, 100]}})")
@@ -369,15 +370,16 @@ def performFit(
     comboIdName          = comboIdName,
     cut                  = commonCut,
   )
-  defineBkgPdf(
-    fitManager, fitVariable, # pdfTypeBkg,
-    outputDirName        = fitDirName,
-    templateDataFileName = templateDataBkgFileName,
-    templateDataTreeName = templateDataBkgTreeName,
-    weightBranchName     = "AccidWeightFactor",
-    comboIdName          = comboIdName,
-    cut                  = commonCut
-  )
+  if pdfTypeBkg is not None:
+    defineBkgPdf(
+      fitManager, fitVariable, pdfTypeBkg,
+      outputDirName        = fitDirName,
+      templateDataFileName = templateDataBkgFileName,
+      templateDataTreeName = templateDataBkgTreeName,
+      weightBranchName     = "AccidWeightFactor",
+      comboIdName          = comboIdName,
+      cut                  = commonCut
+    )
 
   # create RF-sideband weights for data to be fitted
   rfSWeightLabel      = "RfSideband"
@@ -470,7 +472,7 @@ if __name__ == "__main__":
           f"{outputDirName}/{dataSetName}",
           kinematicBinning,
           pdfTypeSig              = "Histogram",
-          # pdfTypeBkg              = "Histogram",
+          pdfTypeBkg              = None,
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
