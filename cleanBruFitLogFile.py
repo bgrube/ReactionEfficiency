@@ -2,7 +2,9 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+import argparse
 import glob
+import sys
 
 
 def filterLinesInFile(
@@ -82,5 +84,12 @@ CLING_ERROR_MARKERS = {
 
 
 if __name__ == "__main__":
-  removeFromFiles("./fitMissingMassSquared.log", dict(BRANCH_ERROR_MARKERS, **CLING_ERROR_MARKERS))
-  removeFromFiles("./BruFitOutput/*/*/*.txt",    dict(BRANCH_ERROR_MARKERS, **CLING_ERROR_MARKERS))
+  # echo and parse command line
+  print(f"Script was called using: '{' '.join(sys.argv)}'")
+  parser = argparse.ArgumentParser(description="Cleans BruFit log files.")
+  parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  args = parser.parse_args()
+
+  markers = dict(BRANCH_ERROR_MARKERS, **CLING_ERROR_MARKERS)
+  removeFromFiles(f"{args.outputDirName}/fitMissingMassSquared.log", markers)
+  removeFromFiles(f"{args.outputDirName}/*/*/*.txt",                 markers)
