@@ -3,6 +3,7 @@
 
 
 import os
+import subprocess
 
 import ROOT
 
@@ -350,7 +351,9 @@ def performFit(
   outputDirName,     # where to write all output files
   kinematicBinning,  # list of with binning info, one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
   pdfTypeSig              = "Histogram",          # type of signal PDF
+  fixParsSig              = (),                   # tuple with fit-parameter names of signal function to fix
   pdfTypeBkg              = "Histogram",          # type of background PDF
+  fixParsBkg              = (),                   # tuple with fit-parameter names of background function to fix
   commonCut               = None,                 # optional selection cut(s) applied to data and template histograms
   dataCut                 = None,                 # optional selection cut(s) applied to data only (in addition to commonCut)
   dataTreeName            = "pippippimpimpmiss",  # tree name of data to fit
@@ -399,7 +402,7 @@ def performFit(
   # define components of fit model
   defineSigPdf(
     fitManager, fitVariable, pdfTypeSig,
-    fixPars              = ("smear", "shift", "scale"),
+    fixPars              = fixParsSig,
     outputDirName        = fitDirName,
     templateDataFileName = templateDataSigFileName,
     templateDataTreeName = templateDataSigTreeName,
@@ -410,7 +413,7 @@ def performFit(
   if pdfTypeBkg is not None:
     defineBkgPdf(
       fitManager, fitVariable, pdfTypeBkg,
-      fixPars              = ("smear", "shift", "scale"),
+      fixPars              = fixParsBkg,
       outputDirName        = fitDirName,
       templateDataFileName = templateDataBkgFileName,
       templateDataTreeName = templateDataBkgTreeName,
@@ -468,6 +471,10 @@ def performFit(
 
 
 if __name__ == "__main__":
+  repoDir = os.path.dirname(os.path.abspath(__file__))
+  gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
+  print(f"Running code in '{repoDir}', git version '{gitInfo}'")
+
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
   makePlots.setupPlotStyle()
@@ -508,7 +515,9 @@ if __name__ == "__main__":
           f"{outputDirName}/{dataSetName}",
           kinematicBinning,
           pdfTypeSig              = "Histogram",
+          fixParsSig              = ("smear", "shift", "scale"),
           # pdfTypeBkg              = None,
+          fixParsBkg              = ("smear", "shift", "scale"),
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
           # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
