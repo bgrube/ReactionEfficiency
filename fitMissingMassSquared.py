@@ -334,8 +334,13 @@ def setRooFitOptions(
   fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))
   fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
-  # fitManager.SetMinimiser(ROOT.Minuit())  # force MINUIT
-  # fitManager.SetMinimiser(ROOT.Minuit2())  # force MINUIT2
+  # force Minimizer
+  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")  # doesn't work
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit"))  # overridden by HS::FIT::Minuit2::FitTo()
+  # fitManager.SetMinimiser(ROOT.Minuit())
+  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit2"))
+  # fitManager.SetMinimiser(ROOT.Minuit2())
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS
 
@@ -465,8 +470,6 @@ def performFit(
 if __name__ == "__main__":
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
-  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")
-  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
   makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total execution time")
