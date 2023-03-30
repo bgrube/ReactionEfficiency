@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
-
 import argparse
 import array
 import collections
@@ -10,7 +9,7 @@ from dataclasses import dataclass  # builtin in Python 3.7+
 import itertools
 import os
 import sys
-from typing import Dict, Tuple, List, Iterable, Mapping
+from typing import Optional, Union, Dict, Tuple, List, Iterable, Sequence, Mapping
 
 from uncertainties import ufloat
 
@@ -40,17 +39,17 @@ REMOVE_PARAM_BOX = False
 @dataclass
 class BinInfo:
   '''Stores information about a single kinematic bin'''
-  name:    str              = None  # bin name
-  centers: Dict[str, float] = None  # dict with bin centers { <binning var> : <bin center>, ..., }
-  dirName: str              = None  # directory names for all bins ( <bin dir name>, ... )
+  name:    Optional[str]              = None  # bin name
+  centers: Optional[Dict[str, float]] = None  # dict with bin centers { <binning var> : <bin center>, ..., }
+  dirName: Optional[str]              = None  # directory names for all bins ( <bin dir name>, ... )
 
   @property
-  def varNames(self) -> Tuple[str, ...]:
+  def varNames(self) -> Union[Tuple[str, ...], None]:
     '''Returns names of kinematic variables used for binning'''
-    return None if self.centers is None else sorted(tuple(self.centers.keys()))
+    return None if self.centers is None else tuple(sorted(self.centers.keys()))
 
   @property
-  def fitResultFileName(self) -> str:
+  def fitResultFileName(self) -> Union[str, None]:
     '''Returns fit result file name for this bin'''
     return None if self.dirName is None else f"{self.dirName}/ResultsHSMinuit2.root"
 
@@ -58,21 +57,21 @@ class BinInfo:
 @dataclass
 class BinningInfo:
   '''Stores information about one particular kinematic binning'''
-  binInfos: Tuple[BinInfo, ...] = None
-  dirName:  str                 = None
+  binInfos: Optional[Tuple[BinInfo, ...]] = None
+  dirName:  Optional[str]                 = None
 
   @property
-  def names(self) -> Tuple[str, ...]:
+  def names(self) -> Union[Tuple[Union[str, None], ...], None]:
     '''Returns tuple with bin names'''
     return None if self.binInfos is None else tuple(binInfo.name for binInfo in self.binInfos)
 
   @property
-  def dirNames(self) -> Tuple[str, ...]:
+  def dirNames(self) -> Union[Tuple[Union[str, None], ...], None]:
     '''Returns tuple with directory names for all bins'''
     return None if self.binInfos is None else tuple(binInfo.dirName for binInfo in self.binInfos)
 
   @property
-  def varNames(self) -> Tuple[str, ...]:
+  def varNames(self) -> Union[Tuple[str, ...], None]:
     '''Returns names of kinematic variables used for binning'''
     varNames = None
     if self.binInfos:
@@ -85,12 +84,12 @@ class BinningInfo:
     return varNames
 
   @property
-  def fitResultFileNames(self) -> str:
+  def fitResultFileNames(self) -> Union[Tuple[Union[str, None]], None]:
     '''Returns tuple with fit-result file names for all bin'''
     return None if self.binInfos is None else tuple(binInfo.fitResultFileName for binInfo in self.binInfos)
 
 
-def getBinningFromDir(fitResultDirName: str) -> BinningInfo:
+def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
     return None
@@ -115,8 +114,8 @@ def getBinningFromDir(fitResultDirName: str) -> BinningInfo:
   return BinningInfo(binInfos, fitResultDirName)
 
 
-def getBinningInfosFromDir(fitResultDirName: str) -> List[BinningInfo]:
-  binningInfos: List[BinningInfo] = []
+def getBinningInfosFromDir(fitResultDirName: str) -> List[Union[BinningInfo, None]]:
+  binningInfos: List[Union[BinningInfo, None]] = []
   # find all subdirectories with binning files
   subDirNames: List[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
   # get binning info from all subdirectories
@@ -133,9 +132,11 @@ def getBinningInfosFromDir(fitResultDirName: str) -> List[BinningInfo]:
 #    dict with parameter values { <par name> : <par value>, ... }
 #    tuple with parameter names (<par name>, ... )
 def readParValuesFromFitFile(
-  fitResultFileName: str,
-  fitParNamesToRead: Mapping[str, str] = None  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
+  fitResultFileName: Union[str, None],
+  fitParNamesToRead: Optional[Mapping[str, str]] = None  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ):
+  if not fitResultFileName:
+    return
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
   fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")
   fitResult      = fitResultFile.Get("MinuitResult")
@@ -168,16 +169,17 @@ def readParValuesFromFitFile(
 def readParValuesForBinning(binningInfo: BinningInfo):
   parValues = []
   parNames = None  # used to compare parameter names in current and previous bin
-  for binInfo in binningInfo.binInfos:
-    parValuesInBin, parNamesInBin = readParValuesFromFitFile(binInfo.fitResultFileName)
-    # ensure that the parameter sets of the fit functions are the same in all kinematic bins
-    if parNames is not None:
-      assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
-    parNames = parNamesInBin
-    # copy axis name(s) and bin center(s)
-    parValuesInBin.update(binInfo.centers)
-    print(f"Read parameter values for kinematic bin: {parValuesInBin}")
-    parValues.append(parValuesInBin)
+  if binningInfo.binInfos:
+    for binInfo in binningInfo.binInfos:
+      parValuesInBin, parNamesInBin = readParValuesFromFitFile(binInfo.fitResultFileName)
+      # ensure that the parameter sets of the fit functions are the same in all kinematic bins
+      if parNames is not None:
+        assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
+      parNames = parNamesInBin
+      # copy axis name(s) and bin center(s)
+      parValuesInBin.update(binInfo.centers)
+      print(f"Read parameter values for kinematic bin: {parValuesInBin}")
+      parValues.append(parValuesInBin)
   return parValues, parNames
 
 
@@ -210,12 +212,14 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
 
 
 def plotFitResult(
-  fitResultDirName: str,
-  fitVariable: str,
-  binName: str = "",
-  pdfDirName: str = None  # overrides default PDF output path (i.e. same dir as fit result file) if set
+  fitResultDirName: Union[str, None],
+  fitVariable:      str,
+  binName:          Union[str, None] = "",
+  pdfDirName:       Optional[str]    = None  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ) -> None:
   '''Plots fit result in given directory'''
+  if not fitResultDirName or not binName:
+    return
   fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'; skipping")
@@ -244,14 +248,15 @@ def plotFitResult(
 
 
 def plotFitResults(
-  binNames: str,
-  fitResultDirNames: Iterable[str],
-  fitVariable: str,
-  pdfDirName: str = None
+  binNames:          Union[Sequence[Union[str, None]], None],
+  fitResultDirNames: Union[Sequence[Union[str, None]], None],
+  fitVariable:       str,
+  pdfDirName:        Optional[str] = None
 ):
   '''Plots fit results for all kinematic bins'''
-  for index, fitResultDirName  in enumerate(fitResultDirNames):
-    plotFitResult(fitResultDirName, fitVariable, binNames[index], pdfDirName)
+  if fitResultDirNames and binNames:
+    for index, fitResultDirName  in enumerate(fitResultDirNames):
+      plotFitResult(fitResultDirName, fitVariable, binNames[index], pdfDirName)
 
 
 # returns
@@ -331,22 +336,23 @@ if __name__ == "__main__":
     plotFitResult(fitResultDirName, fitVariable)
     binVarNamesInDataSet = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
-      binVarNamesInDataSet.append(binningInfo.varNames)
-      if binningInfo.dirNames:
-        print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}'")
-        plotFitResults(
-          binNames          = binningInfo.names,
-          fitResultDirNames = binningInfo.dirNames,
-          fitVariable       = fitVariable,
-          pdfDirName        = binningInfo.dirName,
-        )
-        if not dataSet in parValues:
-          parValues[dataSet] = []
-        parValues[dataSet][len(parValues[dataSet]):], parNamesInBinning = readParValuesForBinning(binningInfo)  # append parameter values
-        if parNames is not None:
-          assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of dataset '{dataSet}' and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
-        else:
-          parNames = parNamesInBinning
+      if binningInfo:
+        binVarNamesInDataSet.append(binningInfo.varNames)
+        if binningInfo.dirNames:
+          print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}'")
+          plotFitResults(
+            binNames          = binningInfo.names,
+            fitResultDirNames = binningInfo.dirNames,
+            fitVariable       = fitVariable,
+            pdfDirName        = binningInfo.dirName,
+          )
+          if not dataSet in parValues:
+            parValues[dataSet] = []
+          parValues[dataSet][len(parValues[dataSet]):], parNamesInBinning = readParValuesForBinning(binningInfo)  # append parameter values
+          if parNames is not None:
+            assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of dataset '{dataSet}' and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
+          else:
+            parNames = parNamesInBinning
     if binVarNames is not None:
       assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
     else:
