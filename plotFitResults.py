@@ -57,25 +57,25 @@ class BinInfo:
 @dataclass
 class BinningInfo:
   '''Stores information about one particular kinematic binning'''
-  binInfos: Optional[Tuple[BinInfo, ...]] = None
-  dirName:  Optional[str]                 = None
+  infos: Optional[Tuple[BinInfo, ...]] = None
+  dirName:  Optional[str]              = None
 
   @property
   def names(self) -> Union[Tuple[Union[str, None], ...], None]:
     '''Returns tuple with bin names'''
-    return None if self.binInfos is None else tuple(binInfo.name for binInfo in self.binInfos)
+    return None if self.infos is None else tuple(binInfo.name for binInfo in self.infos)
 
   @property
   def dirNames(self) -> Union[Tuple[Union[str, None], ...], None]:
     '''Returns tuple with directory names for all bins'''
-    return None if self.binInfos is None else tuple(binInfo.dirName for binInfo in self.binInfos)
+    return None if self.infos is None else tuple(binInfo.dirName for binInfo in self.infos)
 
   @property
   def varNames(self) -> Union[Tuple[str, ...], None]:
     '''Returns names of kinematic variables used for binning'''
     varNames = None
-    if self.binInfos:
-      for binInfo in self.binInfos:
+    if self.infos:
+      for binInfo in self.infos:
         varNamesInBin = binInfo.varNames
         if varNames is None:
           varNames = varNamesInBin
@@ -86,7 +86,7 @@ class BinningInfo:
   @property
   def fitResultFileNames(self) -> Union[Tuple[Union[str, None]], None]:
     '''Returns tuple with fit-result file names for all bin'''
-    return None if self.binInfos is None else tuple(binInfo.fitResultFileName for binInfo in self.binInfos)
+    return None if self.infos is None else tuple(binInfo.fitResultFileName for binInfo in self.infos)
 
 
 def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
@@ -171,8 +171,8 @@ def readParValuesFromFitFile(
 def readParValuesForBinning(binningInfo: BinningInfo):
   parValues = []
   parNames = None  # used to compare parameter names in current and previous bin
-  if binningInfo.binInfos:
-    for binInfo in binningInfo.binInfos:
+  if binningInfo.infos:
+    for binInfo in binningInfo.infos:
       parValuesInBin, parNamesInBin = readParValuesFromFitFile(binInfo.fitResultFileName)
       # ensure that the parameter sets of the fit functions are the same in all kinematic bins
       if parNames is not None:
