@@ -2,9 +2,11 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+import argparse
 import functools
 import os
 import subprocess
+import sys
 
 import ROOT
 
@@ -477,6 +479,7 @@ def performFit(
 
 
 if __name__ == "__main__":
+  #TODO move into function and also call in other scipts
   repoDir = os.path.dirname(os.path.abspath(__file__))
   gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
   print(f"Running code in '{repoDir}', git version '{gitInfo}'")
@@ -487,13 +490,17 @@ if __name__ == "__main__":
   ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
   ROOT.gBenchmark.Start("Total execution time")
 
+  # echo and parse command line
+  print(f"Script was called using: '{' '.join(sys.argv)}'")
+  parser = argparse.ArgumentParser(description="Plots BruFit results.")
+  parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  args = parser.parse_args()
   # dataSample        = "030730",
   dataSample        = "bggen_2017_01-ver03"
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataSample}.root.brufit"
   # dataCut           = None
-  # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
-  dataCut           = "(IsSignal == 0)"  # fit bggen background data
-  outputDirName     = "./BruFitOutput"
+  dataCut           = "(IsSignal == 1)"  # fit bggen signal data
+  # dataCut           = "(IsSignal == 0)"  # fit bggen background data
   kinematicBinnings = [
     None,  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
@@ -518,19 +525,19 @@ if __name__ == "__main__":
       for kinematicBinning in kinematicBinnings:
         performFit(
           dataFileName,
-          f"{outputDirName}/{dataSetName}",
+          f"{args.outputDirName}/{dataSetName}",
           kinematicBinning,
-          pdfTypeSig              = None,
-          # pdfTypeSig              = "Histogram",
-          # fixParsSig              = ("smear", "shift", "scale"),
-          # pdfTypeBkg              = None,
+          # pdfTypeSig              = None,
+          pdfTypeSig              = "Histogram",
+          fixParsSig              = ("smear", "shift", "scale"),
+          pdfTypeBkg              = None,
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
           # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
           # pdfTypeBkg              = "SkewedGaussian_ExpMod",
           # pdfTypeBkg              = "SkewedGaussian_Log",
-          pdfTypeBkg              = "Histogram",
-          fixParsBkg              = ("smear", "shift", "scale"),
+          # pdfTypeBkg              = "Histogram",
+          # fixParsBkg              = ("smear", "shift", "scale"),
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
