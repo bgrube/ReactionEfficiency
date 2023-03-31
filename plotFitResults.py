@@ -220,7 +220,7 @@ def plotFitResult(
   pdfDirName:       Optional[str]    = None  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ) -> None:
   '''Plots fit result in given directory'''
-  if not fitResultDirName or not binName:
+  if not fitResultDirName:
     return
   fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
   if not os.path.isfile(fitResultFileName):
@@ -228,11 +228,11 @@ def plotFitResult(
     return
   print(f"Plotting fit result in file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
-  canvName = f"{binName}_{fitVariable}"
+  canvName = f"{binName or ''}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
   # improve TPaveText with fit parameters
   dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
-  paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binName}TotalPDF_paramBox")
+  paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binName or ''}TotalPDF_paramBox")
   if REMOVE_PARAM_BOX:
     # remove box completely
     dataFitPad.GetListOfPrimitives().Remove(paramBox)
