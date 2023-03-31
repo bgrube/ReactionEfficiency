@@ -32,7 +32,7 @@ def readWeights(
   weights.SetFile(sWeightFileName)
   weights.SetSpecies(sWeightLabel)
   weights.SetIDName(comboIdName)
-  weights.WeightBySelection(inputTree, ("(1)" if cut is None else cut), weightBranchName)
+  weights.WeightBySelection(inputTree, (cut or "(1)"), weightBranchName)
   weights.SortWeights()
   weights.Save()
 
@@ -400,16 +400,17 @@ def performFit(
       fitManager.Bins().LoadBinVar(*binning)
 
   # define components of fit model
-  defineSigPdf(
-    fitManager, fitVariable, pdfTypeSig,
-    fixPars              = fixParsSig,
-    outputDirName        = fitDirName,
-    templateDataFileName = templateDataSigFileName,
-    templateDataTreeName = templateDataSigTreeName,
-    weightBranchName     = "AccidWeightFactor",
-    comboIdName          = comboIdName,
-    cut                  = commonCut,
-  )
+  if pdfTypeSig is not None:
+    defineSigPdf(
+      fitManager, fitVariable, pdfTypeSig,
+      fixPars              = fixParsSig,
+      outputDirName        = fitDirName,
+      templateDataFileName = templateDataSigFileName,
+      templateDataTreeName = templateDataSigTreeName,
+      weightBranchName     = "AccidWeightFactor",
+      comboIdName          = comboIdName,
+      cut                  = commonCut,
+    )
   if pdfTypeBkg is not None:
     defineBkgPdf(
       fitManager, fitVariable, pdfTypeBkg,
@@ -517,13 +518,13 @@ if __name__ == "__main__":
           pdfTypeSig              = "Histogram",
           fixParsSig              = ("smear", "shift", "scale"),
           # pdfTypeBkg              = None,
-          fixParsBkg              = ("smear", "shift", "scale"),
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
           # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
           # pdfTypeBkg              = "SkewedGaussian_ExpMod",
           # pdfTypeBkg              = "SkewedGaussian_Log",
           pdfTypeBkg              = "Histogram",
+          fixParsBkg              = ("smear", "shift", "scale"),
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
           templateDataSigFileName = dataFileName,
