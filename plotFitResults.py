@@ -90,6 +90,7 @@ class BinningInfo:
 
 
 def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
+  '''Reads binning info from given directory'''
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
     return None
@@ -115,8 +116,9 @@ def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
 
 
 def getBinningInfosFromDir(fitResultDirName: str) -> List[Union[BinningInfo, None]]:
+  '''Reads binning infos from all 1st-level subdirectories that contain a 'DataBinsConfig.root' file'''
   binningInfos: List[Union[BinningInfo, None]] = []
-  # find all subdirectories with binning files
+  # find all subdirectories with binning files non-recursively
   subDirNames: List[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
   # get binning info from all subdirectories
   for subDirName in subDirNames:
@@ -126,7 +128,7 @@ def getBinningInfosFromDir(fitResultDirName: str) -> List[Union[BinningInfo, Non
 
 
 #TODO convert to dataclass
-#TODO complete doc strings
+#TODO complete docstrings
 #TODO complete type annotations
 # reads fit result from given file and returns
 #    dict with parameter values { <par name> : <par value>, ... }
@@ -291,12 +293,12 @@ def plotParValue1D(
   markerSize        = 0.75
 ):
   '''Overlay parameter values for datasets for 1-dimensional binning'''
-  binVarName  = binningVars[0]
-  print(f"Plotting parameter '{parName}' as a function of binning variable '{binVarName}'")
+  binningVar  = binningVars[0]
+  print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
   parValueMultiGraph = ROOT.TMultiGraph()
   parValueGraphs = {}  # store graphs here to keep them in memory
   for dataSet in parValues:
-    xVals, yVals, yErrs, binVarLabel, binVarUnit = getDataPointArrays1D(binVarName, parName, parValues[dataSet])
+    xVals, yVals, yErrs, binVarLabel, binVarUnit = getDataPointArrays1D(binningVar, parName, parValues[dataSet])
     # print(dataSet, xVals, yVals, yErrs, binVarLabel, binVarUnit)
     graph = parValueGraphs[dataSet] = ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
     graph.SetTitle(dataSet)
@@ -308,7 +310,7 @@ def plotParValue1D(
   parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
   parValueMultiGraph.GetXaxis().SetTitle(f"{binVarLabel} ({binVarUnit})")
   parValueMultiGraph.GetYaxis().SetTitle(parName)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binVarName}{pdfFileNameSuffix}", "")
+  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")
   parValueMultiGraph.Draw("APZ")
   canv.BuildLegend()
   drawZeroLine(parValueMultiGraph)
@@ -328,18 +330,18 @@ if __name__ == "__main__":
   fitVariable = "MissingMassSquared_Measured"  #TODO get this info from BruFit's ROOT.Setup
 
   parValues   = {}  # dict of lists of dicts with parameter values { <dataset> : [ { <binning var> : <bin center>, ..., <par name> : <par value>, ... }, ... ], ... }
-  parNames    = None
+  parNames    = None  # tuple with parameter names (<par name>, ... )
   binVarNames = None  # list of lists with binning variables for each binning [ [ <binning var>, ... ], ... ]
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
-    print(f"Plotting overall fit result")
+    print(f"Plotting overall fit result for '{dataSet}' dataset")
     plotFitResult(fitResultDirName, fitVariable)
     binVarNamesInDataSet = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:
         binVarNamesInDataSet.append(binningInfo.varNames)
         if binningInfo.dirNames:
-          print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}'")
+          print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}' for '{dataSet}' dataset")
           plotFitResults(
             binNames          = binningInfo.names,
             fitResultDirNames = binningInfo.dirNames,
@@ -350,17 +352,17 @@ if __name__ == "__main__":
             parValues[dataSet] = []
           parValues[dataSet][len(parValues[dataSet]):], parNamesInBinning = readParValuesForBinning(binningInfo)  # append parameter values
           if parNames is not None:
-            assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of dataset '{dataSet}' and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
+            assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of '{dataSet}' dataset and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
           else:
             parNames = parNamesInBinning
     if binVarNames is not None:
-      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
+      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of '{dataSet}' dataset are different from the binning variables {binVarNames} of the previous one"
     else:
       binVarNames = binVarNamesInDataSet
 
   # plot fit parameters as 1D function of binning variable
   makePlots.setupPlotStyle()
-  if parNames is not None:
+  if parNames and binVarNames:
     for parName in parNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
