@@ -6,6 +6,7 @@ import array
 import collections
 import ctypes
 from dataclasses import dataclass  # builtin in Python 3.7+
+import functools
 import itertools
 import os
 import sys
@@ -18,6 +19,10 @@ if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
 import makePlots
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 BINNING_VAR_PLOT_INFO = {

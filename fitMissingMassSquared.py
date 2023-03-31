@@ -2,12 +2,17 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
+import functools
 import os
 import subprocess
 
 import ROOT
 
 import makePlots  # defines helper functions to generate histograms from data trees
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 #TODO convert collection of functions to class with member functions
@@ -23,7 +28,7 @@ def readWeights(
 ):
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f", writing them to key '{sWeightObjectName}' in file '{sWeightFileName}', and assigning label '{sWeightLabel}'"
-  + ("" if cut is None else f" while applying cut(s) '{cut}'"), flush = True)
+  + ("" if cut is None else f" while applying cut(s) '{cut}'"))
   currentDir = ROOT.gDirectory
   inputFile = ROOT.TFile.Open(inputFileName, "READ")
   inputTree = inputFile.Get(inputTreeName)
@@ -148,7 +153,7 @@ def defineHistogramPdf(
     fitManager.SetUp().AddGausConstraint(pdf.ScaleConstraint())  # constrain scale
   # load data for template histograms; ensure that calling code has already defined the kinematical binnings
   print(f"Loading data for histogram PDF '{pdfName}' from tree '{templateDataTreeName}' in file '{templateDataFileName}'"
-  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'", flush = True)
+  + f" and applying weights from '{rfSWeightObjectName}' in file '{rfSWeightFileName}'")
   fitManager.LoadSimulated(templateDataTreeName, templateDataFileName, pdfName)
 
 
@@ -166,7 +171,7 @@ def defineSigPdf(
   comboIdName          = None,
   cut                  = None,
 ):
-  print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'", flush = True)
+  print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
 
   pdfTypeArgs = pdfType.split("_")
   if pdfTypeArgs[0] == "Gaussian":
@@ -226,7 +231,7 @@ def defineBkgPdf(
   comboIdName          = None,
   cut                  = None,
 ):
-  print(f"Defining background PDF '{pdfName}' of type '{pdfType}'", flush = True)
+  print(f"Defining background PDF '{pdfName}' of type '{pdfType}'")
 
   #TODO add polynomials
   # # 2nd-order positive-definite polynomial
@@ -326,7 +331,7 @@ def setRooFitOptions(
   fitManager,
   nmbThreadsPerJob,
 ):
-  print("Setting RooFit options", flush = True)
+  print("Setting RooFit options")
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
   fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
                                                                 # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
@@ -445,14 +450,14 @@ def performFit(
   if binFileNames is None or regenBinnedTrees:
     if kinematicBinning:
       if regenBinnedTrees:
-        print("Forcing regeneration of binned tree files", flush = True)
+        print("Forcing regeneration of binned tree files")
       else:
-        print("Could not find (all) binned tree files; regenerating binned tree files", flush = True)
+        print("Could not find (all) binned tree files; regenerating binned tree files")
     fitManager.LoadData(dataTreeName, dataFileName, "Data")
   else:
-    print("Using existing binned tree files:", flush = True)
+    print("Using existing binned tree files:")
     for binFileName in binFileNames:
-      print(f"    {binFileName}", flush = True)
+      print(f"    {binFileName}")
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
   # perform fit and create fit-result plots
@@ -461,10 +466,10 @@ def performFit(
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    print(f"running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel", flush = True)
+    print(f"running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
-    print(f"running {nmbThreadsPerJob} threads in parallel", flush = True)
+    print(f"running {nmbThreadsPerJob} threads in parallel")
     ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
@@ -485,9 +490,9 @@ if __name__ == "__main__":
   # dataSample        = "030730",
   dataSample        = "bggen_2017_01-ver03"
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataSample}.root.brufit"
-  dataCut           = None
+  # dataCut           = None
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
-  # dataCut           = "(IsSignal == 0)"  # fit bggen background data
+  dataCut           = "(IsSignal == 0)"  # fit bggen background data
   outputDirName     = "./BruFitOutput"
   kinematicBinnings = [
     None,  # no binning -> fit overall distribution
@@ -515,8 +520,9 @@ if __name__ == "__main__":
           dataFileName,
           f"{outputDirName}/{dataSetName}",
           kinematicBinning,
-          pdfTypeSig              = "Histogram",
-          fixParsSig              = ("smear", "shift", "scale"),
+          pdfTypeSig              = None,
+          # pdfTypeSig              = "Histogram",
+          # fixParsSig              = ("smear", "shift", "scale"),
           # pdfTypeBkg              = None,
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",

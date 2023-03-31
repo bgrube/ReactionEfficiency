@@ -3,6 +3,7 @@
 
 
 import argparse
+import functools
 import math
 import numpy as np
 import os
@@ -14,6 +15,10 @@ import ROOT
 
 import makePlots
 import plotFitResults
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 YIELD_PAR_NAMES = {
@@ -131,9 +136,9 @@ def plotEfficiencies1D(
   binningVar = binningVars[0]
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   xVals, yVals, yErrs, binVarLabel, binVarUnit = plotFitResults.getDataPointArrays1D(binningVar, "Efficiency", efficiencies)
-  # set uncertainties to zero as long as they are not estimated well
-  for i in range(len(yErrs)):
-    yErrs[i] = 0
+  # # set uncertainties to zero as long as they are not estimated well
+  # for i in range(len(yErrs)):
+  #   yErrs[i] = 0
   # print(xVals, yVals, yErrs)
   efficiencyGraph = ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
   efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
