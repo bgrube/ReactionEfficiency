@@ -16,7 +16,7 @@ from uncertainties import UFloat, ufloat
 
 import ROOT
 if __name__ == "__main__":
-  ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
+  ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files  # type: ignore
 
 import makePlots
 
@@ -33,9 +33,9 @@ BINNING_VAR_PLOT_INFO = {
 }
 
 DATASET_COLORS = {
-  "Total"   : ROOT.kBlack,
-  "Found"   : ROOT.kGreen + 2,
-  "Missing" : ROOT.kRed + 1
+  "Total"   : ROOT.kBlack,      # type: ignore
+  "Found"   : ROOT.kGreen + 2,  # type: ignore
+  "Missing" : ROOT.kRed + 1     # type: ignore
 }
 
 REMOVE_PARAM_BOX = False
@@ -46,7 +46,7 @@ class BinInfo:
   '''Stores information about a single kinematic bin'''
   name:    str               # bin name
   centers: Dict[str, float]  # dict with bin centers { <binning var> : <bin center>, ..., }
-  dirName: str               # directory names for all bins ( <bin dir name>, ... )
+  dirName: str               # directory name for bins
 
   @property
   def varNames(self) -> Tuple[str, ...]:
@@ -62,8 +62,8 @@ class BinInfo:
 @dataclass
 class BinningInfo:
   '''Stores information about one particular kinematic binning'''
-  infos:   List[BinInfo]
-  dirName: str
+  infos:   List[BinInfo]  # info for all bins of the kinematic binning
+  dirName: str            # directory that contains all bins of the kinematic binning
 
   @property
   def names(self) -> Tuple[str, ...]:
@@ -99,7 +99,7 @@ def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
   if not os.path.isfile(binningFileName):
     return None
   print(f"Loading binning from file '{binningFileName}'")
-  bins = ROOT.Bins("HSBins", binningFileName)
+  bins = ROOT.Bins("HSBins", binningFileName)  # type: ignore
   print("Found binning:")
   bins.PrintAxis()
   binNames = tuple(str(binName) for binName in bins.GetBinNames())
@@ -134,8 +134,8 @@ def getBinningInfosFromDir(fitResultDirName: str) -> List[Union[BinningInfo, Non
 @dataclass
 class ParInfo:
   '''Stores information about parameter values in a single kinematic bin'''
-  binInfo: BinInfo
-  values:  Dict[str, UFloat]  # parameter values
+  binInfo: BinInfo            # info for the kinamtic bin
+  values:  Dict[str, UFloat]  # mapping of parameter names to values
 
   @property
   def names(self) -> Tuple[str, ...]:
@@ -143,13 +143,14 @@ class ParInfo:
     return tuple(sorted(self.values.keys()))
 
 
-def readParInfoFromFitFile(
+def readParInfoForBin(
   binInfo:           BinInfo,
   fitParNamesToRead: Optional[Mapping[str, str]] = None  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ) -> ParInfo:
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
   print(f"Reading fit result object 'MinuitResult' from file '{binInfo.fitResultFileName}'")
-  fitResultFile  = ROOT.TFile.Open(binInfo.fitResultFileName, "READ")
+  #TODO add special case for "Overall"
+  fitResultFile  = ROOT.TFile.Open(binInfo.fitResultFileName, "READ")  # type: ignore
   fitResult      = fitResultFile.Get("MinuitResult")
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
@@ -177,7 +178,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   parInfos = []
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
-    parInfo = readParInfoFromFitFile(binInfo)
+    parInfo = readParInfoForBin(binInfo)
     # ensure that the parameter sets of the fit functions are the same in all kinematic bins
     parNamesInBin = parInfo.names
     if parNames is not None:
@@ -188,7 +189,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   return parInfos
 
 
-def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
+def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:  # type: ignore
   '''Helper function that draws zero line when necessary'''
   objType = obj.IsA().GetName()
   if (objType == "TCanvas") or (objType == "TPad"):
@@ -198,7 +199,7 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
     yMax = ctypes.c_double()
     obj.GetRangeAxis(xMin, yMin, xMax, yMax)
     if (yMin.value < 0) and (yMax.value > 0):
-      zeroLine = ROOT.TLine()
+      zeroLine = ROOT.TLine()  # type: ignore
       zeroLine.SetLineStyle(style)
       zeroLine.SetLineColor(color)
       return zeroLine.DrawLine(xMin, 0, xMax, 0)
@@ -206,7 +207,7 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
     xAxis = obj.GetXaxis()
     yAxis = obj.GetYaxis()
     if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
-      zeroLine = ROOT.TLine()
+      zeroLine = ROOT.TLine()  # type: ignore
       zeroLine.SetLineStyle(style)
       zeroLine.SetLineColor(color)
       return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
@@ -230,7 +231,7 @@ def plotFitResult(
     print(f"Cannot find file '{fitResultFileName}'; skipping")
     return
   print(f"Plotting fit result in file '{fitResultFileName}'")
-  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
+  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
   canvName = f"{binName or ''}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
   # improve TPaveText with fit parameters
@@ -277,7 +278,7 @@ def getValueGraph1D(
   xVals = array.array('d', [graphVal[0]               for graphVal in graphVals])
   yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphVals])
   yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphVals])
-  return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
+  return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)  # type: ignore
 
 
 def plotParValue1D(
@@ -292,21 +293,21 @@ def plotParValue1D(
 ) -> None:
   '''Overlay parameter values for datasets for 1-dimensional binning for given parameter for given binning variable'''
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueMultiGraph = ROOT.TMultiGraph()
+  parValueMultiGraph = ROOT.TMultiGraph()  # type: ignore
   parValueGraphs = {}  # store graphs here to keep them in memory
   for dataSet in parInfos:
     graph = parValueGraphs[dataSet] = getValueGraph1D(binningVar, parName, parInfos[dataSet])
-    graph.SetTitle(dataSet)
-    graph.SetMarkerStyle(ROOT.kCircle)
-    graph.SetMarkerSize(markerSize)
-    graph.SetMarkerColor(DATASET_COLORS[dataSet])
-    graph.SetLineColor(DATASET_COLORS[dataSet])
+    graph.SetTitle(dataSet)                        # type: ignore
+    graph.SetMarkerStyle(ROOT.kCircle)             # type: ignore
+    graph.SetMarkerSize(markerSize)                # type: ignore
+    graph.SetMarkerColor(DATASET_COLORS[dataSet])  # type: ignore
+    graph.SetLineColor(DATASET_COLORS[dataSet])    # type: ignore
     parValueMultiGraph.Add(graph)
   parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   parValueMultiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
   parValueMultiGraph.GetYaxis().SetTitle(parName)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")
+  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")  # type: ignore
   parValueMultiGraph.Draw("APZ")
   canv.BuildLegend()
   drawZeroLine(parValueMultiGraph)
@@ -314,8 +315,8 @@ def plotParValue1D(
 
 
 if __name__ == "__main__":
-  ROOT.gROOT.SetBatch(True)
-  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
+  ROOT.gROOT.SetBatch(True)  # type: ignore
+  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  # type: ignore #TODO use BRUFIT environment variable
 
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")
