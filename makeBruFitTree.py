@@ -2,8 +2,6 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 
-import inspect
-
 import ROOT
 
 import makePlots  # defines helper functions to generate histograms from data trees
@@ -21,11 +19,13 @@ if __name__ == "__main__":
   branchesToWrite = [
     "MissingMassSquared_Measured",  # fit variable
     "AccidWeightFactor",  # weight for removal of RF accidentals
+    # cut variables
+    "NmbUnusedShowers",
     # binning variables
     "BeamEnergy",
     "MissingProtonP",
     "MissingProtonTheta",
-    "MissingProtonPhi"
+    "MissingProtonPhi",
   ]
   print(f"Converting tree '{treeName}' in '{inputFileName}' to BruFit format")
 
