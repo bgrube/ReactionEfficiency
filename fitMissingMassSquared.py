@@ -31,11 +31,11 @@ def readWeights(
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f", writing them to key '{sWeightObjectName}' in file '{sWeightFileName}', and assigning label '{sWeightLabel}'"
   + ("" if cut is None else f" while applying cut(s) '{cut}'"))
-  currentDir = ROOT.gDirectory
-  inputFile = ROOT.TFile.Open(inputFileName, "READ")
+  currentDir = ROOT.gDirectory  # type: ignore
+  inputFile = ROOT.TFile.Open(inputFileName, "READ")  # type: ignore
   inputTree = inputFile.Get(inputTreeName)
   currentDir.cd()
-  weights = ROOT.Weights(sWeightObjectName)  # name of the Weights object
+  weights = ROOT.Weights(sWeightObjectName)  # name of the Weights object  # type: ignore
   weights.SetFile(sWeightFileName)
   weights.SetSpecies(sWeightLabel)
   weights.SetIDName(comboIdName)
@@ -320,7 +320,7 @@ def binnedTreeFilesIn(outputDirName):
   binningFileName = f"{outputDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
     return None
-  bins = ROOT.Bins("HSBins", binningFileName)
+  bins = ROOT.Bins("HSBins", binningFileName)  # type: ignore
   binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
   # verify that all bin files exist
   for binFileName in binFileNames:
@@ -335,22 +335,22 @@ def setRooFitOptions(
 ):
   print("Setting RooFit options")
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
-                                                                # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelizes calculation of likelihood using the given number of cores
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization  # type: ignore
+                                                                # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute  # type: ignore
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelizes calculation of likelihood using the given number of cores  # type: ignore
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores  # type: ignore
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))  # type: ignore
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))  # type: ignore
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps  # type: ignore
   # force Minimizer
-  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")  # doesn't work
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit"))  # overridden by HS::FIT::Minuit2::FitTo()
-  # fitManager.SetMinimiser(ROOT.Minuit())
-  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit2"))
-  # fitManager.SetMinimiser(ROOT.Minuit2())
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS
+  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")  # doesn't work  # type: ignore
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit"))  # overridden by HS::FIT::Minuit2::FitTo()  # type: ignore
+  # fitManager.SetMinimiser(ROOT.Minuit())  # type: ignore
+  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")  # type: ignore
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit2"))  # type: ignore
+  # fitManager.SetMinimiser(ROOT.Minuit2())  # type: ignore
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE  # type: ignore
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS  # type: ignore
 
 
 def performFit(
@@ -389,8 +389,8 @@ def performFit(
     + (" using no binning" if kinematicBinning is None else f" using binning '{kinematicBinning}'")
     + f" and writing output to '{fitDirName}'")
   gBenchmarkLabel = f"Time for fit in '{fitDirName}'"
-  ROOT.gBenchmark.Start(gBenchmarkLabel)
-  fitManager = ROOT.FitManager()
+  ROOT.gBenchmark.Start(gBenchmarkLabel)  # type: ignore
+  fitManager = ROOT.FitManager()  # type: ignore
   fitManager.SetUp().SetOutDir(fitDirName)
 
   # define fit variable and set fit range
@@ -469,13 +469,13 @@ def performFit(
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
     print(f"running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
-    ROOT.Proof.Go(fitManager, nmbProofJobs)
+    ROOT.Proof.Go(fitManager, nmbProofJobs)  # type: ignore
   else:
     print(f"running {nmbThreadsPerJob} threads in parallel")
-    ROOT.Here.Go(fitManager)
+    ROOT.Here.Go(fitManager)  # type: ignore
 
   fitManager.WriteThis()  # write to disk
-  ROOT.gBenchmark.Show(gBenchmarkLabel)
+  ROOT.gBenchmark.Show(gBenchmarkLabel)  # type: ignore
 
 
 if __name__ == "__main__":
@@ -485,10 +485,10 @@ if __name__ == "__main__":
   print(f"Running code in '{repoDir}', git version '{gitInfo}'")
 
   os.nice(18)  # run all processes with second highest niceness level
-  ROOT.gROOT.SetBatch(True)
+  ROOT.gROOT.SetBatch(True)  # type: ignore
   makePlots.setupPlotStyle()
-  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  #TODO use BRUFIT environment variable
-  ROOT.gBenchmark.Start("Total execution time")
+  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  # type: ignore  #TODO use BRUFIT environment variable
+  ROOT.gBenchmark.Start("Total execution time")  # type: ignore
 
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")
@@ -498,8 +498,8 @@ if __name__ == "__main__":
   # dataSample        = "030730",
   dataSample        = "bggen_2017_01-ver03"
   dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataSample}.root.brufit"
-  # dataCut           = None
-  dataCut           = "(IsSignal == 1)"  # fit bggen signal data
+  dataCut           = None
+  # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
   kinematicBinnings = [
     None,  # no binning -> fit overall distribution
@@ -530,13 +530,15 @@ if __name__ == "__main__":
           # pdfTypeSig              = None,
           pdfTypeSig              = "Histogram",
           fixParsSig              = ("smear", "shift", "scale"),
-          pdfTypeBkg              = None,
+          # pdfTypeBkg              = None,
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
           # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
           # pdfTypeBkg              = "SkewedGaussian_ExpMod",
           # pdfTypeBkg              = "SkewedGaussian_Log",
-          # pdfTypeBkg              = "Histogram",
+          pdfTypeBkg              = "Histogram",
+          # fixParsBkg              = ("scale"),
+          fixParsBkg              = ("smear"),
           # fixParsBkg              = ("smear", "shift", "scale"),
           commonCut               = dataSetCut,
           dataCut                 = dataCut,
@@ -544,4 +546,4 @@ if __name__ == "__main__":
           templateDataBkgFileName = dataFileName,
         )
 
-  ROOT.gBenchmark.Show("Total execution time")
+  ROOT.gBenchmark.Show("Total execution time")  # type: ignore
