@@ -495,12 +495,14 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
-  # dataSample        = "030730",
-  dataSample        = "bggen_2017_01-ver03"
-  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataSample}.root.brufit"
+  bggenFileName     = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.bggen_2017_01-ver03.root.brufit"
+  # dataFileName      = bggenFileName
+  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.030730.root.brufit"
   dataCut           = None
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
+  # additionalCut     = None
+  additionalCut     = "(NmbUnusedShowers == 0)"
   kinematicBinnings = [
     None,  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
@@ -540,10 +542,11 @@ if __name__ == "__main__":
           # fixParsBkg              = ("scale"),
           fixParsBkg              = ("smear"),
           # fixParsBkg              = ("smear", "shift", "scale"),
-          commonCut               = dataSetCut,
+          #TODO create function that joins cuts
+          commonCut               = " && ".join(filter(None, (dataSetCut, additionalCut))),
           dataCut                 = dataCut,
-          templateDataSigFileName = dataFileName,
-          templateDataBkgFileName = dataFileName,
+          templateDataSigFileName = bggenFileName,
+          templateDataBkgFileName = bggenFileName,
         )
 
   ROOT.gBenchmark.Show("Total execution time")  # type: ignore
