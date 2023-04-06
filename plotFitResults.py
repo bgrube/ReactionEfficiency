@@ -257,14 +257,12 @@ def plotFitResult(
 
 
 def plotFitResults(
-  binNames:          Sequence[str],
-  fitResultDirNames: Sequence[str],
-  fitVariable:       str,
-  pdfDirName:        Optional[str] = None
+  binningInfo: BinningInfo,
+  fitVariable: str,
 ):
   '''Plots fit results for all kinematic bins'''
-  for index, fitResultDirName  in enumerate(fitResultDirNames):
-    plotFitResult(fitResultDirName, fitVariable, binNames[index], pdfDirName)
+  for binInfo in binningInfo.infos:
+    plotFitResult(binInfo.dirName, fitVariable, binInfo.name, pdfDirName = binningInfo.dirName)
 
 
 def getParValuesForGraph1D(
@@ -347,12 +345,7 @@ if __name__ == "__main__":
         binVarNamesInDataSet.append(binningInfo.varNames)
         if binningInfo.dirNames:
           print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}' for '{dataSet}' dataset")
-          plotFitResults(
-            binNames          = binningInfo.names,
-            fitResultDirNames = binningInfo.dirNames,
-            fitVariable       = fitVariable,
-            pdfDirName        = binningInfo.dirName,
-          )
+          plotFitResults(binningInfo, fitVariable)
           if not dataSet in parInfos:
             parInfos[dataSet] = []
           parInfos[dataSet][len(parInfos[dataSet]):] = readParInfosForBinning(binningInfo)  # append parameter values
