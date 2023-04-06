@@ -24,7 +24,7 @@ from plotFitResults import BinInfo, BinningInfo, ParInfo, BINNING_VAR_PLOT_INFO
 print = functools.partial(print, flush = True)
 
 
-YIELD_PAR_NAMES = {
+YIELD_PAR_NAMES: Dict[str, str] = {
   "Signal"     : "Yld_SigPdf",
   "Background" : "Yld_BkgPdf",
 }
