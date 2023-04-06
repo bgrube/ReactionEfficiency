@@ -29,13 +29,13 @@ BINNING_VAR_PLOT_INFO = {
   "BeamEnergy"         : {"label" : "E_{beam}",                      "unit" : "GeV"},
   "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c"},
   "MissingProtonTheta" : {"label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg"},
-  "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"}
+  "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"},
 }
 
 DATASET_COLORS = {
   "Total"   : ROOT.kBlack,      # type: ignore
   "Found"   : ROOT.kGreen + 2,  # type: ignore
-  "Missing" : ROOT.kRed + 1     # type: ignore
+  "Missing" : ROOT.kRed + 1,    # type: ignore
 }
 
 REMOVE_PARAM_BOX = False
@@ -149,7 +149,7 @@ class ParInfo:
 
 def readParInfoForBin(
   binInfo:           BinInfo,
-  fitParNamesToRead: Optional[Mapping[str, str]] = None  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
+  fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ) -> ParInfo:
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
   print(f"Reading fit result object 'MinuitResult' from file '{binInfo.fitResultFileName}'")
@@ -221,25 +221,22 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:  # typ
 
 
 def plotFitResult(
-  fitResultDirName: str,
-  fitVariable:      str,
-  binName:          str           = "",
-  pdfDirName:       Optional[str] = None  # overrides default PDF output path (i.e. same dir as fit result file) if set
+  binInfo:     BinInfo,
+  fitVariable: str,
+  pdfDirName:  Optional[str] = None,  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ) -> None:
-  '''Plots fit result in given directory'''
-  if not fitResultDirName:
-    return
-  fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
+  '''Plots fit result for given kinematic bin'''
+  fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'; skipping")
     return
   print(f"Plotting fit result in file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
-  canvName = f"{binName or ''}_{fitVariable}"
+  canvName = f"{binInfo.name or ''}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
   # improve TPaveText with fit parameters
   dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
-  paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binName or ''}TotalPDF_paramBox")
+  paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binInfo.name or ''}TotalPDF_paramBox")
   if REMOVE_PARAM_BOX:
     # remove box completely
     dataFitPad.GetListOfPrimitives().Remove(paramBox)
@@ -248,21 +245,21 @@ def plotFitResult(
     paramBox.SetBorderSize(0)
     paramBox.SetFillStyle(0)
   drawZeroLine(dataFitPad)
-  pdfFileName = ("Overall" if binName == "" else "") + f"{canv.GetName()}.pdf"
+  pdfFileName = ("Overall" if binInfo.name == "" else "") + f"{canv.GetName()}.pdf"
   if pdfDirName:
     canv.SaveAs(f"{pdfDirName}/{pdfFileName}")
   else:
-    canv.SaveAs(f"{fitResultDirName}/{pdfFileName}")
+    canv.SaveAs(f"{binInfo.dirName}/{pdfFileName}")
   fitResultFile.Close()
 
 
 def plotFitResults(
   binningInfo: BinningInfo,
   fitVariable: str,
-):
+) -> None:
   '''Plots fit results for all kinematic bins'''
   for binInfo in binningInfo.infos:
-    plotFitResult(binInfo.dirName, fitVariable, binInfo.name, pdfDirName = binningInfo.dirName)
+    plotFitResult(binInfo, fitVariable, pdfDirName = binningInfo.dirName)
 
 
 def getParValuesForGraph1D(
@@ -295,7 +292,7 @@ def plotParValue1D(
   pdfFileNameSuffix: str   = "",
   particle:          str   = "Proton",
   channel:           str   = "4pi",
-  markerSize:        float = 0.75
+  markerSize:        float = 0.75,
 ) -> None:
   '''Overlay parameter values for datasets for 1-dimensional binning for given parameter for given binning variable'''
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
@@ -338,7 +335,7 @@ if __name__ == "__main__":
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
-    plotFitResult(fitResultDirName, fitVariable)
+    plotFitResult(BinInfo("", {}, fitResultDirName), fitVariable)
     binVarNamesInDataSet = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:
