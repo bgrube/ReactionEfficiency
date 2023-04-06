@@ -10,7 +10,7 @@ import functools
 import itertools
 import os
 import sys
-from typing import Optional, Union, Dict, Tuple, List, Sequence, Mapping
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from uncertainties import UFloat, ufloat
 
@@ -57,6 +57,10 @@ class BinInfo:
   def fitResultFileName(self) -> str:
     '''Returns fit result file name for this bin'''
     return f"{self.dirName}/ResultsHSMinuit2.root"
+
+  def isSameBinAs(self, other: 'BinInfo') -> bool:
+    '''Returns whether 2 BinInfo objects represent the same kinematic bin'''
+    return (self.name == other.name) and (self.centers == other.centers)
 
 
 @dataclass
@@ -149,7 +153,6 @@ def readParInfoForBin(
 ) -> ParInfo:
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
   print(f"Reading fit result object 'MinuitResult' from file '{binInfo.fitResultFileName}'")
-  #TODO add special case for "Overall"
   fitResultFile  = ROOT.TFile.Open(binInfo.fitResultFileName, "READ")  # type: ignore
   fitResult      = fitResultFile.Get("MinuitResult")
   fitPars        = fitResult.floatParsFinal()
@@ -264,20 +267,25 @@ def plotFitResults(
     plotFitResult(fitResultDirName, fitVariable, binNames[index], pdfDirName)
 
 
-def getValueGraph1D(
+def getParValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
-  valueName:  str,  # name of value, i.e. y-axis
-  values:     List[ParInfo],
-):  #TODO there does not seem to be a way to specify ROOT types
-  '''Creates ROOT.TGraphErrors that contains values for given value name as a function of given bin variable'''
-  graphVals = [(value.binInfo.centers[binVarName], value.values[valueName])
-    for value in values if (binVarName in value.binInfo.varNames) and (valueName in value.names)]
-  if not graphVals:
+  parName:    str,  # name of value, i.e. y-axis
+  parInfos:   List[ParInfo],
+) -> List[Tuple[float, UFloat]]:
+  '''Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos'''
+  graphValues: List[Tuple[float, UFloat]] = [(parInfo.binInfo.centers[binVarName], parInfo.values[parName])
+    for parInfo in parInfos if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)]
+  return graphValues
+
+
+def getParValueGraph1D(graphValues: List[Tuple[float, UFloat]]) -> Any:  #TODO there does not seem to be a way to specify ROOT types
+  '''Creates ROOT.TGraphErrors from given values'''
+  if not graphValues:
     print("No data to plot")
     return
-  xVals = array.array('d', [graphVal[0]               for graphVal in graphVals])
-  yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphVals])
-  yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphVals])
+  xVals = array.array('d', [graphVal[0]               for graphVal in graphValues])
+  yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphValues])
+  yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphValues])
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)  # type: ignore
 
 
@@ -296,7 +304,7 @@ def plotParValue1D(
   parValueMultiGraph = ROOT.TMultiGraph()  # type: ignore
   parValueGraphs = {}  # store graphs here to keep them in memory
   for dataSet in parInfos:
-    graph = parValueGraphs[dataSet] = getValueGraph1D(binningVar, parName, parInfos[dataSet])
+    graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]))
     graph.SetTitle(dataSet)                        # type: ignore
     graph.SetMarkerStyle(ROOT.kCircle)             # type: ignore
     graph.SetMarkerSize(markerSize)                # type: ignore
