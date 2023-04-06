@@ -67,14 +67,16 @@ def overlayEfficiencies(
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   efficiencyMultiGraph = ROOT.TMultiGraph()  # type: ignore
   efficiencyGraphs = {}  # store graphs here to keep them in memory
+  shiftFraction = 0
   color = 1
   for (fitResultDirName, fitLabel), efficiencies in effInfos.items():
-    graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies))
+    graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
     graph.SetTitle(fitLabel)            # type: ignore
     graph.SetMarkerStyle(ROOT.kCircle)  # type: ignore
     graph.SetMarkerSize(markerSize)     # type: ignore
     graph.SetMarkerColor(color)         # type: ignore
     graph.SetLineColor(color)           # type: ignore
+    shiftFraction += 0.01
     color += 1
     efficiencyMultiGraph.Add(graph)
   efficiencyMultiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
