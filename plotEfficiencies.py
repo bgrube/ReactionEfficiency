@@ -26,23 +26,19 @@ print = functools.partial(print, flush = True)
 
 YIELD_PAR_NAMES = {
   "Signal"     : "Yld_SigPdf",
-  "Background" : "Yld_BkgPdf"
+  "Background" : "Yld_BkgPdf",
 }
 
 
-#TODO use dataclasses to store information
-#TODO add type annotations
-#TODO add docstrings
-#TODO pass binInfo?
 def readDataIntegralFromFitFile(
-  fitResultFileName: str,
-  fitVariable:       str,
-  binName:           str = ""
-) -> UFloat:
-  '''Reads data histogram in given file and returns its integral assuming Poissonian uncertainty'''
+  binInfo:     BinInfo,
+  fitVariable: str,
+) -> ParInfo:
+  '''Reads data histogram for given kinematic bin and returns its integral assuming Poissonian uncertainty'''
+  fitResultFileName = binInfo.fitResultFileName
   print(f"Reading fitted data histogram from file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
-  canvName = f"{binName}_{fitVariable}"
+  canvName = f"{'' if binInfo.name == 'Overall' else binInfo.name}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
   # get data histogram
   dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
@@ -53,53 +49,27 @@ def readDataIntegralFromFitFile(
   for i in range(dataHist.GetN()):
     integral += yVals[i]
   fitResultFile.Close()
-  return ufloat(integral, math.sqrt(integral))
+  return ParInfo(binInfo, {"Signal" : ufloat(integral, math.sqrt(integral))})
 
 
-#     list of dicts with yields [ { <binning var> : <bin center>, ..., "Signal" : <integral> }, ... ]
-#     tuple with binning variables (<binning var>, ... )
-#TODO pass binInfo?
-def readDataIntegralsFromFitDir(
-  fitResultDirName: str,
-  fitVariable:      str
-):
-  '''Reads integrals of data histograms in given directory and returns list of yield infos'''
-  integrals = []
-  # read overall yields from fit-result file
-  fitResultFileName = f"{fitResultDirName}/ResultsHSMinuit2.root"
-  if os.path.isfile(fitResultFileName):
-    integralOverall = {"Signal" : readDataIntegralFromFitFile(fitResultFileName, fitVariable)}
-    integralOverall.update({"Overall" : None})  # tag overall yields with special axis name
-    print(f"Read overall integral: {integralOverall}")
-    integrals.append(integralOverall)  # first entry
-  # get binning from file
-  binningInfo = plotFitResults.getBinningFromDir(fitResultDirName)
-  if binningInfo is not None and binningInfo.infos:
-    for binInfo in binningInfo.infos:
-      integralInBin = {"Signal" : readDataIntegralFromFitFile(binInfo.fitResultFileName, fitVariable, binInfo.name)}
-      # copy axis name and bin center
-      integralInBin.update(binInfo.centers)
-      print(f"Read integral for kinematic bin: {integralInBin}")
-      integrals.append(integralInBin)
-  return integrals
-
-
-#TODO reduce code doubling; cf. readParInfosForBinning()
 def readYieldInfosForBinning(
   binningInfo:   BinningInfo,
-  readIntegrals: bool = False,  #TODO
+  fitVariable:   str,
+  readIntegrals: bool = False,
 ) -> List[ParInfo]:
   '''Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning'''
   yieldInfos = []
   # read overall yields
   overallBinInfo = BinInfo("Overall", {}, binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
-    yieldInfo = plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
+    yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
+      else plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
     print(f"Read overall yields: {yieldInfo}")
     yieldInfos.append(yieldInfo)  # first entry always contains overall yields
   # read yields for each bin
   for binInfo in binningInfo.infos:
-    yieldInfo = plotFitResults.readParInfoForBin(binInfo, YIELD_PAR_NAMES)
+    yieldInfo = readDataIntegralFromFitFile(binInfo, fitVariable) if readIntegrals \
+      else plotFitResults.readParInfoForBin(binInfo, YIELD_PAR_NAMES)
     print(f"Read yields for kinematic bin: {yieldInfo}")
     yieldInfos.append(yieldInfo)
   return yieldInfos
@@ -108,7 +78,7 @@ def readYieldInfosForBinning(
 @dataclass
 class EffInfo:
   '''Stores information about efficiency in a single kinematic bin'''
-  binInfo: BinInfo  # info for the kinamtic bin
+  binInfo: BinInfo  # info for the kinematic bin
   value:   UFloat   # efficiency value
 
 
@@ -183,54 +153,28 @@ if __name__ == "__main__":
   dataSets    = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"  #TODO get this info from BruFit's ROOT.Setup
 
-  # print("Calculating efficiencies from integrals of data histograms")
-  # integrals   = {}  # dict of lists of dicts with integrals of data histogram { <dataset:> [ { <binning var> : <bin center>, ..., "Signal" : <integral> }, ... ], ... }
-  # binVarNames = None  # list of lists with binning variables for each binning [ [ <binning var>, ... ], ... ]
-  # for dataSet in dataSets:
-  #   print(f"Reading integrals of data histograms for '{dataSet}' dataset")
-  #   fitResultDirName = f"{args.outputDirName}/{dataSet}"
-  #   integrals[dataSet] = readDataIntegralsFromFitDir(fitResultDirName, fitVariable)  # overall integral values
-  #   binVarNamesInDataSet = []
-  #   for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
-  #     if binningInfo:
-  #       binVarNamesInDataSet.append(binningInfo.varNames)
-  #       if binningInfo.dirName:
-  #         integrals[dataSet][len(integrals[dataSet]):] = readDataIntegralsFromFitDir(binningInfo.dirName, fitVariable)  # append integral values
-  #   if binVarNames is None:
-  #     binVarNames = binVarNamesInDataSet
-  #   else:
-  #     assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
-  # efficiencies = calculateEfficiencies(integrals, binVarNames)
-  # if efficiencies:
-  #   if "Overall" in efficiencies[0]:
-  #     print(f"Overall efficiency from data-histogram integral is {efficiencies[0]['Efficiency']}")
-  #   if binVarNames:
-  #     for binningVars in binVarNames:
-  #       if len(binningVars) == 1:
-  #         plotEfficiencies1D(efficiencies, binningVars, args.outputDirName, "_integral")
-
-  #TODO reduce code doubling
-  print("Calculating efficiencies from fit results")
-  yieldInfos:  Dict[str, List[ParInfo]]           = {}    # parInfos[<dataset>][<bin>]
-  binVarNames: Union[List[Tuple[str, ...]], None] = None  # binning variables for each binning
-  for dataSet in dataSets:
-    print(f"Reading yields for '{dataSet}' dataset")
-    fitResultDirName = f"{args.outputDirName}/{dataSet}"
-    yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName))  # overall yield values
-    binVarNamesInDataSet = []
-    for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
-      if binningInfo:
-        binVarNamesInDataSet.append(binningInfo.varNames)
-        yieldInfos[dataSet][len(yieldInfos[dataSet]):] = readYieldInfosForBinning(binningInfo)  # append yield values
-    if binVarNames is None:
-      binVarNames = binVarNamesInDataSet
-    else:
-      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
-  effInfos = calculateEfficiencies(yieldInfos)
-  if effInfos:
-    if effInfos[0].binInfo.name == "Overall":
-      print(f"Overall efficiency from fits is {effInfos[0].value}")
-    if binVarNames:
-      for binningVars in binVarNames:
-        if len(binningVars) == 1:
-          plotEfficiencies1D(effInfos, binningVars[0], args.outputDirName)
+  for readIntegrals in (True, False):
+    print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
+    yieldInfos:  Dict[str, List[ParInfo]]           = {}    # parInfos[<dataset>][<bin>]
+    binVarNames: Union[List[Tuple[str, ...]], None] = None  # binning variables for each binning
+    for dataSet in dataSets:
+      print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
+      fitResultDirName = f"{args.outputDirName}/{dataSet}"
+      yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName), fitVariable, readIntegrals)  # overall yield values
+      binVarNamesInDataSet = []
+      for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
+        if binningInfo:
+          binVarNamesInDataSet.append(binningInfo.varNames)
+          yieldInfos[dataSet][len(yieldInfos[dataSet]):] = readYieldInfosForBinning(binningInfo, fitVariable, readIntegrals)  # append yield values
+      if binVarNames is None:
+        binVarNames = binVarNamesInDataSet
+      else:
+        assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
+    effInfos = calculateEfficiencies(yieldInfos)
+    if effInfos:
+      if effInfos[0].binInfo.name == "Overall":
+        print("Overall efficiency from " + ("data-histogram integrals" if readIntegrals else "fits") + f" is {effInfos[0].value}")
+      if binVarNames:
+        for binningVars in binVarNames:
+          if len(binningVars) == 1:
+            plotEfficiencies1D(effInfos, binningVars[0], args.outputDirName, "_integral" if readIntegrals else "")
