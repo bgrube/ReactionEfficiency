@@ -2,12 +2,12 @@
 # !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
 
 import argparse
-import array
 import collections
 import ctypes
 from dataclasses import dataclass  # builtin in Python 3.7+
 import functools
 import itertools
+import numpy as np
 import os
 import sys
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
@@ -274,14 +274,22 @@ def getParValuesForGraph1D(
   return graphValues
 
 
-def getParValueGraph1D(graphValues: Sequence[Tuple[float, UFloat]]) -> Any:  #TODO there does not seem to be a way to specify ROOT types
+def getParValueGraph1D(
+  graphValues:     Sequence[Tuple[float, UFloat]],
+  shiftByFraction: float = 0,
+) -> Any:  #TODO there does not seem to be a way to specify ROOT types
   '''Creates ROOT.TGraphErrors from given values'''
   if not graphValues:
     print("No data to plot")
     return
-  xVals = array.array('d', [graphVal[0]               for graphVal in graphValues])
-  yVals = array.array('d', [graphVal[1].nominal_value for graphVal in graphValues])
-  yErrs = array.array('d', [graphVal[1].std_dev       for graphVal in graphValues])
+  xVals = np.array([graphVal[0]               for graphVal in graphValues], dtype = "d")
+  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
+  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
+  # shift x values by fraction of total x range
+  if shiftByFraction != 0:
+    xRange = max(xVals) - min(xVals)
+    shift  = xRange * shiftByFraction
+    xVals = xVals + shift
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)  # type: ignore
 
 
