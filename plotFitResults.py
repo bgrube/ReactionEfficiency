@@ -138,7 +138,7 @@ def getBinningInfosFromDir(fitResultDirName: str) -> List[Union[BinningInfo, Non
 @dataclass
 class ParInfo:
   '''Stores information about parameter values in a single kinematic bin'''
-  binInfo: BinInfo            # info for the kinamtic bin
+  binInfo: BinInfo            # info for the kinematic bin
   values:  Dict[str, UFloat]  # mapping of parameter names to values
 
   @property
@@ -152,8 +152,9 @@ def readParInfoForBin(
   fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ) -> ParInfo:
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
-  print(f"Reading fit result object 'MinuitResult' from file '{binInfo.fitResultFileName}'")
-  fitResultFile  = ROOT.TFile.Open(binInfo.fitResultFileName, "READ")  # type: ignore
+  fitResultFileName = binInfo.fitResultFileName
+  print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
+  fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
   fitResult      = fitResultFile.Get("MinuitResult")
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
@@ -164,7 +165,7 @@ def readParInfoForBin(
       fitParIndex = fitPars.index(fitParName)
       if fitParIndex < 0:
         #TODO try using printStream() with ROOT.cout to improve output
-        print(f"Cannot find parameter '{fitParName}' in fit parameters {fitPars} in file '{binInfo.fitResultFileName}'. Skipping parameter.")
+        print(f"Cannot find parameter '{fitParName}' in fit parameters {fitPars} in file '{fitResultFileName}'. Skipping parameter.")
         continue
       fitPar = fitPars[fitParIndex]
       parValuesInBin[fitParKey] = ufloat(fitPar.getVal(), fitPar.getError())
@@ -265,15 +266,15 @@ def plotFitResults(
 def getParValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   parName:    str,  # name of value, i.e. y-axis
-  parInfos:   List[ParInfo],
-) -> List[Tuple[float, UFloat]]:
+  parInfos:   Sequence[ParInfo],
+) -> Tuple[Tuple[float, UFloat]]:
   '''Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos'''
-  graphValues: List[Tuple[float, UFloat]] = [(parInfo.binInfo.centers[binVarName], parInfo.values[parName])
-    for parInfo in parInfos if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)]
+  graphValues: Tuple[Tuple[float, UFloat]] = tuple((parInfo.binInfo.centers[binVarName], parInfo.values[parName])
+    for parInfo in parInfos if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names))
   return graphValues
 
 
-def getParValueGraph1D(graphValues: List[Tuple[float, UFloat]]) -> Any:  #TODO there does not seem to be a way to specify ROOT types
+def getParValueGraph1D(graphValues: Sequence[Tuple[float, UFloat]]) -> Any:  #TODO there does not seem to be a way to specify ROOT types
   '''Creates ROOT.TGraphErrors from given values'''
   if not graphValues:
     print("No data to plot")
@@ -285,7 +286,7 @@ def getParValueGraph1D(graphValues: List[Tuple[float, UFloat]]) -> Any:  #TODO t
 
 
 def plotParValue1D(
-  parInfos:          Dict[str, List[ParInfo]],
+  parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
   binningVar:        str,  # name of binning variable to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
@@ -319,15 +320,15 @@ def plotParValue1D(
 
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)  # type: ignore
-  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  # type: ignore #TODO use BRUFIT environment variable
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
 
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")
-  parser = argparse.ArgumentParser(description="Plots BruFit results.")
+  parser = argparse.ArgumentParser(description="Plots BruFit results in given directory.")
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
   dataSets    = ["Total", "Found", "Missing"]
-  fitVariable = "MissingMassSquared_Measured"  #TODO get this info from BruFit's ROOT.Setup
+  fitVariable = "MissingMassSquared_Measured"
 
   parInfos:    Dict[str, List[ParInfo]]           = {}    # parInfos[<dataset>][<bin>]
   parNames:    Union[Tuple[str, ...], None]       = None
