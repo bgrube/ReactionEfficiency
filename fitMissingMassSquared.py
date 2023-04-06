@@ -487,7 +487,7 @@ if __name__ == "__main__":
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)  # type: ignore
   makePlots.setupPlotStyle()
-  ROOT.gROOT.ProcessLine(".x ~/Analysis/brufit/macros/LoadBru.C")  # type: ignore  #TODO use BRUFIT environment variable
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
   ROOT.gBenchmark.Start("Total execution time")  # type: ignore
 
   # echo and parse command line
