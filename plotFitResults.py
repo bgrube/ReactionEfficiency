@@ -25,14 +25,14 @@ import makePlots
 print = functools.partial(print, flush = True)
 
 
-BINNING_VAR_PLOT_INFO = {
+BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
   "BeamEnergy"         : {"label" : "E_{beam}",                      "unit" : "GeV"},
   "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c"},
   "MissingProtonTheta" : {"label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg"},
   "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"},
 }
 
-DATASET_COLORS = {
+DATASET_COLORS: Dict[str, int] = {
   "Total"   : ROOT.kBlack,      # type: ignore
   "Found"   : ROOT.kGreen + 2,  # type: ignore
   "Missing" : ROOT.kRed + 1,    # type: ignore
