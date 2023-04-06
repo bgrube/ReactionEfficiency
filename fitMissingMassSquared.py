@@ -5,8 +5,8 @@
 import argparse
 import functools
 import os
-import subprocess
 import sys
+from typing import Iterable, List, Mapping, Sequence, Tuple, Union
 
 import ROOT
 
@@ -17,20 +17,27 @@ import makePlots  # defines helper functions to generate histograms from data tr
 print = functools.partial(print, flush = True)
 
 
+def andCuts(cuts: Iterable[Union[str, None]]) -> str:
+  '''Creates cut string where given cuts are combined by via logical and, ignoring None and empty cut strings'''
+  cutsWithBraces = (f"({cut})" for cut in filter(None, cuts))  # filters out None _and_ ""
+  return " && ".join(cutsWithBraces)
+
+
 #TODO convert collection of functions to class with member functions
 def readWeights(
-  inputFileName,
-  inputTreeName,
-  weightBranchName,
-  comboIdName,
-  sWeightLabel,       # label used when applying weights
-  sWeightFileName,    # ROOT file name to which weight object will be written
-  sWeightObjectName,  # name of weight object saved to ROOT file
-  cut = None,         # optional selection cut to apply
-):
+  inputFileName:     str,       # name of file from which to read weights
+  inputTreeName:     str,       # name of tree from which to read weights
+  weightBranchName:  str,       # name of branch from which to read weights
+  comboIdName:       str,       # name of branch with unique ID
+  sWeightLabel:      str,       # label used when applying weights
+  sWeightFileName:   str,       # ROOT file name to which weight object will be written
+  sWeightObjectName: str,       # name of weight object in ROOT file
+  cut:               str = "",  # optional selection cut to apply
+) -> None:
+  '''Reads weights from input tree and writes them out as a HS::FIT::Weights object'''
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f", writing them to key '{sWeightObjectName}' in file '{sWeightFileName}', and assigning label '{sWeightLabel}'"
-  + ("" if cut is None else f" while applying cut(s) '{cut}'"))
+  + ("" if not cut else f" while applying cut(s) '{cut}'"))
   currentDir = ROOT.gDirectory  # type: ignore
   inputFile = ROOT.TFile.Open(inputFileName, "READ")  # type: ignore
   inputTree = inputFile.Get(inputTreeName)
@@ -46,20 +53,22 @@ def readWeights(
 
 def defineGaussianPdf(
   fitManager,
-  fitVariable,
-  pdfName,
-  parDefs,  # dict of strings with parameter definitions
-):
+  fitVariable: str,
+  pdfName:     str,
+  parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
+) -> None:
+  '''Defines Gaussian PDF'''
   fitManager.SetUp().FactoryPDF(f"Gaussian::{pdfName}({fitVariable}, mean_{pdfName}[{parDefs['mean']}], width_{pdfName}[{parDefs['width']}])")
 
 
 def defineDoubleGaussianPdf(
   fitManager,
-  fitVariable,
-  pdfName,
-  parDefs,  # dict of strings with parameter definitions
-  commonMean = False,
-):
+  fitVariable: str,
+  pdfName:     str,
+  parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
+  commonMean:  bool = False,
+) -> None:
+  '''Defines two types of double-Gaussian PDFs'''
   if commonMean:
     # with same mean
     fitManager.SetUp().FactoryPDF(f"SUM::{pdfName}("
@@ -76,11 +85,12 @@ def defineDoubleGaussianPdf(
 
 def defineSkewedGaussianPdf(
   fitManager,
-  fitVariable,
-  pdfName,
-  parDefs,  # dict of strings with parameter definitions
-  pdfType = "skewNormal",
-):
+  fitVariable: str,
+  pdfName:     str,
+  parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
+  pdfType:     str = "skewNormal",
+) -> None:
+  '''Defines several types of skewed Gaussian PDFs'''
   # various implementations of skewed Gaussians
   if pdfType == "SkewNormal":
     # skew normal PDF (see https://en.wikipedia.org/wiki/Skew_normal_distribution)
@@ -109,16 +119,17 @@ def defineSkewedGaussianPdf(
 
 def defineHistogramPdf(
   fitManager,
-  fitVariable,
-  pdfName,
-  parDefs,  # dict of strings with parameter definitions
-  outputDirName,
-  templateDataFileName,
-  templateDataTreeName,
-  weightBranchName,
-  comboIdName,
-  cut,
-):
+  fitVariable:          str,
+  pdfName:              str,
+  parDefs:              Mapping[str, str],  # maps parameter names to their definition strings
+  outputDirName:        str,  # name of directory where weight files are written
+  templateDataFileName: str,  # name of file from which histogram is filled
+  templateDataTreeName: str,  # name of tree from which histogram is filled
+  weightBranchName:     str,  # name of branch from which to read weights
+  comboIdName:          str,  # name of branch with unique combo ID
+  cut:                  str,  # cut that is applied when filling histogram
+) -> None:
+  '''Defines histogram-based PDF'''
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = "RfSideband"
   rfSWeightFileName   = f"{outputDirName}/rfSidebandWeights{pdfName}.root"
@@ -161,18 +172,19 @@ def defineHistogramPdf(
 
 def defineSigPdf(
   fitManager,
-  fitVariable,
-  pdfType,
-  fixPars = (),  # tuple with fit-parameter names to fix
-  pdfName = "SigPdf",
-  # arguments needed for histogram PDF
-  outputDirName        = None,
-  templateDataFileName = None,
-  templateDataTreeName = None,
-  weightBranchName     = None,
-  comboIdName          = None,
-  cut                  = None,
-):
+  fitVariable: str,
+  pdfType:     str,  # selects type of PDF
+  fixPars:     Sequence[str] = (),  # tuple with fit-parameter names to fix
+  pdfName:     str = "SigPdf",
+  # arguments only needed for histogram PDF
+  outputDirName:        str = "",  # name of directory where weight files are written
+  templateDataFileName: str = "",  # name of file from which histogram is filled
+  templateDataTreeName: str = "",  # name of tree from which histogram is filled
+  weightBranchName:     str = "",  # name of branch from which to read weights
+  comboIdName:          str = "",  # name of branch with unique combo ID
+  cut:                  str = "",  # cut that is applied when filling histogram
+) -> None:
+  '''Defines signal PDFs of various types'''
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
 
   pdfTypeArgs = pdfType.split("_")
@@ -210,7 +222,7 @@ def defineSigPdf(
       templateDataTreeName,
       weightBranchName,
       comboIdName,
-      cut = " && ".join(filter(None, (cut, "(IsSignal == 1)"))),
+      cut = andCuts((cut, "(IsSignal == 1)")),
     )
   else:
     raise ValueError(f"Unknown signal PDF type '{pdfTypeArgs[0]}'")
@@ -221,18 +233,19 @@ def defineSigPdf(
 
 def defineBkgPdf(
   fitManager,
-  fitVariable,
-  pdfType,
-  fixPars = (),  # tuple with fit-parameter names to fix
-  pdfName = "BkgPdf",
-  # arguments needed for histogram PDF
-  outputDirName        = None,
-  templateDataFileName = None,
-  templateDataTreeName = None,
-  weightBranchName     = None,
-  comboIdName          = None,
-  cut                  = None,
+  fitVariable: str,
+  pdfType:     str,  # selects type of PDF
+  fixPars:     Sequence[str] = (),  # tuple with fit-parameter names to fix
+  pdfName:     str = "BkgPdf",
+  # arguments only needed for histogram PDF
+  outputDirName:        str = "",  # name of directory where weight files are written
+  templateDataFileName: str = "",  # name of file from which histogram is filled
+  templateDataTreeName: str = "",  # name of tree from which histogram is filled
+  weightBranchName:     str = "",  # name of branch from which to read weights
+  comboIdName:          str = "",  # name of branch with unique combo ID
+  cut:                  str = "",  # cut that is applied when filling histogram
 ):
+  '''Defines signal PDFs of various types'''
   print(f"Defining background PDF '{pdfName}' of type '{pdfType}'")
 
   #TODO add polynomials
@@ -307,7 +320,7 @@ def defineBkgPdf(
       templateDataTreeName,
       weightBranchName,
       comboIdName,
-      cut = " && ".join(filter(None, (cut, "(IsSignal == 0)"))),
+      cut =andCuts((cut, "(IsSignal == 0)")),
     )
   else:
     raise ValueError(f"Unknown background PDF type '{pdfTypeArgs[0]}'")
@@ -316,23 +329,25 @@ def defineBkgPdf(
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", bkgPdfWeightStartVal)
 
 
-def binnedTreeFilesIn(outputDirName):
+def binnedTreeFilesIn(outputDirName: str) -> List[str]:
+  '''Returns list of file names with binned data'''
   binningFileName = f"{outputDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
-    return None
+    return []
   bins = ROOT.Bins("HSBins", binningFileName)  # type: ignore
   binFileNames = [str(fileName) for fileName in bins.GetFileNames()]
   # verify that all bin files exist
   for binFileName in binFileNames:
     if not os.path.isfile(binFileName):
-      return None
+      return []
   return binFileNames
 
 
 def setRooFitOptions(
   fitManager,
-  nmbThreadsPerJob,
-):
+  nmbThreadsPerJob: int,
+) -> None:
+  '''Sets general fit options'''
   print("Setting RooFit options")
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
   fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization  # type: ignore
@@ -354,39 +369,40 @@ def setRooFitOptions(
 
 
 def performFit(
-  dataFileName,      # path to data to fit
-  outputDirName,     # where to write all output files
-  kinematicBinning,  # list of with binning info, one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
-  pdfTypeSig              = "Histogram",          # type of signal PDF
-  fixParsSig              = (),                   # tuple with fit-parameter names of signal function to fix
-  pdfTypeBkg              = "Histogram",          # type of background PDF
-  fixParsBkg              = (),                   # tuple with fit-parameter names of background function to fix
-  commonCut               = None,                 # optional selection cut(s) applied to data and template histograms
-  dataCut                 = None,                 # optional selection cut(s) applied to data only (in addition to commonCut)
-  dataTreeName            = "pippippimpimpmiss",  # tree name of data to fit
-  templateDataSigFileName = None,                 # path to template data for signal histogram
-  templateDataSigTreeName = "pippippimpimpmiss",  # tree name of data for signal histogram template
-  templateDataBkgFileName = None,                 # path to template data for background histogram
-  templateDataBkgTreeName = "pippippimpimpmiss",  # tree name of data for background histogram template
-  fitVariable             = "MissingMassSquared_Measured",  # branch name that contains data to fit and template-data for signal and background, respectively
-  fitRange                = "-0.25, 3.75",  # [(GeV/c)^2]
-  comboIdName             = "ComboID",  # branch name with unique ID for each combo
-  regenBinnedTrees        = False,  # if set, force regeneration of files with binned trees
-  nmbThreadsPerJob        = 5,
-  nmbProofJobs            = 10,  #TODO? automatically determine number of PROOF jobs
-):
+  dataFileName:            str,                                            # path to file that contains data to fit
+  outputDirName:           str,                                            # where to write all output files
+  kinematicBinning:        Sequence[Tuple[str, int, float, float]],        # binning info with one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
+  pdfTypeSig:              str           = "Histogram",                    # type of signal PDF
+  fixParsSig:              Sequence[str] = (),                             # fit-parameter names of signal function to fix
+  pdfTypeBkg:              str           = "Histogram",                    # type of background PDF
+  fixParsBkg:              Sequence[str] = (),                             # fit-parameter names of background function to fix
+  commonCut:               str           = "",                             # optional selection cut(s) applied to data and template histograms
+  dataCut:                 str           = "",                             # optional selection cut(s) applied to data only (in addition to commonCut)
+  dataTreeName:            str           = "pippippimpimpmiss",            # name of tree that holds the data to fit
+  templateDataSigFileName: str           = "",                             # name of file from which signal histogram is filled
+  templateDataSigTreeName: str           = "pippippimpimpmiss",            # name of tree from which signal histogram is filled
+  templateDataBkgFileName: str           = "",                             # name of file from which background histogram is filled
+  templateDataBkgTreeName: str           = "pippippimpimpmiss",            # name of tree from which background histogram is filled
+  fitVariable:             str           = "MissingMassSquared_Measured",  # name of branch that holds data to fit and template-data for signal and background, respectively
+  fitRange:                str           = "-0.25, 3.75",                  # [(GeV/c)^2]
+  comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
+  regenBinnedTrees:        bool          = False,                          # if set, force regeneration of files with binned trees
+  nmbThreadsPerJob:        int           = 5,
+  nmbProofJobs:            int           = 10,  #TODO? automatically determine number of PROOF jobs
+) -> None:
+  '''Sets up and performs fit'''
   # create the fit manager and set the output directory for fit results, plots, and weights
   fitDirName = None
-  if kinematicBinning is None:
+  if not kinematicBinning:
     fitDirName = outputDirName
   else:
     # create subdirectory for binning
     binningVars = [binning[0] for binning in kinematicBinning]
     binningDirName = "_".join(binningVars)
     fitDirName = f"{outputDirName}/{binningDirName}"
-  print(f"fitting data in '{dataFileName}'" + ("" if commonCut is None else f" applying cut '{commonCut}' to data and template histograms")
-    + ("" if dataCut is None else f" and additional cut '{dataCut}' to data")
-    + (" using no binning" if kinematicBinning is None else f" using binning '{kinematicBinning}'")
+  print(f"fitting data in '{dataFileName}'" + ("" if not commonCut else f" applying cut '{commonCut}' to data and template histograms")
+    + ("" if not dataCut else f" and additional cut '{dataCut}' to data")
+    + (" using no binning" if not kinematicBinning else f" using binning '{kinematicBinning}'")
     + f" and writing output to '{fitDirName}'")
   gBenchmarkLabel = f"Time for fit in '{fitDirName}'"
   ROOT.gBenchmark.Start(gBenchmarkLabel)  # type: ignore
@@ -402,12 +418,11 @@ def performFit(
 
   # define kinematic bins
   # !Note! binning needs to be defined before any data are loaded
-  if kinematicBinning:
-    for binning in kinematicBinning:
-      fitManager.Bins().LoadBinVar(*binning)
+  for binning in kinematicBinning:
+    fitManager.Bins().LoadBinVar(*binning)
 
   # define components of fit model
-  if pdfTypeSig is not None:
+  if pdfTypeSig:
     defineSigPdf(
       fitManager, fitVariable, pdfTypeSig,
       fixPars              = fixParsSig,
@@ -418,7 +433,7 @@ def performFit(
       comboIdName          = comboIdName,
       cut                  = commonCut,
     )
-  if pdfTypeBkg is not None:
+  if pdfTypeBkg:
     defineBkgPdf(
       fitManager, fitVariable, pdfTypeBkg,
       fixPars              = fixParsBkg,
@@ -442,14 +457,14 @@ def performFit(
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
-    cut               = " && ".join(filter(None, (commonCut, dataCut))),
+    cut               = andCuts((commonCut, dataCut)),
   )
   # apply weights for RF-sideband subtraction
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
 
   # load and bin data to be fitted
-  binFileNames = binnedTreeFilesIn(fitDirName) if kinematicBinning else None
-  if binFileNames is None or regenBinnedTrees:
+  binFileNames = binnedTreeFilesIn(fitDirName) if kinematicBinning else []
+  if not binFileNames or regenBinnedTrees:
     if kinematicBinning:
       if regenBinnedTrees:
         print("Forcing regeneration of binned tree files")
@@ -479,11 +494,7 @@ def performFit(
 
 
 if __name__ == "__main__":
-  #TODO move into function and also call in other scipts
-  repoDir = os.path.dirname(os.path.abspath(__file__))
-  gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
-  print(f"Running code in '{repoDir}', git version '{gitInfo}'")
-
+  makePlots.printGitInfo()
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)  # type: ignore
   makePlots.setupPlotStyle()
@@ -496,15 +507,15 @@ if __name__ == "__main__":
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
   bggenFileName     = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.bggen_2017_01-ver03.root.brufit"
-  # dataFileName      = bggenFileName
-  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.030730.root.brufit"
-  dataCut           = None
+  dataFileName      = bggenFileName
+  # dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.030730.root.brufit"
+  dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
-  # additionalCut     = None
-  additionalCut     = "(NmbUnusedShowers == 0)"
+  additionalCut     = ""
+  # additionalCut     = "(NmbUnusedShowers == 0)"
   kinematicBinnings = [
-    None,  # no binning -> fit overall distribution
+    [],  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
     [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
@@ -513,7 +524,7 @@ if __name__ == "__main__":
   ]
 
   dataSets = {
-    "Total"   : None,
+    "Total"   : "",
     "Found"   : "(TrackFound == 1)",
     "Missing" : "(TrackFound == 0)"
   }
@@ -529,10 +540,10 @@ if __name__ == "__main__":
           dataFileName,
           f"{args.outputDirName}/{dataSetName}",
           kinematicBinning,
-          # pdfTypeSig              = None,
+          # pdfTypeSig              = "",
           pdfTypeSig              = "Histogram",
           fixParsSig              = ("smear", "shift", "scale"),
-          # pdfTypeBkg              = None,
+          # pdfTypeBkg              = "",
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
           # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
@@ -540,10 +551,9 @@ if __name__ == "__main__":
           # pdfTypeBkg              = "SkewedGaussian_Log",
           pdfTypeBkg              = "Histogram",
           # fixParsBkg              = ("scale"),
-          fixParsBkg              = ("smear"),
-          # fixParsBkg              = ("smear", "shift", "scale"),
-          #TODO create function that joins cuts
-          commonCut               = " && ".join(filter(None, (dataSetCut, additionalCut))),
+          # fixParsBkg              = ("smear"),
+          fixParsBkg              = ("smear", "shift", "scale"),
+          commonCut               = andCuts((dataSetCut, additionalCut)),
           dataCut                 = dataCut,
           templateDataSigFileName = bggenFileName,
           templateDataBkgFileName = bggenFileName,
