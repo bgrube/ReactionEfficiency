@@ -58,21 +58,21 @@ def overlayEfficiencies(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
   pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str   = "",
-  particle:          str   = "Proton",
-  channel:           str   = "4pi",
+  pdfFileNameSuffix: str = "",
+  particle:          str = "Proton",
+  channel:           str = "4pi",
 ):
   '''Overlays efficiencies as a function of `binningVar` for all given fits'''
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   efficiencyMultiGraph = ROOT.TMultiGraph()  # type: ignore
   efficiencyGraphs = {}  # store graphs here to keep them in memory
   shiftFraction = 0
-  styleIndex = 1
+  styleIndex = 0
   for (fitResultDirName, fitLabel), efficiencies in effInfos.items():
     graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
     shiftFraction += 0.01
-    graph.SetTitle(fitLabel)                                            # type: ignore
-    makePlots.setCbFriendlyStyle(graph, styleIndex)
+    graph.SetTitle(fitLabel)  # type: ignore
+    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(effInfos) == 1 else True)
     styleIndex += 1
     efficiencyMultiGraph.Add(graph)
   efficiencyMultiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
