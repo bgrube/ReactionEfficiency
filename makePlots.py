@@ -3,17 +3,21 @@
 
 
 from collections.abc import Iterable
+import os
+import subprocess
+from typing import Any, Dict, Iterable, Tuple
+
 import ROOT
 
 
 # simplified versions of Paul's criteria
-UNUSED_TRACK_FOUND_CONDITION = "(" \
+UNUSED_TRACK_FOUND_CONDITION: str = "(" \
   + "(NmbUnusedTracks == 1)" \
   + " and ((MissingProtonTheta < 5) or (abs(UnusedDeltaPhi[0]) <= 30))" \
   + " and (abs(UnusedDeltaTheta[0]) <= 30)" \
   + " and (abs(UnusedDeltaPOverP[0]) <= 0.6)" \
   + ")"
-UNUSED_TRACK_FOUND_CONDITION_MEASURED = "(" \
+UNUSED_TRACK_FOUND_CONDITION_MEASURED: str = "(" \
   + "(NmbUnusedTracks == 1)" \
   + " and ((MissingProtonTheta_Measured < 5) or (abs(UnusedDeltaPhi_Measured[0]) <= 30))" \
   + " and (abs(UnusedDeltaTheta_Measured[0]) <= 30)" \
@@ -21,11 +25,85 @@ UNUSED_TRACK_FOUND_CONDITION_MEASURED = "(" \
   + ")"
 
 # filter expressions for track-found cases
-FILTER_CASES = {
+FILTER_CASES: Dict[str, str] = {
   "Total"   : "(true)",
   "Found"   : "(TrackFound == true)",
   "Missing" : "(TrackFound == false)"
 }
+
+# black + 7 colorblind-friendly colors rom M. Okabe and K. Ito, "How to make figures and presentations that are friendly to color blind people," University of Tokyo, 2002.
+# see also Bang Wong, https://www.nature.com/articles/nmeth.1618.pdf
+#     https://davidmathlogic.com/colorblind
+#     https://yoshke.org/blog/colorblind-friendly-diagrams
+COLORS_CB_FRIENDLY: Tuple[str, ...] = (
+  "#000000",  # black
+  "#0072B2",  # blue
+  "#D55E00",  # vermillion
+  "#009E73",  # bluish green
+  "#CC79A7",  # reddish purple
+  "#56B4E9",  # sky blue
+  "#E69F00",  # orange
+  "#F0E442",  # yellow
+)
+
+def getRootColor(hexColor: str) -> int:
+  '''Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created'''
+  ROOT.TColor.SetColorThreshold(0)  # ensure GetColor() returns exact color  # type: ignore
+  return ROOT.TColor.GetColor(hexColor)  # type: ignore
+
+def getCbFriendlyRootColor(index: int) -> int:
+  '''Returns ROOT color index for given index in colorblind-friendly palette'''
+  return getRootColor(COLORS_CB_FRIENDLY[index])
+
+# 11 filled marker styles; the float is a relative scaling factor to obtain equal apparent sizes
+MARKERS_FILLED: Tuple[Tuple[int, float], ...] = (
+  (ROOT.kFullCircle,            0.75),  # type: ignore
+  (ROOT.kFullSquare,            0.70),  # type: ignore
+  (ROOT.kFullDiamond,           1),     # type: ignore
+  (ROOT.kFullCross,             0.85),  # type: ignore
+  (ROOT.kFullCrossX,            0.85),  # type: ignore
+  (ROOT.kFullStar,              1),     # type: ignore
+  (ROOT.kFullFourTrianglesX,    0.90),  # type: ignore
+  (ROOT.kFullFourTrianglesPlus, 0.85),  # type: ignore
+  (ROOT.kFullTriangleUp,        0.85),  # type: ignore
+  (ROOT.kFullTriangleDown,      0.85),  # type: ignore
+  (ROOT.kFullDoubleDiamond,     1.10),  # type: ignore
+)
+# 11 open marker styles
+MARKERS_OPEN: Tuple[Tuple[int, float], ...] = (
+  (ROOT.kOpenCircle,            0.75),  # type: ignore
+  (ROOT.kOpenSquare,            0.70),  # type: ignore
+  (ROOT.kOpenDiamond,           1),     # type: ignore
+  (ROOT.kOpenCross,             0.85),  # type: ignore
+  (ROOT.kOpenCrossX,            0.85),  # type: ignore
+  (ROOT.kOpenStar,              1),     # type: ignore
+  (ROOT.kOpenFourTrianglesX,    0.90),  # type: ignore
+  (ROOT.kOpenFourTrianglesPlus, 0.85),  # type: ignore
+  (ROOT.kOpenTriangleUp,        0.85),  # type: ignore
+  (ROOT.kOpenTriangleDown,      0.85),  # type: ignore
+  (ROOT.kOpenDoubleDiamond,     1.10),  # type: ignore
+)
+
+def setCbFriendlyStyle(
+  graphOrHist:   Any,
+  styleIndex:    int,  # index that switches between styles
+  markerSize:    float = 1.5,
+  filledMarkers: bool  = True,
+) -> None:
+  '''Sets line color and marker style, color, and size of a TGraph or TH1 according to a style index'''
+  nmbStyles = min(len(COLORS_CB_FRIENDLY), len(MARKERS_FILLED), len(MARKERS_OPEN))
+  assert styleIndex < nmbStyles, f"The style index {styleIndex} goes beyond the maximum of {nmbStyles} that are implemented"
+  graphOrHist.SetMarkerStyle(MARKERS_FILLED[styleIndex][0] if filledMarkers else MARKERS_OPEN[styleIndex][0])
+  graphOrHist.SetMarkerSize(markerSize * MARKERS_FILLED[styleIndex][1] if filledMarkers else MARKERS_OPEN[styleIndex][1])
+  graphOrHist.SetMarkerColor(getCbFriendlyRootColor(styleIndex))
+  graphOrHist.SetLineColor(getCbFriendlyRootColor(styleIndex))
+
+
+def printGitInfo() -> None:
+  '''Prints directory of this file and git hash in this directory'''
+  repoDir = os.path.dirname(os.path.abspath(__file__))
+  gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
+  print(f"Running code in '{repoDir}', git version '{gitInfo}'")
 
 
 def setupPlotStyle():
