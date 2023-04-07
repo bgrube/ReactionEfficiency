@@ -32,12 +32,6 @@ BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
   "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"},
 }
 
-DATASET_COLORS: Dict[str, int] = {
-  "Total"   : ROOT.kBlack,      # type: ignore
-  "Found"   : ROOT.kGreen + 2,  # type: ignore
-  "Missing" : ROOT.kRed + 1,    # type: ignore
-}
-
 REMOVE_PARAM_BOX = False
 
 
@@ -307,13 +301,12 @@ def plotParValue1D(
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
   parValueMultiGraph = ROOT.TMultiGraph()  # type: ignore
   parValueGraphs = {}  # store graphs here to keep them in memory
+  styleIndex = 0
   for dataSet in parInfos:
     graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]))
-    graph.SetTitle(dataSet)                        # type: ignore
-    graph.SetMarkerStyle(ROOT.kCircle)             # type: ignore
-    graph.SetMarkerSize(markerSize)                # type: ignore
-    graph.SetMarkerColor(DATASET_COLORS[dataSet])  # type: ignore
-    graph.SetLineColor(DATASET_COLORS[dataSet])    # type: ignore
+    graph.SetTitle(dataSet)  # type: ignore
+    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False, filledMarkers = False)
+    styleIndex += 1
     parValueMultiGraph.Add(graph)
   parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
@@ -327,6 +320,7 @@ def plotParValue1D(
 
 
 if __name__ == "__main__":
+  makePlots.printGitInfo()
   ROOT.gROOT.SetBatch(True)  # type: ignore
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
 
