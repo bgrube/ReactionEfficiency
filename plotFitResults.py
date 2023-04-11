@@ -301,11 +301,13 @@ def plotParValue1D(
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
   parValueMultiGraph = ROOT.TMultiGraph()  # type: ignore
   parValueGraphs = {}  # store graphs here to keep them in memory
+  shiftFraction = 0
   styleIndex = 0
   for dataSet in parInfos:
-    graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]))
+    graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]), shiftFraction)
+    shiftFraction += 0.01
     graph.SetTitle(dataSet)  # type: ignore
-    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False, filledMarkers = False)
+    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
     parValueMultiGraph.Add(graph)
   parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
@@ -314,7 +316,24 @@ def plotParValue1D(
   parValueMultiGraph.GetYaxis().SetTitle(parName)
   canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")  # type: ignore
   parValueMultiGraph.Draw("APZ")
-  canv.BuildLegend()
+  hist = parValueMultiGraph.GetHistogram()
+  plotRange = hist.GetMaximum() - hist.GetMinimum()
+  minVal = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))  # type: ignore
+  maxVal = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))  # type: ignore
+  maxErr = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))  # type: ignore
+  if 2 * maxErr / plotRange > 0.9:  # one error bar dominates plot range
+    plotRange = 2 * (maxVal - minVal)  # new plot range = 2 * value range
+    plotRangeCenter = (maxVal + minVal) / 2
+    minVal = plotRangeCenter - plotRange / 2
+    maxVal = plotRangeCenter + plotRange / 2
+    print(f"Adjusting plot range to [{minVal}, {maxVal}]")
+    parValueMultiGraph.SetMinimum(minVal)
+    parValueMultiGraph.SetMaximum(maxVal)
+    canv.Modified()
+    canv.Update()
+  legend = canv.BuildLegend()
+  legend.SetFillStyle(0)
+  legend.SetBorderSize(0)
   drawZeroLine(parValueMultiGraph)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
