@@ -1,12 +1,21 @@
-*.code-workspace
-.proof
-.vscode
 *.bak
 *.log
+*.old
+*.orig
 *.pdf
 *.root*
 *_dictUmbrella.h
 *_dictContent.h
+screen
+.proof
+
+# project dirs
+data/**
+fits/**
+
+#VSCode
+*.code-workspace
+.vscode
 
 # Python
 env
