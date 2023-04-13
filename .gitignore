@@ -8,6 +8,11 @@
 *_dictUmbrella.h
 *_dictContent.h
 
+# Python
+env
+__pycache__
+.ipynb_checkpoints
+
 # Prerequisites
 *.d
 
