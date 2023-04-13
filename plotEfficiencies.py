@@ -143,6 +143,7 @@ def plotEfficiencies1D(
 
 
 if __name__ == "__main__":
+  makePlots.printGitInfo()
   ROOT.gROOT.SetBatch(True)  # type: ignore
   makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
