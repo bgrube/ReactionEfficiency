@@ -4,7 +4,7 @@
 *.bak
 *.log
 *.pdf
-*.root
+*.root*
 *_dictUmbrella.h
 *_dictContent.h
 
