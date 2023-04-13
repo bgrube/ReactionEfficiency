@@ -11,9 +11,9 @@ ROOT.gStyle.SetHistMinimumZero(True)
 
 # file name : (hist name, output file base name)
 inData = {
-  "../ReactionEfficiency/pippimpmiss.30370_acc.root" : ("MissingMassSquared", "justin_Proton_2pi_mm2_30370_acc_fit"),
+  "./pippimpmiss.30370_acc.root" : ("MissingMassSquared", "justin_Proton_2pi_mm2_30370_acc_fit"),
   "../pmatt/trackeff_Proton_2pi.30370_acc_Pval.root" : ("MissingMass/MissingMass", "paul_Proton_2pi_mm2_30370_acc_Pval_fit"),
-  "../ReactionEfficiency/pippippimpimpmiss.30370_acc.root" : ("MissingMassSquared", "justin_Proton_4pi_mm2_30370_acc_fit"),
+  "./pippippimpimpmiss.30370_acc.root" : ("MissingMassSquared", "justin_Proton_4pi_mm2_30370_acc_fit"),
   "../pmatt/trackeff_Proton_4pi.30370_acc_Pval.root" : ("MissingMass/MissingMass", "paul_Proton_4pi_mm2_30370_acc_Pval_fit")}
 rebinFactor = 20
 fitRange = (-0.5, 4)

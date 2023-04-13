@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-FIT_DIR="./BruFitOutput"
+FIT_DIR="./fits/noShowers/BruFitOutput.data_sigScale"
 
 rm -rfv "${FIT_DIR}"
 mkdir -pv "${FIT_DIR}"

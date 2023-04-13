@@ -12,8 +12,8 @@ if __name__ == "__main__":
   # dataset         = None
   dataset         = "bggen_2017_01-ver03"
   # dataset         = "030730"
-  inputFileName   = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
-  outputFileName  = f"../ReactionEfficiency/{inputFileName}.brufit"
+  inputFileName   = f"./pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
+  outputFileName  = f"./{inputFileName}.brufit"
   treeName        = "pippippimpimpmiss"
   branchesToWrite = [
     "MissingMassSquared_Measured",  # fit variable

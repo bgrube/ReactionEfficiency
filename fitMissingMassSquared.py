@@ -505,9 +505,9 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
-  bggenFileName     = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.bggen_2017_01-ver03.root.brufit"
+  bggenFileName     = f"./pippippimpimpmiss_flatTree.bggen_2017_01-ver03.root.brufit"
   # dataFileName      = bggenFileName
-  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.030730.root.brufit"
+  dataFileName      = f"./pippippimpimpmiss_flatTree.030730.root.brufit"
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
