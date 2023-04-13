@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-# !NOTE! only on ifarm the shebang selects the correct Python3 version for ROOT
+#!/usr/bin/env python3
+
 
 import argparse
 import collections
