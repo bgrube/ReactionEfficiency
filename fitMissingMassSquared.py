@@ -507,13 +507,13 @@ if __name__ == "__main__":
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
   bggenFileName     = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.bggen_2017_01-ver03.root.brufit"
-  dataFileName      = bggenFileName
-  # dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.030730.root.brufit"
+  # dataFileName      = bggenFileName
+  dataFileName      = f"../ReactionEfficiency/pippippimpimpmiss_flatTree.030730.root.brufit"
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
-  additionalCut     = ""
-  # additionalCut     = "(NmbUnusedShowers == 0)"
+  # additionalCut     = ""
+  additionalCut     = "(NmbUnusedShowers == 0)"
   kinematicBinnings = [
     [],  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
@@ -542,7 +542,9 @@ if __name__ == "__main__":
           kinematicBinning,
           # pdfTypeSig              = "",
           pdfTypeSig              = "Histogram",
-          fixParsSig              = ("smear", "shift", "scale"),
+          # fixParsSig              = ("smear", "scale"),
+          fixParsSig              = ("smear", "shift"),
+          # fixParsSig              = ("smear", "shift", "scale"),
           # pdfTypeBkg              = "",
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
@@ -552,6 +554,7 @@ if __name__ == "__main__":
           pdfTypeBkg              = "Histogram",
           # fixParsBkg              = ("scale"),
           # fixParsBkg              = ("smear"),
+          # fixParsBkg              = ("smear", "scale"),
           fixParsBkg              = ("smear", "shift", "scale"),
           commonCut               = andCuts((dataSetCut, additionalCut)),
           dataCut                 = dataCut,
