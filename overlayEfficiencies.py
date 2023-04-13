@@ -81,7 +81,7 @@ def overlayEfficiencies(
   efficiencyMultiGraph.GetYaxis().SetTitle("Efficiency")
   efficiencyMultiGraph.SetMinimum(0)
   efficiencyMultiGraph.SetMaximum(1)
-  fitLabels = tuple(key[1] for key in effInfos.keys())
+  fitLabels = tuple(key[1].replace(' ', '_') for key in effInfos.keys())
   canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(fitLabels)}{pdfFileNameSuffix}", "")  # type: ignore
   efficiencyMultiGraph.Draw("APZ")
   canv.BuildLegend()
@@ -103,17 +103,33 @@ if __name__ == "__main__":
 
   fitResults = [
     # no extra cuts
-    ("./noCut/BruFitOutput.sig_fixed",                     "Truth"),
-    ("./noCut/BruFitOutput.bggen_allFixed",                "bggen all fixed"),
-    # ("./noCut/BruFitOutput.bggen_sigAllFixed_bkgAllFudge", "bggen sig fixed"),
-    # ("./noCut/BruFitOutput.bggen_allFudge",                "bggen all free"),
-    ("./noCut/BruFitOutput.data_allFixed",                 "Data all fixed"),
-    # ("./noCut/BruFitOutput.data_bkgAllFudge",              "Data sig fixed"),
-    # ("./noCut/BruFitOutput.data_allFudge",                 "Data all free"),
+    # ("./noCut/BruFitOutput.sig_allFixed",        "MC truth"),
+    # ("./noCut/BruFitOutput.sig_allFudge",        "bggenSig sig fudge"),
+    # ("./noCut/BruFitOutput.sig_bkg_allFixed",    "bggenSig sig+bkg fixed"),
+    # ("./noCut/BruFitOutput.sig_bkg_bkgAllFudge", "bggenSig sig+bkg bkg fudge"),
+    # ("./noCut/BruFitOutput.sig_bkg_allFudge",    "bggenSig sig+bkg all fudge"),
+    # ("./noCut/BruFitOutput.bggen_allFixed",      "bggen all fixed"),
+    # ("./noCut/BruFitOutput.bggen_bkgAllFudge",   "bggen sig fixed"),
+    # ("./noCut/BruFitOutput.bggen_allFudge",      "bggen all free"),
+    # ("./noCut/BruFitOutput.data_allFixed",       "Data all fixed"),
+    # ("./noCut/BruFitOutput.data_bkgAllFudge",    "Data sig fixed"),
+    # ("./noCut/BruFitOutput.data_allFudge",       "Data all free"),
     # no unused showers
-    ("./noShowers/BruFitOutput.bggen_noShowers_allFixed",   "bggen NS all fixed"),
-    ("./noShowers/BruFitOutput.data_noShowers_allFixed",    "Data NS all fixed"),
-    # ("./noShowers/BruFitOutput.data_noShowers_bkgAllFudge", "Data NS sig fixed"),
+    ("./noShowers/BruFitOutput.sig_allFixed",                "NUS MC truth"),
+    # ("./noShowers/BruFitOutput.sig_allFudge",                "NUS bggenSig sig fudge"),
+    # ("./noShowers/BruFitOutput.sig_bkg_allFixed",            "NUS bggenSig sig+bkg fixed"),
+    # ("./noShowers/BruFitOutput.sig_bkg_bkgAllFudge",         "NUS bggenSig sig+bkg bkg fudge"),
+    # ("./noShowers/BruFitOutput.sig_bkg_allFudge",            "NUS bggenSig sig+bkg all fudge"),
+    # ("./noShowers/BruFitOutput.bggen_allFixed",              "NUS bggen fixed"),
+    # ("./noShowers/BruFitOutput.bggen_bkgAllFudge",           "NUS bggen bkg fugde"),
+    # ("./noShowers/BruFitOutput.bggen_allFudge",              "NUS bggen all fudge"),
+    ("./noShowers/BruFitOutput.data_allFixed",               "NUS data fixed"),
+    ("./noShowers/BruFitOutput.data_bkgShift",               "NUS data bkg shift"),
+    ("./noShowers/BruFitOutput.data_sigShift",               "NUS data sig shift"),
+    ("./noShowers/BruFitOutput.data_sigShift_bkgShift",      "NUS data sig+bkg shift"),
+    # ("./noShowers/BruFitOutput.data_sigShift_bkgShiftScale", "NUS data sig shift bkg shift+scale"),
+    # ("./noShowers/BruFitOutput.data_bkgAllFudge",            "NUS data bkg fudge"),
+    # ("./noShowers/BruFitOutput.data_allFudge",               "NUS data all fudge"),
   ]
   fitResultDirNames = tuple(fitResult[0] for fitResult in fitResults)
   fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
@@ -123,4 +139,4 @@ if __name__ == "__main__":
     if binVarNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          overlayEfficiencies(effInfos, binningVars[0], "foo")
+          overlayEfficiencies(effInfos, binningVars[0], "overlays")
