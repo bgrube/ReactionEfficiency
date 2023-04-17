@@ -6,6 +6,7 @@
 *.root*
 *_dictUmbrella.h
 *_dictContent.h
+.nfs*
 screen
 .proof
 
