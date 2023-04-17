@@ -125,7 +125,7 @@ def setupPlotStyle():
 
 
 def overlayMissingMassSquared():
-  inFileNames = ("pippippimpimpmiss.30370.root", "pippippimpimpmiss_bggen_2017_01-ver03.root")
+  inFileNames = ("pippippimpimpmiss.RD_2017_01-ver04_030730.root", "pippippimpimpmiss.MCbggen_2017_01-ver03.root")
   labels = ("Real data (scaled)", "bggen MC")
   histBaseName = "MissingMassSquared/MissingMassSquared"
   rebinFactor = 100
@@ -151,7 +151,7 @@ def overlayMissingMassSquared():
       hist.Rebin(rebinFactor)
       hStacks[case].Add(hist)
     # draw distributions
-    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_bggen_overlay" + ("_" + case if case != "" else ""))
+    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_MCbggen_overlay" + ("_" + case if case != "" else ""))
     hStacks[case].Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
@@ -477,7 +477,7 @@ def overlayTopologies(
   additionalFilter  = None,
   maxNmbTopologies  = 10,
   pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = "_bggen_topologies"
+  pdfFileNameSuffix = "_MCbggen_topologies"
 ):
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   for case in FILTER_CASES.keys():
@@ -523,16 +523,16 @@ if __name__ == "__main__":
   # overlayMissingMassSquared()
 
   # dataset = None
-  dataset = "bggen_2017_01-ver03"
-  isMonteCarlo = isBggenMc = True
-  # dataset = "030730"
-  # isMonteCarlo = isBggenMc = False
+  dataset = "MCbggen_2017_01-ver03"
+  isMonteCarlo = isMcBggen = True
+  # dataset = "RD_2017_01-ver04_030730"
+  # isMonteCarlo = isMcBggen = False
   histFileName = f"pippippimpimpmiss.{dataset}.root"          if dataset else "pippippimpimpmiss.root"
   treeFileName = f"pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
   treeName     = "pippippimpimpmiss"
   inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION)
 
-  #TODO determine isMonteCarlo and isBggenMc flags from data
+  #TODO determine isMonteCarlo and isMcBggen flags from data
   if isMonteCarlo:
     filterTopologies = {
       ""                                             : None,
@@ -546,7 +546,7 @@ if __name__ == "__main__":
       overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
       overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
 
-    if isBggenMc:
+    if isMcBggen:
 
       cutsArgs = [
         {},  # no extra cut
