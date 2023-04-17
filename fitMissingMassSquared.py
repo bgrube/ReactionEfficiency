@@ -505,9 +505,9 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
-  bggenFileName     = f"./pippippimpimpmiss_flatTree.bggen_2017_01-ver03.root.brufit"
+  bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
   # dataFileName      = bggenFileName
-  dataFileName      = f"./pippippimpimpmiss_flatTree.030730.root.brufit"
+  dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
@@ -539,11 +539,17 @@ if __name__ == "__main__":
           dataFileName,
           f"{args.outputDirName}/{dataSetName}",
           kinematicBinning,
+          # signal PDF
           # pdfTypeSig              = "",
           pdfTypeSig              = "Histogram",
+          # fixParsSig              = ("smear"),
+          # fixParsSig              = ("shift"),
+          # fixParsSig              = ("scale"),
+          # fixParsSig              = ("shift", "scale"),
           # fixParsSig              = ("smear", "scale"),
-          fixParsSig              = ("smear", "shift"),
-          # fixParsSig              = ("smear", "shift", "scale"),
+          # fixParsSig              = ("smear", "shift"),
+          fixParsSig              = ("smear", "shift", "scale"),
+          # background PDF
           # pdfTypeBkg              = "",
           # pdfTypeBkg              = "DoubleGaussian",
           # pdfTypeBkg              = "DoubleGaussian_SameMean",
@@ -551,9 +557,12 @@ if __name__ == "__main__":
           # pdfTypeBkg              = "SkewedGaussian_ExpMod",
           # pdfTypeBkg              = "SkewedGaussian_Log",
           pdfTypeBkg              = "Histogram",
-          # fixParsBkg              = ("scale"),
           # fixParsBkg              = ("smear"),
+          # fixParsBkg              = ("shift"),
+          # fixParsBkg              = ("scale"),
+          # fixParsBkg              = ("shift", "scale"),
           # fixParsBkg              = ("smear", "scale"),
+          # fixParsBkg              = ("smear", "shift"),
           fixParsBkg              = ("smear", "shift", "scale"),
           commonCut               = andCuts((dataSetCut, additionalCut)),
           dataCut                 = dataCut,
