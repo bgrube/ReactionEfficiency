@@ -503,11 +503,19 @@ if __name__ == "__main__":
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
-  parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  parser.add_argument("outputDirName", nargs = "?", type = str, default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  parser.add_argument("--pdfTypeSig",               type = str, default = "Histogram",      help = "Type of signal PDF to use in fit; (default: '%(default)s')")
+  parser.add_argument("--fixParsSig",  nargs = "*", type = str, default = [],               help = "Names of parameters of signal PDF to fix in fit; (default: none)")
+  parser.add_argument("--pdfTypeBkg",               type = str, default = "Histogram",      help = "Type of background PDF to use in fit; (default: '%(default)s')")
+  parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
   args = parser.parse_args()
-  bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
-  # dataFileName      = bggenFileName
-  dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
+  # bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
+  bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
+  dataFileName      = bggenFileName
+  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
+  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
+  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
+  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
@@ -516,7 +524,8 @@ if __name__ == "__main__":
   kinematicBinnings = [
     [],  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
-    [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]
+    # [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]; spring 2017
+    [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
     [("MissingProtonPhi",   10, -180.0, +180.0)]   # [deg]
@@ -539,31 +548,10 @@ if __name__ == "__main__":
           dataFileName,
           f"{args.outputDirName}/{dataSetName}",
           kinematicBinning,
-          # signal PDF
-          # pdfTypeSig              = "",
-          pdfTypeSig              = "Histogram",
-          # fixParsSig              = ("smear"),
-          # fixParsSig              = ("shift"),
-          # fixParsSig              = ("scale"),
-          # fixParsSig              = ("shift", "scale"),
-          # fixParsSig              = ("smear", "scale"),
-          # fixParsSig              = ("smear", "shift"),
-          fixParsSig              = ("smear", "shift", "scale"),
-          # background PDF
-          # pdfTypeBkg              = "",
-          # pdfTypeBkg              = "DoubleGaussian",
-          # pdfTypeBkg              = "DoubleGaussian_SameMean",
-          # pdfTypeBkg              = "SkewedGaussian_SkewNormal",
-          # pdfTypeBkg              = "SkewedGaussian_ExpMod",
-          # pdfTypeBkg              = "SkewedGaussian_Log",
-          pdfTypeBkg              = "Histogram",
-          # fixParsBkg              = ("smear"),
-          # fixParsBkg              = ("shift"),
-          # fixParsBkg              = ("scale"),
-          # fixParsBkg              = ("shift", "scale"),
-          # fixParsBkg              = ("smear", "scale"),
-          # fixParsBkg              = ("smear", "shift"),
-          fixParsBkg              = ("smear", "shift", "scale"),
+          pdfTypeSig              = args.pdfTypeSig,
+          fixParsSig              = args.fixParsSig,
+          pdfTypeBkg              = args.pdfTypeBkg,
+          fixParsBkg              = args.fixParsBkg,
           commonCut               = andCuts((dataSetCut, additionalCut)),
           dataCut                 = dataCut,
           templateDataSigFileName = bggenFileName,
