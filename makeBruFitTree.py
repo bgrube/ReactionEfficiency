@@ -10,8 +10,12 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
 
   # dataset         = None
-  dataset         = "bggen_2017_01-ver03"
-  # dataset         = "030730"
+  # dataset         = "RD_2017_01-ver04_030730"
+  # dataset         = "MCbggen_2017_01-ver03"
+  # dataset         = "RD_2018_01-ver02_041003"
+  # dataset         = "RD_2018_01-ver02_042030"
+  dataset         = "RD_2018_01-ver02_042550"
+  # dataset         = "MCbggen_2018_01-ver02"
   inputFileName   = f"./pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
   outputFileName  = f"./{inputFileName}.brufit"
   treeName        = "pippippimpimpmiss"
