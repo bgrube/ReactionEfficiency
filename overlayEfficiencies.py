@@ -29,7 +29,7 @@ def getEfficiencies(
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
 ) -> Tuple[Dict[Tuple[str, str], List[EffInfo]], Union[List[Tuple[str, ...]], None]]:
   '''Reads yields from given fit directories and calculates efficiencies for each directory'''
-  assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"list of fit-result directory names '{fitResultDirNames}' must have unique elements"
+  assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"list of fit-result directory names '{fitResultDirNames}' must consist of unique elements"
   assert (not fitLabels) or len(fitLabels) == len(fitResultDirNames), f"Number of given fit labels ({len(fitLabels)}) does not match number of fit directories ({len(fitResultDirNames)})"
   print("Reading yields and calculating efficiencies")
   effInfos:    Dict[Tuple[str, str], List[EffInfo]] = {}    # effInfos[(<fit directory>, <fit label>)][<bin>]
@@ -100,6 +100,7 @@ if __name__ == "__main__":
   # parser.add_argument("--fitLabels", type = str, nargs = "*", default = [], help = "The legend labels for each fit (same order as directory names); (default: directory names)")
   # args = parser.parse_args()
 
+  run = "_041003"
   fitResults = [
     # no extra cuts
     # ("noCut/BruFitOutput.sig_allFixed",        "MC truth"),
@@ -113,48 +114,52 @@ if __name__ == "__main__":
     # ("noCut/BruFitOutput.data_allFixed",       "Data all fixed"),
     # ("noCut/BruFitOutput.data_bkgAllFudge",    "Data sig fixed"),
     # ("noCut/BruFitOutput.data_allFudge",       "Data all free"),
+    #
     # no unused showers
-    ("noShowers/BruFitOutput.sig_allFixed",                "NUS MC truth"),
-    # ("noShowers/BruFitOutput.sig_allFudge",                "NUS bggenSig sig fudge"),
-    # ("noShowers/BruFitOutput.sig_bkg_allFixed",            "NUS bggenSig sig+bkg fixed"),
-    # ("noShowers/BruFitOutput.sig_bkg_bkgAllFudge",         "NUS bggenSig sig+bkg bkg fudge"),
-    # ("noShowers/BruFitOutput.sig_bkg_allFudge",            "NUS bggenSig sig+bkg all fudge"),
-    # ("noShowers/BruFitOutput.bggen_allFixed",              "NUS bggen fixed"),
-    # ("noShowers/BruFitOutput.bggen_bkgAllFudge",           "NUS bggen bkg fugde"),
-    # ("noShowers/BruFitOutput.bggen_allFudge",              "NUS bggen all fudge"),
+    # ("noShowers/BruFitOutput.sig_allFixed",                "MC truth"),
+    # # ("noShowers/BruFitOutput.sig_allFudge",                "bggenSig sig fudge"),
+    # # ("noShowers/BruFitOutput.sig_bkg_allFixed",            "bggenSig sig+bkg fixed"),
+    # # ("noShowers/BruFitOutput.sig_bkg_bkgAllFudge",         "bggenSig sig+bkg bkg fudge"),
+    # # ("noShowers/BruFitOutput.sig_bkg_allFudge",            "bggenSig sig+bkg all fudge"),
+    # ("noShowers/BruFitOutput.bggen_allFixed",              "bggen fixed"),
+    # ("noShowers/BruFitOutput.bggen_bkgAllFudge",           "bggen bkg fugde"),
+    # ("noShowers/BruFitOutput.bggen_allFudge",              "bggen all fudge"),
     #
-    ("noShowers/BruFitOutput.data_allFixed",               "NUS data fixed"),
-    # ("noShowers/BruFitOutput.data_bkgSmear",               "NUS data bkg smear"),
-    # # ("noShowers/BruFitOutput.data_bkgShift",               "NUS data bkg shift"),
-    # ("noShowers/BruFitOutput.data_bkgScale",               "NUS data bkg scale"),
-    # # ("noShowers/BruFitOutput.data_bkgFixSmear",            "NUS data bkg fix smear"),
-    # ("noShowers/BruFitOutput.data_bkgFixShift",            "NUS data bkg fix shift"),
-    # # ("noShowers/BruFitOutput.data_bkgFixScale",            "NUS data bkg fix scale"),
-    # ("noShowers/BruFitOutput.data_bkgAllFudge",            "NUS data bkg fudge"),
+    ("noShowers/BruFitOutput.sig_allFixed",                      "bggen MC"),
+    (f"noShowers/BruFitOutput.data{run}_allFixed",               "data fixed"),
+    # (f"noShowers/BruFitOutput.data{run}_bkgSmear",               "data bkg smear"),
+    # # (f"noShowers/BruFitOutput.data{run}_bkgShift",               "data bkg shift"),
+    # (f"noShowers/BruFitOutput.data{run}_bkgScale",               "data bkg scale"),
+    # # (f"noShowers/BruFitOutput.data{run}_bkgFixSmear",            "data bkg fix smear"),
+    # (f"noShowers/BruFitOutput.data{run}_bkgFixShift",            "data bkg fix shift"),
+    # # (f"noShowers/BruFitOutput.data{run}_bkgFixScale",            "data bkg fix scale"),
+    (f"noShowers/BruFitOutput.data{run}_bkgAllFudge",            "data bkg fudge"),
     #
-    # ("noShowers/BruFitOutput.data_sigSmear",               "NUS data sig smear"),
-    # # ("noShowers/BruFitOutput.data_sigShift",               "NUS data sig shift"),
-    # # ("noShowers/BruFitOutput.data_sigScale",               "NUS data sig scale"),
-    # ("noShowers/BruFitOutput.data_sigFixSmear",            "NUS data sig fix smear"),
-    # # ("noShowers/BruFitOutput.data_sigFixShift",            "NUS data sig fix shift"),
-    # ("noShowers/BruFitOutput.data_sigFixScale",            "NUS data sig fix scale"),
-    # ("noShowers/BruFitOutput.data_sigShift_bkgShift",      "NUS data sig+bkg shift"),
-    # ("noShowers/BruFitOutput.data_sigShift_bkgShiftScale", "NUS data sig shift bkg shift+scale"),
-    # ("noShowers/BruFitOutput.data_allFudge",               "NUS data all fudge"),
+    # (f"noShowers/BruFitOutput.data{run}_sigSmear",               "data sig smear"),
+    # # (f"noShowers/BruFitOutput.data{run}_sigShift",               "data sig shift"),
+    # # (f"noShowers/BruFitOutput.data{run}_sigScale",               "data sig scale"),
+    # (f"noShowers/BruFitOutput.data{run}_sigFixSmear",            "data sig fix smear"),
+    # # (f"noShowers/BruFitOutput.data{run}_sigFixShift",            "data sig fix shift"),
+    # (f"noShowers/BruFitOutput.data{run}_sigFixScale",            "data sig fix scale"),
+    # (f"noShowers/BruFitOutput.data{run}_sigShift_bkgShift",      "data sig+bkg shift"),
+    # (f"noShowers/BruFitOutput.data{run}_sigShift_bkgShiftScale", "data sig shift bkg shift+scale"),
+    (f"noShowers/BruFitOutput.data{run}_sigAllFudge",            "data sig fudge"),
     #
-    # ("noShowers/BruFitOutput.data_sigAllFixed_bkgDoubleGaussian",            "NUS data bkg Double-Gauss"),
-    # ("noShowers/BruFitOutput.data_sigAllFixed_bkgDoubleGaussian_SameMean",   "NUS data bkg Double-Gauss same mean"),
-    # ("noShowers/BruFitOutput.data_sigAllFixed_bkgSkewedGaussian_ExpMod",     "NUS data bkg ExpModGauss"),
-    # ("noShowers/BruFitOutput.data_sigAllFixed_bkgSkewedGaussian_Log",        "NUS data bkg LogNormal"),
-    # ("noShowers/BruFitOutput.data_sigAllFixed_bkgSkewedGaussian_SkewNormal", "NUS data bkg SkewNormal"),
+    (f"noShowers/BruFitOutput.data{run}_allFudge",               "data all fudge"),
     #
-    ("noShowers/BruFitOutput.data_sigAllFudge_bkgDoubleGaussian",            "NUS data sig fudge bkg Double-Gauss"),
-    ("noShowers/BruFitOutput.data_sigAllFudge_bkgDoubleGaussian_SameMean",   "NUS data sig fudge bkg Double-Gauss same mean"),
-    ("noShowers/BruFitOutput.data_sigAllFudge_bkgSkewedGaussian_ExpMod",     "NUS data sig fudge bkg ExpModGauss"),
-    ("noShowers/BruFitOutput.data_sigAllFudge_bkgSkewedGaussian_Log",        "NUS data sig fudge bkg LogNormal"),
-    ("noShowers/BruFitOutput.data_sigAllFudge_bkgSkewedGaussian_SkewNormal", "NUS data sig fudge bkg SkewNormal"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgDoubleGaussian",            "data bkg Double-Gauss"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgDoubleGaussian_SameMean",   "data bkg Double-Gauss same mean"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgSkewedGaussian_ExpMod",     "data bkg ExpModGauss"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgSkewedGaussian_Log",        "data bkg LogNormal"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgSkewedGaussian_SkewNormal", "data bkg SkewNormal"),
+    #
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgDoubleGaussian",            "data sig fudge bkg Double-Gauss"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgDoubleGaussian_SameMean",   "data sig fudge bkg Double-Gauss same mean"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_ExpMod",     "data sig fudge bkg ExpModGauss"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_Log",        "data sig fudge bkg LogNormal"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_SkewNormal", "data sig fudge bkg SkewNormal"),
   ]
-  fitResultDirNames = tuple(f"./fits/{fitResult[0]}" for fitResult in fitResults)
+  fitResultDirNames = tuple(f"./fits/2018_01-ver02/{fitResult[0]}" for fitResult in fitResults)
   fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
   effInfos, binVarNames = getEfficiencies(fitResultDirNames, fitLabels)
   print("Overlaying efficiencies")
