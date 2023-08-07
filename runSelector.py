@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import glob
+import os
 
 import ROOT
 
@@ -38,18 +40,33 @@ if __name__ == "__main__":
 
   # pi+pi+pi-pi-(p)
   selectorFileName = "./DSelector_pippippimpimpmiss.C"
-  # treeName        = "pippippimpimpmiss__B1_T1_U1_Effic_Tree"
-  # fileNamePattern = "./data/MCbggen/2017_01-ver03/tree_pippippimpimpmiss__B1_T1_U1_Effic_MCbggen_2017_01-ver03_batch01.root"
-  # fileNamePattern = "./data/RD/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_RD_2018_01-ver02_041003.root"
-  # fileNamePattern = "./data/RD/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_RD_2018_01-ver02_042030.root"
-  # fileNamePattern = "./data/RD/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_RD_2018_01-ver02_042550.root"
-  # fileNamePattern = "./data/MCbggen/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_MCbggen_2018_01-ver02.root"
-  treeName        = "pippippimpimmissprot__B1_T1_U1_Effic_Tree"
-  fileNamePattern = "./data/RD/2019_11-ver01/tree_pippippimpimmissprot__B1_T1_U1_Effic_071592.root"
+  treeName = "pippippimpimpmiss__B1_T1_U1_Effic_Tree"
+  # dataSets = [{"type" : "MCbggen", "period" : "2017_01-ver03"}]
+  # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "041003"}]
+  # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042030"}]
+  # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042550"}]
+  # dataSets = [{"type" : "MCbggen", "period" : "2018_01-ver02"}]
+  # for dataSet in dataSets:
+  #   dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_pippippimpimpmiss__B1_T1_U1_Effic_{dataSet['type']}_{dataSet['period']}"
+  #   + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"})
+  treeName = "pippippimpimmissprot__B1_T1_U1_Effic_Tree"
+  inFiles = glob.glob("./data/RD/2019_11-ver01/*.root")
+  dataSets = []
+  for inFile in inFiles:
+    runNumber = inFile.split(".")[-2].split("_")[-1]
+    dataSet = {"type" : "RD", "period" : "2019_11-ver01", "run" : runNumber}
+    dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_pippippimpimmissprot__B1_T1_U1_Effic_{dataSet['run']}.root"})
   # pi+pi-(p)
   # selectorFileName = "./DSelector_pippimpmiss.C"
-  # treeName         = "pippimpmiss__B1_T1_U1_Effic_Tree"
-  # fileNamePattern  = "./data/2017_01-ver04/batch02/tree_pippimpmiss__B1_T1_U1_Effic_030730.root"
-  runSelector(fileNamePattern, treeName, selectorFileName)
+  # treeName = "pippimpmiss__B1_T1_U1_Effic_Tree"
 
-  #TODO rename output files
+  for dataSet in dataSets:
+    runSelector(dataSet["fileName"], treeName, selectorFileName)
+    # rename output files
+    channel = "pippippimpimpmiss"
+    histFileName = f"./{channel}.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
+    print(f"Writing histogram file to '{histFileName}'")
+    os.replace(f"{channel}.root", histFileName)
+    treeFileName = f"./{channel}_flatTree.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
+    print(f"Writing tree file to '{treeFileName}'")
+    os.replace(f"{channel}_flatTree.root", treeFileName)
