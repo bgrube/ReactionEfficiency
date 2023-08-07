@@ -338,9 +338,28 @@ struct fillHistWithTObjString {
   { }
 
   void
+  operator ()(const TObjString& s)
+  {
+    _hist.Fill(s.GetString().Data(), 1);
+    return;
+  }
+
+  TH1& _hist;
+
+};
+"""
+ROOT.gInterpreter.Declare(CPP_CODE)
+CPP_CODE = """
+struct fillHistWithTObjStringWeighted {
+
+  fillHistWithTObjStringWeighted(TH1& hist)
+    : _hist(hist)
+  { }
+
+  void
   operator ()(
     const TObjString& s,
-    const Double_t    w = 1
+    const Double_t    w
   ) {
     _hist.Fill(s.GetString().Data(), w);
     return;
@@ -382,16 +401,17 @@ def getTopologyHist(
   if histNameSuffix:
     histName += f"_{histNameSuffix}"
   hist = ROOT.TH1F(histName, "", 1, 0, 1)
-  fillHistWithTObjString = ROOT.fillHistWithTObjString(hist)
+  fillHistWithTObjString         = ROOT.fillHistWithTObjString        (hist)
+  fillHistWithTObjStringWeighted = ROOT.fillHistWithTObjStringWeighted(hist)
   # fill histogram
   if not weightVariable:
     data.Foreach(fillHistWithTObjString, [variable])
   elif isinstance(weightVariable, str):
     # use existing weight column
-    data.Foreach(fillHistWithTObjString, [variable, weightVariable])
+    data.Foreach(fillHistWithTObjStringWeighted, [variable, weightVariable])
   elif isinstance(weightVariable, Iterable):
     # use new weight column
-    data.Foreach(fillHistWithTObjString, [variable, weightVariable[0]])
+    data.Foreach(fillHistWithTObjStringWeighted, [variable, weightVariable[0]])
   hist.LabelsDeflate("X")
   hist.LabelsOption(">", "X")  # sort topologies by number od combos
   # get ordered list of topology names
@@ -523,14 +543,18 @@ if __name__ == "__main__":
   # overlayMissingMassSquared()
 
   # dataset = None
-  dataset = "MCbggen_2017_01-ver03"
-  isMonteCarlo = isMcBggen = True
+  # dataset = "MCbggen_2017_01-ver03"
+  # dataset = "MCbggen_2018_01-ver02"
+  # isMonteCarlo = isMcBggen = True
   # dataset = "RD_2017_01-ver04_030730"
-  # isMonteCarlo = isMcBggen = False
+  dataset = "RD_2018_01-ver02_041003"
+  isMonteCarlo = isMcBggen = False
   histFileName = f"pippippimpimpmiss.{dataset}.root"          if dataset else "pippippimpimpmiss.root"
   treeFileName = f"pippippimpimpmiss_flatTree.{dataset}.root" if dataset else "pippippimpimpmiss_flatTree.root"
   treeName     = "pippippimpimpmiss"
-  inputData    = ROOT.RDataFrame(treeName, treeFileName).Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION)
+  inputData    = ROOT.RDataFrame(treeName, treeFileName) \
+                     .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
+                     .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   #TODO determine isMonteCarlo and isMcBggen flags from data
   if isMonteCarlo:
@@ -592,13 +616,14 @@ if __name__ == "__main__":
     plot1D(caseData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_{case}_Sb")
   kinematicBinnings  = [
     # beam energy
-    {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" : 9,  "range" : (3.0, 12.0)},
+    # {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" :  9, "range" : (3.0, 12.0)},  # spring 2017
+    {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" : 10, "range" : (5.5, 11.5)},  # spring 2018
     # momentum of missing proton
     {"variable" : "MissingProtonP",     "label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c", "nmbBins" : 10, "range" : (0, 3.5)},
     # polar angle of missing proton
-    {"variable" : "MissingProtonTheta", "label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg",   "nmbBins" : 13, "range" : (0, 65)},
+    {"variable" : "MissingProtonTheta", "label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg",   "nmbBins" : 10, "range" : (0, 65)},
     # azimuthal angle of missing proton
-    {"variable" : "MissingProtonPhi",   "label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg",   "nmbBins" : 10, "range" : (-180, +180)}
+    {"variable" : "MissingProtonPhi",   "label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg",   "nmbBins" : 10, "range" : (-180, +180)},
   ]
   for kinematicBinning in kinematicBinnings:
     kinBinVariable = kinematicBinning["variable"]
@@ -617,6 +642,9 @@ if __name__ == "__main__":
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonPhi",          axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 360, -180, 180))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{p}^{miss}_{measured} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
   plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{#phi}^{miss}_{measured} (deg)", binning = (180, 0, 90, 360, -180, 180))
+
+  plot1D(inputData, "MissingProtonP",      axisTitles = "#it{p}^{miss}_{kin. fit} (GeV/c)",    binning = (1000, 0, 10),  additionalFilter = "(NmbUnusedShowers == 0)")
+  plot1D(inputData, "MissingProtonTheta",  axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg)", binning = (1000, 0, 100), additionalFilter = "(NmbUnusedShowers == 0)")
 
   plot1D(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6))
   plot1D(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2))
