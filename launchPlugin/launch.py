@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+# patched version of launch.py based on version 3341ff8
+# submits one job per run, where each job runs over all files of a run
+# !NOTE! The script submits a job by constructing a `swif2 add-job ...` command
+#        line that contains the full list of input files. For many files and/or
+#        long path names the command line may overflow and may be cut off by
+#        the operating system.
+
 # Alex Austregesilo
 # Paul Mattione
 # Built off of hdswif by Kei Moriya
