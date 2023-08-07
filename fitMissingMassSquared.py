@@ -511,11 +511,11 @@ if __name__ == "__main__":
   args = parser.parse_args()
   # bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
   bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
-  dataFileName      = bggenFileName
+  # dataFileName      = bggenFileName
   # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
   # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
   # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
-  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
+  dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
@@ -528,13 +528,13 @@ if __name__ == "__main__":
     [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
-    [("MissingProtonPhi",   10, -180.0, +180.0)]   # [deg]
+    [("MissingProtonPhi",   10, -180.0, +180.0)],  # [deg]
   ]
 
   dataSets = {
     "Total"   : "",
     "Found"   : "(TrackFound == 1)",
-    "Missing" : "(TrackFound == 0)"
+    "Missing" : "(TrackFound == 0)",
   }
 
   #TODO calculate chi^2
