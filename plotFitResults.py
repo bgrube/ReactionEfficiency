@@ -284,6 +284,9 @@ def getParValueGraph1D(
     xRange = max(xVals) - min(xVals)
     shift  = xRange * shiftByFraction
     xVals = xVals + shift
+  # report weighted average
+  meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
+  print(f"    weighted mean of efficiencies = {meanEff}")
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)  # type: ignore
 
 
