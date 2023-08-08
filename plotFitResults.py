@@ -10,7 +10,7 @@ import itertools
 import numpy as np
 import os
 import sys
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from uncertainties import UFloat, ufloat
 
@@ -271,7 +271,7 @@ def getParValuesForGraph1D(
 def getParValueGraph1D(
   graphValues:     Sequence[Tuple[float, UFloat]],
   shiftByFraction: float = 0,
-) -> Any:  #TODO there does not seem to be a way to specify ROOT types
+) -> ROOT.TGraphErrors:  # type: ignore
   '''Creates ROOT.TGraphErrors from given values'''
   if not graphValues:
     print("No data to plot")
