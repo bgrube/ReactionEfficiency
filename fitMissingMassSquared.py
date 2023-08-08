@@ -527,8 +527,8 @@ if __name__ == "__main__":
     [],  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
     # [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]; spring 2017
-    [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
-    # [("BeamEnergy",         10,    7.7,   11.2)],  # [GeV]; spring 2020
+    # [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
+    [("BeamEnergy",         10,    7.7,   11.2)],  # [GeV]; spring 2020
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
     [("MissingProtonPhi",   10, -180.0, +180.0)],  # [deg]
