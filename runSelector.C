@@ -12,12 +12,14 @@ runSelector(
 
 	const TString selectorName    = "./DSelector_pippippimpimpmiss.C+";
 	// pi+pi+pi-pi-(p)
-	const TString treeName        = "pippippimpimpmiss__B1_T1_U1_Effic_Tree";
+	// const TString treeName        = "pippippimpimpmiss__B1_T1_U1_Effic_Tree";
 	// const TString fileNamePattern = "./data/MCbggen/2017_01-ver03/tree_pippippimpimpmiss__B1_T1_U1_Effic_MCbggen_2017_01-ver03_batch01.root";
 	// const TString fileNamePattern = "./data/RD/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_RD_2018_01-ver02_041003.root";
 	// const TString fileNamePattern = "./data/RD/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_RD_2018_01-ver02_042030.root";
 	// const TString fileNamePattern = "./data/RD/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_RD_2018_01-ver02_042550.root";
-	const TString fileNamePattern = "./data/MCbggen/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_MCbggen_2018_01-ver02.root";
+	// const TString fileNamePattern = "./data/MCbggen/2018_01-ver02/tree_pippippimpimpmiss__B1_T1_U1_Effic_MCbggen_2018_01-ver02.root";
+	const TString treeName        = "pippippimpimmissprot__B1_T1_U1_Effic_Tree";
+	const TString fileNamePattern = "./data/RD/2019_11-ver01/tree_pippippimpimmissprot__B1_T1_U1_Effic_071592.root";
 	// pi+pi-(p)
 	// const TString selectorName    = "./DSelector_pippimpmiss.C+";
 	// const TString treeName        = "pippimpmiss__B1_T1_U1_Effic_Tree";
