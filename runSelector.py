@@ -79,3 +79,5 @@ if __name__ == "__main__":
     print(f"Writing tree file to '{treeFileName}'")
     os.replace(f"{channel}_flatTree.root", treeFileName)
     print()
+
+  #TODO convert to BruFit tree right inplace
