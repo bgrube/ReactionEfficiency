@@ -57,7 +57,7 @@ if __name__ == "__main__":
   #   dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_pippippimpimpmiss__B1_T1_U1_Effic_{dataSet['type']}_{dataSet['period']}"
   #   + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"})
   treeName = "pippippimpimmissprot__B1_T1_U1_Effic_Tree"
-  inFiles = glob.glob("./data/RD/2019_11-ver01/*.root")
+  inFiles = sorted(glob.glob("./data/RD/2019_11-ver01/*.root"))
   dataSets = []
   for inFile in inFiles:
     runNumber = inFile.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_pippippimpimmissprot__B1_T1_U1_Effic_<run number>.root`

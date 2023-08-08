@@ -63,7 +63,9 @@ if __name__ == "__main__":
   # dataSets = ["RD_2018_01-ver02_042030"]
   # dataSets = ["RD_2018_01-ver02_042550"]
   # dataSets = ["MCbggen_2018_01-ver02"]
-  dataSets = [fileName.split(".")[2] for fileName in glob.glob("./pippippimpimpmiss_flatTree.RD_2019_11-ver01_??????.root")]
+  dataSets = [fileName.split(".")[2] for fileName in sorted(glob.glob("./pippippimpimpmiss_flatTree.RD_2019_11-ver01_??????.root"))]
+  print(f"!!! {dataSets}")
+  raise ValueError
   if dataSets:
     inputFileNames = [f"./pippippimpimpmiss_flatTree.{dataSet}.root" for dataSet in dataSets]
   else:
