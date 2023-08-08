@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+import functools
 import glob
 
 import ROOT
 
-import makePlots  # defines helper functions to generate histograms from data trees
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 def makeBruFitTree(
