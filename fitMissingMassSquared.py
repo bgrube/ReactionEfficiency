@@ -501,21 +501,23 @@ if __name__ == "__main__":
   ROOT.gBenchmark.Start("Total execution time")  # type: ignore
 
   # echo and parse command line
+  # dataFileName  = bggenFileName
+  # dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
+  dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
+  # dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
+  # dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
+  # bggenFileName = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
+  bggenFileName = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
   print(f"Script was called using: '{' '.join(sys.argv)}'")
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
   parser.add_argument("outputDirName", nargs = "?", type = str, default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  parser.add_argument("dataFileName",  nargs = "?", type = str, default = dataFileName,     help = "The path to the input data tree in BruFit format; (default: '%(default)s')")
+  parser.add_argument("bggenFileName", nargs = "?", type = str, default = bggenFileName,    help = "The path to the input bggen MC tree in BruFit format; (default: '%(default)s')")
   parser.add_argument("--pdfTypeSig",               type = str, default = "Histogram",      help = "Type of signal PDF to use in fit; (default: '%(default)s')")
   parser.add_argument("--fixParsSig",  nargs = "*", type = str, default = [],               help = "Names of parameters of signal PDF to fix in fit; (default: none)")
   parser.add_argument("--pdfTypeBkg",               type = str, default = "Histogram",      help = "Type of background PDF to use in fit; (default: '%(default)s')")
   parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
   args = parser.parse_args()
-  # bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
-  bggenFileName     = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
-  # dataFileName      = bggenFileName
-  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
-  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
-  # dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
-  dataFileName      = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
@@ -526,6 +528,7 @@ if __name__ == "__main__":
     # 1D binnings; only one binning par variable name allowed
     # [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]; spring 2017
     [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
+    # [("BeamEnergy",         10,    7.7,   11.2)],  # [GeV]; spring 2020
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
     [("MissingProtonPhi",   10, -180.0, +180.0)],  # [deg]
@@ -545,7 +548,7 @@ if __name__ == "__main__":
     if kinematicBinnings:
       for kinematicBinning in kinematicBinnings:
         performFit(
-          dataFileName,
+          args.dataFileName,
           f"{args.outputDirName}/{dataSetName}",
           kinematicBinning,
           pdfTypeSig              = args.pdfTypeSig,
@@ -554,8 +557,8 @@ if __name__ == "__main__":
           fixParsBkg              = args.fixParsBkg,
           commonCut               = andCuts((dataSetCut, additionalCut)),
           dataCut                 = dataCut,
-          templateDataSigFileName = bggenFileName,
-          templateDataBkgFileName = bggenFileName,
+          templateDataSigFileName = args.bggenFileName,
+          templateDataBkgFileName = args.bggenFileName,
         )
 
   ROOT.gBenchmark.Show("Total execution time")  # type: ignore
