@@ -93,14 +93,13 @@ if __name__ == "__main__":
   makePlots.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
 
-  # # echo and parse command line
-  # print(f"Script was called using: '{' '.join(sys.argv)}'")
-  # parser = argparse.ArgumentParser(description="Overlays efficiency graphs obtained from BruFit results in given directories.")
-  # parser.add_argument("fitResultDirNames", type = str, nargs = "+", default = ["./BruFitOutput"], help = "The paths to the BruFit output directories that should be overlaid; (default: %(default)s)")
-  # parser.add_argument("--fitLabels", type = str, nargs = "*", default = [], help = "The legend labels for each fit (same order as directory names); (default: directory names)")
-  # args = parser.parse_args()
+  # echo and parse command line
+  print(f"Script was called using: '{' '.join(sys.argv)}'")
+  parser = argparse.ArgumentParser(description="Overlays efficiency graphs obtained from BruFit results in given directories using given labels.")
+  parser.add_argument("--fitResult", type = str, nargs = 2, metavar = ("DIR_PATH", "LABEL"), action = "append", help = "The path to the BruFit output directory of the fit that should be added to the overlay and the corresponding legend label; can be specified multiple times")
+  args = parser.parse_args()
 
-  run = "_041003"
+  # run = "_041003"
   fitResults = [
     # no extra cuts
     # ("noCut/BruFitOutput.sig_allFixed",        "MC truth"),
@@ -125,15 +124,15 @@ if __name__ == "__main__":
     # ("noShowers/BruFitOutput.bggen_bkgAllFudge",           "bggen bkg fugde"),
     # ("noShowers/BruFitOutput.bggen_allFudge",              "bggen all fudge"),
     #
-    ("noShowers/BruFitOutput.sig_allFixed",                      "bggen MC"),
-    (f"noShowers/BruFitOutput.data{run}_allFixed",               "data fixed"),
+    # ("noShowers/BruFitOutput.sig_allFixed",                      "bggen MC"),
+    # (f"noShowers/BruFitOutput.data{run}_allFixed",               "data fixed"),
     # (f"noShowers/BruFitOutput.data{run}_bkgSmear",               "data bkg smear"),
     # # (f"noShowers/BruFitOutput.data{run}_bkgShift",               "data bkg shift"),
     # (f"noShowers/BruFitOutput.data{run}_bkgScale",               "data bkg scale"),
     # # (f"noShowers/BruFitOutput.data{run}_bkgFixSmear",            "data bkg fix smear"),
     # (f"noShowers/BruFitOutput.data{run}_bkgFixShift",            "data bkg fix shift"),
     # # (f"noShowers/BruFitOutput.data{run}_bkgFixScale",            "data bkg fix scale"),
-    (f"noShowers/BruFitOutput.data{run}_bkgAllFudge",            "data bkg fudge"),
+    # (f"noShowers/BruFitOutput.data{run}_bkgAllFudge",            "data bkg fudge"),
     #
     # (f"noShowers/BruFitOutput.data{run}_sigSmear",               "data sig smear"),
     # # (f"noShowers/BruFitOutput.data{run}_sigShift",               "data sig shift"),
@@ -143,9 +142,9 @@ if __name__ == "__main__":
     # (f"noShowers/BruFitOutput.data{run}_sigFixScale",            "data sig fix scale"),
     # (f"noShowers/BruFitOutput.data{run}_sigShift_bkgShift",      "data sig+bkg shift"),
     # (f"noShowers/BruFitOutput.data{run}_sigShift_bkgShiftScale", "data sig shift bkg shift+scale"),
-    (f"noShowers/BruFitOutput.data{run}_sigAllFudge",            "data sig fudge"),
+    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge",            "data sig fudge"),
     #
-    (f"noShowers/BruFitOutput.data{run}_allFudge",               "data all fudge"),
+    # (f"noShowers/BruFitOutput.data{run}_allFudge",               "data all fudge"),
     #
     # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgDoubleGaussian",            "data bkg Double-Gauss"),
     # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgDoubleGaussian_SameMean",   "data bkg Double-Gauss same mean"),
@@ -158,9 +157,24 @@ if __name__ == "__main__":
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_ExpMod",     "data sig fudge bkg ExpModGauss"),
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_Log",        "data sig fudge bkg LogNormal"),
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_SkewNormal", "data sig fudge bkg SkewNormal"),
+    #
+    # # 2018 runs
+    # (f"noShowers/BruFitOutput.data_041003_allFixed", "Run 41003"),
+    # (f"noShowers/BruFitOutput.data_042030_allFixed", "Run 42030"),
+    # (f"noShowers/BruFitOutput.data_042550_allFixed", "Run 42550"),
+    # 2020 runs
+    (f"noShowers/BruFitOutput.data_071592_allFixed", "Run 71592"),
+    (f"noShowers/BruFitOutput.data_071593_allFixed", "Run 71593"),
+    (f"noShowers/BruFitOutput.data_071594_allFixed", "Run 71594"),
+    (f"noShowers/BruFitOutput.data_071596_allFixed", "Run 71596"),
   ]
-  fitResultDirNames = tuple(f"./fits/2018_01-ver02/{fitResult[0]}" for fitResult in fitResults)
-  fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
+  if args.fitResult:
+    fitResultDirNames = [fitResult[0] for fitResult in args.fitResult]
+    fitLabels         = [fitResult[1] for fitResult in args.fitResult]
+  else:
+    # fitResultDirNames = tuple(f"./fits/2018_01-ver02/{fitResult[0]}" for fitResult in fitResults)
+    fitResultDirNames = tuple(f"./fits/2019_11-ver01/{fitResult[0]}" for fitResult in fitResults)
+    fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
   effInfos, binVarNames = getEfficiencies(fitResultDirNames, fitLabels)
   print("Overlaying efficiencies")
   if effInfos:
