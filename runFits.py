@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import glob
 import os
 import shutil
 import subprocess
@@ -9,9 +10,12 @@ import subprocess
 if __name__ == "__main__":
 
   bggenFileName = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
-  dataFileNames = [f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"]
+  # period        = "2018_01-ver02"
+  # dataFileNames = [f"./pippippimpimpmiss_flatTree.RD_{period}_041003.root.brufit"]
+  period        = "2019_11-ver01"
+  dataFileNames = sorted(glob.glob(f"./pippippimpimpmiss_flatTree.RD_{period}_??????.root.brufit"))
   dataSamples   = [{"dataFileName" : fileName, "dataLabel" : f"data_{fileName.split('.')[2].split('_')[-1]}"} for fileName in dataFileNames]
-  print(f"!!! {dataSamples}")
+  # print(f"!!! {dataSamples}")
   fits = [[
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigAllFixed_noBkg",
@@ -24,8 +28,7 @@ if __name__ == "__main__":
     #   "pdfTypeBkg" : "\"\"",
     # },
     {
-      "dataFileName" : dataSample['dataFileName'],
-      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed.new",
+      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
       "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
       "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     },
@@ -105,7 +108,11 @@ if __name__ == "__main__":
     #   "pdfTypeBkg" : "Histogram",
     # },
   ] for dataSample in dataSamples]
-  print(f"!!! {fits}")
+  # add input files (same of all studies)
+  for index, dataSample in enumerate(dataSamples):
+    for study in fits[index]:
+      study.update({"dataFileName" : dataSample['dataFileName']})
+  # print(f"!!! {fits}")
   # raise ValueError
 
   # pdfTypeBkg = "DoubleGaussian",
@@ -114,10 +121,9 @@ if __name__ == "__main__":
   # pdfTypeBkg = "SkewedGaussian_ExpMod",
   # pdfTypeBkg = "SkewedGaussian_Log",
 
-
   for dataSamples in fits:
     for study in dataSamples:
-      fitDirectory = f"./fits/2018_01-ver02/noShowers/{study['fitDirectory']}"
+      fitDirectory = f"./fits/{period}/noShowers/{study['fitDirectory']}"
       # prepare directories
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
