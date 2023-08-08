@@ -18,92 +18,92 @@ if __name__ == "__main__":
   # print(f"!!! {dataSamples}")
   fits = [[
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigAllFixed_noBkg",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFixed_noBkg",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "\"\"",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigAllFudge_noBkg",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge_noBkg",
     #   "pdfTypeSig" : "Histogram",
     #   "pdfTypeBkg" : "\"\"",
     # },
-    {
-      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
-      "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
-      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigSmear",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
+    #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
+    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    # },
+    # {
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigShift",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigShift",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigScale",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigScale",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigFixSmear",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigFixSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigFixShift",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigFixShift",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "shift",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigFixScale",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigFixScale",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
+    {
+      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
+      "pdfTypeSig" : "Histogram",
+      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_sigAllFudge",
-    #   "pdfTypeSig" : "Histogram",
-    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    # },
-    # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgSmear",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "shift scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgShift",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgShift",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgScale",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgScale",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgFixSmear",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgFixSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgFixShift",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgFixShift",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "shift",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgFixScale",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgFixScale",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "scale",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_bkgAllFudge",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgAllFudge",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
     #   "pdfTypeBkg" : "Histogram",
     # },
     # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample}_allFudge",
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFudge",
     #   "pdfTypeSig" : "Histogram",
     #   "pdfTypeBkg" : "Histogram",
     # },
