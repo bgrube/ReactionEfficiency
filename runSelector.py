@@ -30,8 +30,9 @@ def runSelector(
   # create TChain with input data
   chain = ROOT.TChain(treeName)  # type: ignore
   chain.Add(fileNamePattern)
-  print(f"processing tree '{treeName}' in file(s) '{fileNamePattern}' using selector '{selectorFileName}'")
-  selector = selectorFileName if selectorFileName[-1] == "+" else selectorFileName + "+"  # ensure that selector is compiled
+  selector = selectorFileName.rstrip("+") + "+"  # ensure that selector is always compiled
+                                                 # don't use "++", otherwise each proof job compiles the script and speed is much reduced
+  print(f"processing tree '{treeName}' in file(s) '{fileNamePattern}' using selector '{selector}'")
   # process TChain
   if runPROOF:
     # run with PROOF
@@ -48,17 +49,18 @@ if __name__ == "__main__":
 
   # pi+pi+pi-pi-(p)
   selectorFileName = "./DSelector_pippippimpimpmiss.C"
-  treeName = "pippippimpimpmiss__B1_T1_U1_Effic_Tree"
-  # dataSets = [{"type" : "MCbggen", "period" : "2017_01-ver03"}]
+  # treeName = "pippippimpimpmiss__B1_T1_U1_Effic_Tree"
+  # # dataSets = [{"type" : "MCbggen", "period" : "2017_01-ver03"}]
   # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "041003"}]
-  # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042030"}]
-  # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042550"}]
-  # dataSets = [{"type" : "MCbggen", "period" : "2018_01-ver02"}]
+  # # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042030"}]
+  # # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042550"}]
+  # # dataSets = [{"type" : "MCbggen", "period" : "2018_01-ver02"}]
   # for dataSet in dataSets:
   #   dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_pippippimpimpmiss__B1_T1_U1_Effic_{dataSet['type']}_{dataSet['period']}"
   #   + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"})
   treeName = "pippippimpimmissprot__B1_T1_U1_Effic_Tree"
-  inFiles = sorted(glob.glob("./data/RD/2019_11-ver01/*.root"))
+  # inFiles = sorted(glob.glob("./data/RD/2019_11-ver01/*.root"))
+  inFiles = ["./data/RD/2019_11-ver01/tree_pippippimpimmissprot__B1_T1_U1_Effic_071592.root"]
   dataSets = []
   for inFile in inFiles:
     runNumber = inFile.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_pippippimpimmissprot__B1_T1_U1_Effic_<run number>.root`
