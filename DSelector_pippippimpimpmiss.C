@@ -151,6 +151,9 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonPhi_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("KinFitPVal");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BestMissingMatchDistTOF");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BestMissingMatchDistBCAL");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
 	//TODO write out only best match instead of all candidates?
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbTruthTracks");
@@ -424,6 +427,12 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		const size_t locNumUnusedShowers    = dComboWrapper->Get_NumUnusedShowers();
 		const double locEnergyUnusedShowers = dComboWrapper->Get_Energy_UnusedShowers();
 
+		const double locKinFitPVal = dComboWrapper->Get_ConfidenceLevel_KinFit();
+
+		// get custom branches defined by ReactionEfficiency plugin
+		const double locBestMissingMatchDistTOF  = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistTOF");
+		const double locBestMissingMatchDistBCAL = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistBCAL");
+
 		//if you manually execute any actions, and it fails a cut, be sure to call:
 			//dComboWrapper->Set_IsComboCut(true);
 
@@ -462,6 +471,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		fillTreeKinematics(locMissingProtonP4_Measured, "MissingProton", "_Measured");
 		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",            locNumUnusedShowers);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers",         locEnergyUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("KinFitPVal",                  locKinFitPVal);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("BestMissingMatchDistTOF",     locBestMissingMatchDistTOF);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("BestMissingMatchDistBCAL",    locBestMissingMatchDistBCAL);
 		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",              myTObjString(locThrownTopology));
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
