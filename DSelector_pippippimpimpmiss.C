@@ -157,7 +157,7 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistBCAL");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
 	//TODO write out only best match instead of all candidates?
-	// TTreeReader does not support UChar_t as index; see https://sft.its.cern.ch/jira/browse/ROOT-8827
+	// TTreeReader does not support UChar_t as index for variably-sized arrays; see https://sft.its.cern.ch/jira/browse/ROOT-8827
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthP",                    "NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthTheta",                "NmbTruthTracks");
