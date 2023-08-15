@@ -4,8 +4,11 @@
 import functools
 import glob
 import os
+from typing import List
 
 import ROOT
+
+import makeBruFitTree
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -47,6 +50,8 @@ if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)  # type: ignore
 
+  deleteFlatTreeFiles = False
+
   # pi+pi+pi-pi-(p)
   selectorFileName = "./DSelector_pippippimpimpmiss.C"
   # treeName = "pippippimpimpmiss__B1_T1_U1_Effic_Tree"
@@ -71,16 +76,25 @@ if __name__ == "__main__":
   # selectorFileName = "./DSelector_pippimpmiss.C"
   # treeName = "pippimpmiss__B1_T1_U1_Effic_Tree"
 
+  # run selector and create flat-tree file
+  flatTreeFileNames: List[str] = []
   for dataSet in dataSets:
     runSelector(dataSet["fileName"], treeName, selectorFileName)
     # rename output files
     channel = "pippippimpimpmiss"
     histFileName = f"./{channel}.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
-    print(f"Writing histogram file to '{histFileName}'")
+    print(f"Moving histogram file to '{histFileName}'")
     os.replace(f"{channel}.root", histFileName)
-    treeFileName = f"./{channel}_flatTree.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
-    print(f"Writing tree file to '{treeFileName}'")
-    os.replace(f"{channel}_flatTree.root", treeFileName)
+    flatTreeFileName = f"./{channel}_flatTree.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
+    print(f"Moving flat-tree file to '{flatTreeFileName}'")
+    os.replace(f"{channel}_flatTree.root", flatTreeFileName)
+    flatTreeFileNames.append(flatTreeFileName)
     print()
 
-  #TODO convert to BruFit tree right inplace
+  # convert flat tree to BruFit tree
+  for flatTreeFileName in flatTreeFileNames:
+    bruFitTreeFileName = f"{flatTreeFileName}.brufit"
+    makeBruFitTree.makeBruFitTree(flatTreeFileName, outputFileName = bruFitTreeFileName)
+    if deleteFlatTreeFiles:
+      print(f"Removing flat-tree file '{flatTreeFileName}'")
+      os.remove(flatTreeFileName)
