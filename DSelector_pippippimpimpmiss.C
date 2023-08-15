@@ -140,6 +140,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	//The type for the branch must be included in the brackets
 	//1st function argument is the name of the branch
 	//2nd function argument is the name of the branch that contains the size of the array (for fundamentals only)
+	dFlatTreeInterface->Create_Branch_Fundamental<UInt_t>         ("RunNumber");
+	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("KinFitPVal");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BeamEnergy");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingMassSquared");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonP");
@@ -149,13 +151,13 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonP_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonTheta_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonPhi_Measured");
-	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbUnusedShowers");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("EnergyUnusedShowers");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("KinFitPVal");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BestMissingMatchDistTOF");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("BestMissingMatchDistBCAL");
+	dFlatTreeInterface->Create_Branch_Fundamental<UChar_t>        ("NmbUnusedShowers");
+	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("EnergyUnusedShowers");
+	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistTOF");
+	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistBCAL");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
 	//TODO write out only best match instead of all candidates?
+	// TTreeReader does not support UChar_t as index; see https://sft.its.cern.ch/jira/browse/ROOT-8827
 	dFlatTreeInterface->Create_Branch_Fundamental<Int_t>          ("NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthP",                    "NmbTruthTracks");
 	dFlatTreeInterface->Create_Branch_FundamentalArray<Double_t>  ("TruthTheta",                "NmbTruthTracks");
@@ -423,15 +425,16 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		if (!Execute_Actions()) //if the active combo fails a cut, IsComboCutFlag automatically set
 			continue;
 
-		// ECAL info
-		const size_t locNumUnusedShowers    = dComboWrapper->Get_NumUnusedShowers();
-		const double locEnergyUnusedShowers = dComboWrapper->Get_Energy_UnusedShowers();
+		const UInt_t  locRunNumber  = dComboWrapper->Get_RunNumber();
+		const Float_t locKinFitPVal = dComboWrapper->Get_ConfidenceLevel_KinFit();
 
-		const double locKinFitPVal = dComboWrapper->Get_ConfidenceLevel_KinFit();
+		// ECAL info
+		const UChar_t locNmbUnusedShowers    = dComboWrapper->Get_NumUnusedShowers();
+		const Float_t locEnergyUnusedShowers = dComboWrapper->Get_Energy_UnusedShowers();
 
 		// get custom branches defined by ReactionEfficiency plugin
-		const double locBestMissingMatchDistTOF  = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistTOF");
-		const double locBestMissingMatchDistBCAL = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistBCAL");
+		const Float_t locBestMissingMatchDistTOF  = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistTOF");
+		const Float_t locBestMissingMatchDistBCAL = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistBCAL");
 
 		//if you manually execute any actions, and it fails a cut, be sure to call:
 			//dComboWrapper->Set_IsComboCut(true);
@@ -464,16 +467,17 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("AccidWeightFactor", locHistAccidWeightFactor);
 
 		// FILL ANY CUSTOM BRANCHES FIRST!!
+		dFlatTreeInterface->Fill_Fundamental<UInt_t>  ("RunNumber",                   locRunNumber);
+		dFlatTreeInterface->Fill_Fundamental<Float_t> ("KinFitPVal",                  locKinFitPVal);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("BeamEnergy",                  locBeamEnergy);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared",          locMissingMassSquared);
 		fillTreeKinematics(locMissingProtonP4, "MissingProton");
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared_Measured", locMissingMassSquared_Measured);
 		fillTreeKinematics(locMissingProtonP4_Measured, "MissingProton", "_Measured");
-		dFlatTreeInterface->Fill_Fundamental<Int_t>   ("NmbUnusedShowers",            locNumUnusedShowers);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("EnergyUnusedShowers",         locEnergyUnusedShowers);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("KinFitPVal",                  locKinFitPVal);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("BestMissingMatchDistTOF",     locBestMissingMatchDistTOF);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("BestMissingMatchDistBCAL",    locBestMissingMatchDistBCAL);
+		dFlatTreeInterface->Fill_Fundamental<UChar_t> ("NmbUnusedShowers",            locNmbUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Float_t> ("EnergyUnusedShowers",         locEnergyUnusedShowers);
+		dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistTOF",     locBestMissingMatchDistTOF);
+		dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistBCAL",    locBestMissingMatchDistBCAL);
 		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",              myTObjString(locThrownTopology));
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
