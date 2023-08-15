@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 import os
 import subprocess
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import ROOT
 
@@ -29,6 +29,13 @@ FILTER_CASES: Dict[str, str] = {
   "Found"   : "(TrackFound == true)",
   "Missing" : "(TrackFound == false)",
 }
+
+COLOR_CASES = {
+  "Total"   : ROOT.kGray,  # type: ignore
+  "Found"   : ROOT.kGreen + 2,  # type: ignore
+  "Missing" : ROOT.kRed + 1,  # type: ignore
+}
+
 
 # black + 7 colorblind-friendly colors rom M. Okabe and K. Ito, "How to make figures and presentations that are friendly to color blind people," University of Tokyo, 2002.
 # see also Bang Wong, https://www.nature.com/articles/nmeth.1618.pdf
@@ -108,6 +115,7 @@ def printGitInfo() -> None:
 
 
 def setupPlotStyle() -> None:
+  '''Defines ROOT plot style'''
   #TODO remove dependency from external file or add file to repo
   ROOT.gROOT.LoadMacro("~/rootlogon.C")  # type: ignore
   ROOT.gROOT.ForceStyle()  # type: ignore
@@ -125,6 +133,7 @@ def setupPlotStyle() -> None:
 
 
 def overlayMissingMassSquared() -> None:
+  '''Overlays missing-mass-squared histograms from two data samples'''
   inFileNames:  Tuple[str, str] = ("pippippimpimpmiss.RD_2017_01-ver04_030730.root", "pippippimpimpmiss.MCbggen_2017_01-ver03.root")
   labels:       Tuple[str, str] = ("Real data (scaled)", "bggen MC")
   histBaseName: str             = "MissingMassSquared/MissingMassSquared"
@@ -159,22 +168,22 @@ def overlayMissingMassSquared() -> None:
     canv.SaveAs(".pdf")
 
 
-# simple generic function to plot a histogram in a ROOT file
 def drawHistogram(
-  inFileName,
-  histName,
-  rebinFactor = 1,  # if integer -> rebin x-axis, if iterable of integers rebin axes
-  drawOption = "HIST",
-  pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = ""
-):
+  inFileName:        str,
+  histName:          str,
+  rebinFactor:       Union[int, Sequence[int]] = 1,  # if integer -> rebin x axis; if sequence of 2 integers -> rebin x and y axes
+  drawOption:        str = "HIST",
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "",
+) -> None:
+  '''Plots histogram with given name in ROOT file with given name'''
   # get histogram
   inFile = ROOT.TFile(inFileName)  # type: ignore
   hist = inFile.Get(histName)
   if isinstance(hist, ROOT.TH2):  # type: ignore
     if isinstance(rebinFactor, int):
       hist.RebinX(rebinFactor)
-    elif isinstance(rebinFactor, Iterable):
+    elif isinstance(rebinFactor, Sequence):
       hist.Rebin2D(rebinFactor[0], rebinFactor[1])
   elif isinstance(hist, ROOT.TH1):  # type: ignore
     hist.Rebin(rebinFactor)
@@ -185,35 +194,37 @@ def drawHistogram(
 
 
 def getHistND(
-  inputData,   # RDataFrame
-  variables,   # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
-  axisTitles,  # semicolon-separated list
-  binning,     # tuple with binning definition
-  weightVariable   = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
-  filterExpression = None,
-  histNameSuffix   = "",
-  histTitle        = ""
-):
+  inputData:        ROOT.RDataFrame,  # type: ignore
+  variables:        Tuple[Union[str, Tuple[str, str]], ...],  # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
+  axisTitles:       str,    # semicolon-separated list
+  binning:          Tuple,  # tuple with binning definitions
+  weightVariable:   Union[None, str, Tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression: Union[None, str] = None,
+  histNameSuffix:   str = "",
+  histTitle:        str = "",
+) -> Union[ROOT.TH1D, ROOT.TH2D]:  # type: ignore
+  '''Creates histogram from given variables in RDataFrame, applying optional weighting and filtering'''
   histDim = len(variables)
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
   # apply additional filters, if defined
   data = inputData.Filter(filterExpression) if filterExpression else inputData
-  columnNames = [None,] * len(variables)
+  columnNames: List[Union[None, str]] = [None,] * len(variables)
   for index, variable in enumerate(variables):
     if isinstance(variable, str):
       # use existing variable column
       columnNames[index] = variable
-    elif isinstance(variable, Iterable):
+    elif isinstance(variable, Sequence):
       # create new variable column
       data  = data.Define(variable[0], variable[1])
       columnNames[index] = variable[0]
     assert columnNames[index] is not None, f"failed to get column name for variable '{variable}'"
-  if not isinstance(weightVariable, str) and isinstance(weightVariable, Iterable):
+  if isinstance(weightVariable, Sequence) and not isinstance(weightVariable, str):
     # create new weight column
     data = data.Define(weightVariable[0], weightVariable[1])
   # create histogram
   hist = None
-  histDef = ("_".join(columnNames + ([histNameSuffix] if histNameSuffix else [])), f"{histTitle};{axisTitles}", *binning)  # histogram definition
+  histDef = tuple("_".join(columnNames + ([histNameSuffix] if histNameSuffix else [])),
+                  f"{histTitle};{axisTitles}", *binning)  # histogram definition
   # get member function to create histogram
   HistoND = getattr(data, "Histo1D") if histDim == 1 else getattr(data, "Histo2D")
   if not weightVariable:
@@ -221,7 +232,7 @@ def getHistND(
   elif isinstance(weightVariable, str):
     # use existing weight column
     hist = HistoND(histDef, *columnNames, weightVariable)
-  elif isinstance(weightVariable, Iterable):
+  elif isinstance(weightVariable, Sequence):
     # use new weight column
     hist = HistoND(histDef, *columnNames, weightVariable[0])
   assert hist is not None, f"failed to create histogram for weight variable '{weightVariable}'"
@@ -229,9 +240,10 @@ def getHistND(
 
 
 def setDefaultYAxisTitle(
-  axisTitles,  # semicolon-separated list
-  defaultYTitle = "Number of Combos (RF-subtracted)"
+  axisTitles:    str,  # semicolon-separated list
+  defaultYTitle: str = "Number of Combos (RF-subtracted)",
 ):
+  '''Sets default y-axis title if not provided by `axisTitles`'''
   titles = axisTitles.split(";")
   if (len(titles) == 1):
     return titles[0] + ";" + defaultYTitle
@@ -241,18 +253,18 @@ def setDefaultYAxisTitle(
     return axisTitles
 
 
-# plot 1D distribution of given variable
 def plot1D(
-  inputData,   # RDataFrame
-  variable,    # variable to plot; may be column name, or tuple with new column definition
-  axisTitles,  # semicolon-separated list
-  binning,     # tuple with binning definition
-  weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = "",
-  additionalFilter  = None
-):
-  hist = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)
+  inputData:         ROOT.RDataFrame,  # type: ignore
+  variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,  # semicolon-separated list
+  binning:           Tuple[int, float, float],  # tuple with binning definition
+  weightVariable:    Union[None, str, Tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "",
+  additionalFilter:  Union[None, str] = None,
+) -> None:
+  '''Plots 1D distribution for given variable, applying optional weighting and filtering'''
+  hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)  # type: ignore
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")  # type: ignore
   hist.Draw("HIST")
@@ -265,51 +277,46 @@ def plot1D(
   canv.SaveAs(".pdf")
 
 
-# plot 2D distribution of given variables
 def plot2D(
-  inputData,   # RDataFrame
-  xVariable,   # x variable to plot; may be column name, or tuple with new column definition
-  yVariable,   # y variable to plot; may be column name, or tuple with new column definition
-  axisTitles,  # semicolon-separated list
-  binning,     # tuple with binning definition
-  weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = "",
-  additionalFilter  = None
-):
-  hist = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)
+  inputData:         ROOT.RDataFrame,  # type: ignore
+  xVariable:         Union[str, Tuple[str, str]],  # x variable to plot; may be column name, or tuple with new column definition
+  yVariable:         Union[str, Tuple[str, str]],  # y variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,  # semicolon-separated list
+  binning:           Tuple[int, float, float, int, float, float],  # tuple with binning definition
+  weightVariable:    Union[None, str, Tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "",
+  additionalFilter:  Union[None, str] = None,
+) -> None:
+  '''Plots 2D distribution for given x and y variables, applying optional weighting and filtering'''
+  hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)  # type: ignore
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")  # type: ignore
   hist.Draw("COLZ")
   canv.SaveAs(".pdf")
 
 
-# overlay distributions of variable defined by `variable` for Total, Found, and Missing cases
 def overlayCases(
-  inputData,   # RDataFrame
-  variable,    # variable to plot; may be column name, or tuple with new column definition
-  axisTitles,  # semicolon-separated list
-  binning,     # tuple with binning definition
-  additionalFilter  = None,
-  weightVariable = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = ""
-):
+  inputData:         ROOT.RDataFrame,  # type: ignore
+  variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,  # semicolon-separated list
+  binning:           Tuple[int, float, float],  # tuple with binning definition
+  weightVariable:    Union[None, str, Tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "",
+  additionalFilter:  Union[None, str] = None,
+) -> None:
+  '''Overlays 1D distributions of given variable for "Total", "Found", and "Missing" cases'''
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
-  colorCases = {
-    "Total"   : ROOT.kGray,  # type: ignore
-    "Found"   : ROOT.kGreen + 2,  # type: ignore
-    "Missing" : ROOT.kRed + 1  # type: ignore
-  }
   # overlay distributions for cases
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))  # type: ignore
   hists = []
   for case in FILTER_CASES.keys():
-    hist = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, FILTER_CASES[case],
-                     histNameSuffix = case, histTitle = case)
-    hist.SetLineColor(colorCases[case])
+    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, FILTER_CASES[case],  # type: ignore
+                                histNameSuffix = case, histTitle = case)
+    hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
-      hist.SetFillColor(colorCases[case])
+      hist.SetFillColor(COLOR_CASES[case])
     hists.append(hist)
     hStack.Add(hist.GetPtr())
   # draw distributions
@@ -326,7 +333,9 @@ def overlayCases(
   canv.SaveAs(".pdf")
 
 
-# C++ helper functor to work around fact that RDataFrame cannot fill TObjSTring into histogram
+# C++ helper functors that fill TObjString into TH1
+# workaround because RDataFrame cannot fill TObjSTring into histogram
+# !Note! the code is not thread-safe; RDataFrame needs to run in single-threaded mode
 # see https://sft.its.cern.ch/jira/browse/ROOT-10246
 #TODO make this code thread-safe
 # see https://root-forum.cern.ch/t/filling-histograms-in-parallel/35460/3
@@ -374,20 +383,15 @@ ROOT.gInterpreter.Declare(CPP_CODE)  # type: ignore
 
 
 def getTopologyHist(
-  inputData,  # RDataFrame
-  weightVariable   = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
-  filterExpression = None,
-  histNameSuffix   = ""
-):
-  #TODO the following does not work without recreating the RDataFrame
-  # switch to single-threaded mode because the above code is not thread-safe (yet)
-  nmbThreads = None
-  if ROOT.IsImplicitMTEnabled():  # type: ignore
-    nmbThreads = ROOT.GetThreadPoolSize()  # type: ignore
-    ROOT.DisableImplicitMT()  # type: ignore
+  inputData:        ROOT.RDataFrame,  # type: ignore
+  weightVariable:   Union[None, str, Tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression: Union[None, str] = None,
+  histNameSuffix:   str = "",
+) -> Tuple[List[str], ROOT.TH1F]:  # type: ignore
+  '''Fills categorical histogram with counts for each generated topology, applying optional weighting and filtering, and returns list of topology strings and histogram'''
   # apply additional filters, if defined
   data = inputData.Filter(filterExpression) if filterExpression else inputData
-  if not isinstance(weightVariable, str) and isinstance(weightVariable, Iterable):
+  if not isinstance(weightVariable, str) and isinstance(weightVariable, Sequence):
     # create new weight column
     data = data.Define(weightVariable[0], weightVariable[1])
   # create histogram
@@ -395,22 +399,22 @@ def getTopologyHist(
   histName = variable
   if isinstance(weightVariable, str):
     histName += f"_{weightVariable}"
-  elif isinstance(weightVariable, Iterable):
+  elif isinstance(weightVariable, Sequence):
     histName += f"_{weightVariable[0]}"
   if filterExpression:
     histName += f"_{filterExpression}"
   if histNameSuffix:
     histName += f"_{histNameSuffix}"
   hist = ROOT.TH1F(histName, "", 1, 0, 1)  # type: ignore
+  # fill histogram
   fillHistWithTObjString         = ROOT.fillHistWithTObjString        (hist)  # type: ignore
   fillHistWithTObjStringWeighted = ROOT.fillHistWithTObjStringWeighted(hist)  # type: ignore
-  # fill histogram
   if not weightVariable:
     data.Foreach(fillHistWithTObjString, [variable])
   elif isinstance(weightVariable, str):
     # use existing weight column
     data.Foreach(fillHistWithTObjStringWeighted, [variable, weightVariable])
-  elif isinstance(weightVariable, Iterable):
+  elif isinstance(weightVariable, Sequence):
     # use new weight column
     data.Foreach(fillHistWithTObjStringWeighted, [variable, weightVariable[0]])
   hist.LabelsDeflate("X")
@@ -418,35 +422,28 @@ def getTopologyHist(
   # get ordered list of topology names
   xAxis = hist.GetXaxis()
   topoNames = [xAxis.GetBinLabel(binIndex) for binIndex in range(1, xAxis.GetNbins() + 1)]
-  # restore multithreading if it was enabled
-  if nmbThreads:
-    ROOT.EnableImplicitMT(nmbThreads)  # type: ignore
   return (topoNames, hist)
 
 
-# helper function that returns dict { bin label : bin content }
-def getCategorialTH1AsDict(hist):
+def getCategoricalTH1AsDict(hist: ROOT.TH1) -> Dict[str, float]:  # type: ignore
+  '''Returns categorical histogram as dict { bin label : bin content }'''
   xAxis = hist.GetXaxis()
   return {xAxis.GetBinLabel(binIndex) : hist.GetBinContent(binIndex)
     for binIndex in range(1, xAxis.GetNbins() + 1)}
 
 
 def plotTopologyHist(
-  inputData,  # RDataFrame
-  normalize         = False,
-  maxNmbTopologies  = 10,
-  additionalFilter  = None,
-  pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = ""
-):
-  colorCases = {
-    "Total"   : ROOT.kGray,  # type: ignore
-    "Found"   : ROOT.kGreen + 2,  # type: ignore
-    "Missing" : ROOT.kRed + 1  # type: ignore
-  }
+  inputData:         ROOT.RDataFrame,  # type: ignore
+  normalize:         bool = False,
+  maxNmbTopologies:  int  = 10,
+  additionalFilter:  Union[None, str] = None,
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "",
+) -> None:
+  '''Plots categorical histogram with counts or fraction for each generated topology, applying optional weighting and filtering'''
   # get histogram data
-  topoNames = {}  # dictionary of ordered list of topology names { case : [ topologyName ] }
-  topoHists = {}  # dictionary of topology histograms { case : topologyHist }
+  topoNames: Dict[str, List[str]] = {}  # dictionary of ordered list of topology names { case : [ topologyName ] }
+  topoHists: Dict[str, ROOT.TH1F] = {}  # dictionary of topology histograms { case : topologyHist }  # type: ignore
   for case in FILTER_CASES.keys():
     caseData = inputData.Filter(FILTER_CASES[case])
     topoNames[case], topoHists[case] = getTopologyHist(caseData, weightVariable = "AccidWeightFactor", filterExpression = additionalFilter, histNameSuffix = case + ("_norm" if normalize else ""))
@@ -461,15 +458,15 @@ def plotTopologyHist(
     for binIndex, binLabel in enumerate(topoLabels):
       xAxis.SetBinLabel(binIndex + 1, binLabel)
     # get histogram values as dictionary, i.e. { topology : count }
-    histValues = getCategorialTH1AsDict(topoHists[case])
+    histValues = getCategoricalTH1AsDict(topoHists[case])
     # set bin content of histogram
     for binLabel in topoLabels:
       hist.Fill(binLabel, histValues[binLabel] if binLabel in histValues else 0)
     if normalize:
       hist.Scale(100 / hist.Integral())
-    hist.SetLineColor(colorCases[case])
+    hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
-      hist.SetFillColor(colorCases[case])
+      hist.SetFillColor(COLOR_CASES[case])
     hists[case] = hist
     hStack.Add(hist)
     print(f"plotTopologyHist(): {case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
@@ -484,22 +481,21 @@ def plotTopologyHist(
   for case in FILTER_CASES.keys():
     integralOtherTopos = hists[case].Integral(maxNmbTopologies, hists[case].GetNbinsX())
     legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")  # type: ignore
-    legendEntry.SetTextColor(ROOT.kBlack if case == "Total" else colorCases[case])  # type: ignore
+    legendEntry.SetTextColor(ROOT.kBlack if case == "Total" else COLOR_CASES[case])  # type: ignore
   canv.SaveAs(".pdf")
 
 
-# plot distribution of variable defined by `variable` for overall data sample
-# for bggen sample: overlay distributions for the `maxNmbTopologies` topologies with the largest number of combos
 def overlayTopologies(
-  inputData,   # RDataFrame
-  variable,    # variable to plot; may be column name, or tuple with new column definition
-  axisTitles,  # semicolon-separated list
-  binning,     # tuple with binning definition
-  additionalFilter  = None,
-  maxNmbTopologies  = 10,
-  pdfFileNamePrefix = "justin_Proton_4pi_",
-  pdfFileNameSuffix = "_MCbggen_topologies"
-):
+  inputData:         ROOT.RDataFrame,  # type: ignore
+  variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,  # semicolon-separated list
+  binning:           Tuple[int, float, float],  # tuple with binning definition
+  additionalFilter:  Union[None, str] = None,
+  maxNmbTopologies:  int  = 10,
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "_MCbggen_topologies",
+) -> None:
+  '''Overlays 1D distributions for given variable from overall data sample and distributions for the `maxNmbTopologies` topologies with the largest number of combos from the bggen MC sample'''
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   for case in FILTER_CASES.keys():
     caseData = data.Filter(FILTER_CASES[case])
@@ -511,8 +507,8 @@ def overlayTopologies(
     hists = []
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot):
-      hist = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor", (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
-                       histNameSuffix = f"{case}_{topo}", histTitle = topo)
+      hist: ROOT.TH1D = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor",  # type: ignore
+                                  (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"), histNameSuffix = f"{case}_{topo}", histTitle = topo)
       if topo == "Total":
         hist.SetLineColor(ROOT.kGray)  # type: ignore
         hist.SetFillColor(ROOT.kGray)  # type: ignore
@@ -564,7 +560,7 @@ if __name__ == "__main__":
       ""                                             : None,
       "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
       "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
-      "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")'
+      "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")',
     }
     for suffix, filter in filterTopologies.items():
       overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
@@ -637,7 +633,7 @@ if __name__ == "__main__":
       kinBinMin = kinBinRange[0] + kinBinIndex * kinBinWidth
       kinBinMax = kinBinMin + kinBinWidth
       kinBinFilter = f"(({kinBinMin} < {kinBinVariable}) and ({kinBinVariable} < {kinBinMax}))"
-      kinBinData = caseData.Filter(kinBinFilter)
+      kinBinData = inputData.Filter(kinBinFilter)
       overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}")
 
   plot2D(inputData, xVariable = "MissingProtonTheta",          yVariable = "MissingProtonP",            axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9))
