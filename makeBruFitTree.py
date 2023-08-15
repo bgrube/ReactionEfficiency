@@ -6,6 +6,8 @@ import glob
 
 import ROOT
 
+import makePlots  # defines helper functions to generate histograms from data trees
+
 
 # always flush print() to reduce garbling of log files due to buffering
 print = functools.partial(print, flush = True)
