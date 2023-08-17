@@ -16,8 +16,8 @@ print = functools.partial(print, flush = True)
 
 
 # load required libraries
-ROOT.gSystem.Load("libDSelector.so")  # type: ignore
-ROOT.gROOT.ProcessLine(".x $(ROOT_ANALYSIS_HOME)/scripts/Load_DSelector.C")  # type: ignore
+ROOT.gSystem.Load("libDSelector.so")
+ROOT.gROOT.ProcessLine(".x $(ROOT_ANALYSIS_HOME)/scripts/Load_DSelector.C")
 
 
 # see https://halldweb.jlab.org/wiki/index.php/DSelector#Using_DSelector.27s_with_PROOF-Lite
@@ -27,11 +27,11 @@ def runSelector(
   selectorFileName: str,
   nmbProofThreads:  int  = 20,
   runPROOF:         bool = True,
-  nmbEntries:       int  = ROOT.TTree.kMaxEntries,  # type: ignore
+  nmbEntries:       int  = ROOT.TTree.kMaxEntries,
 ) -> None:
   '''Runs DSelector over data set defined by given file name pattern'''
   # create TChain with input data
-  chain = ROOT.TChain(treeName)  # type: ignore
+  chain = ROOT.TChain(treeName)
   chain.Add(fileNamePattern)
   selector = selectorFileName.rstrip("+") + "+"  # ensure that selector is always compiled
                                                  # don't use "++", otherwise each proof job compiles the script and speed is much reduced
@@ -39,8 +39,8 @@ def runSelector(
   # process TChain
   if runPROOF:
     # run with PROOF
-    ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")  # type: ignore
-    ROOT.DPROOFLiteManager.Process_Chain(chain, selector, nmbProofThreads)  # type: ignore
+    ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
+    ROOT.DPROOFLiteManager.Process_Chain(chain, selector, nmbProofThreads)
   else:
     # run interactively
     chain.Process(selector, "", nmbEntries)
@@ -48,7 +48,7 @@ def runSelector(
 
 if __name__ == "__main__":
   #TODO add command-line interface
-  ROOT.gROOT.SetBatch(True)  # type: ignore
+  ROOT.gROOT.SetBatch(True)
 
   deleteFlatTreeFiles = False
 

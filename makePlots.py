@@ -31,9 +31,9 @@ FILTER_CASES: Dict[str, str] = {
 }
 
 COLOR_CASES = {
-  "Total"   : ROOT.kGray,  # type: ignore
-  "Found"   : ROOT.kGreen + 2,  # type: ignore
-  "Missing" : ROOT.kRed + 1,  # type: ignore
+  "Total"   : ROOT.kGray,
+  "Found"   : ROOT.kGreen + 2,
+  "Missing" : ROOT.kRed + 1,
 }
 
 
@@ -54,8 +54,8 @@ COLORS_CB_FRIENDLY: Tuple[str, ...] = (
 
 def getRootColor(hexColor: str) -> int:
   '''Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created'''
-  ROOT.TColor.SetColorThreshold(0)  # ensure GetColor() returns exact color  # type: ignore
-  return ROOT.TColor.GetColor(hexColor)  # type: ignore
+  ROOT.TColor.SetColorThreshold(0)  # ensure GetColor() returns exact color
+  return ROOT.TColor.GetColor(hexColor)
 
 def getCbFriendlyRootColor(index: int) -> int:
   '''Returns ROOT color index for given index in colorblind-friendly palette'''
@@ -63,31 +63,31 @@ def getCbFriendlyRootColor(index: int) -> int:
 
 # 11 filled marker styles; the float is a relative scaling factor to obtain equal apparent sizes
 MARKERS_FILLED: Tuple[Tuple[int, float], ...] = (
-  (ROOT.kFullCircle,            0.75),  # type: ignore
-  (ROOT.kFullSquare,            0.70),  # type: ignore
-  (ROOT.kFullDiamond,           1.00),  # type: ignore
-  (ROOT.kFullCross,             0.85),  # type: ignore
-  (ROOT.kFullCrossX,            0.85),  # type: ignore
-  (ROOT.kFullStar,              1.00),  # type: ignore
-  (ROOT.kFullFourTrianglesX,    0.90),  # type: ignore
-  (ROOT.kFullFourTrianglesPlus, 0.85),  # type: ignore
-  (ROOT.kFullTriangleUp,        0.85),  # type: ignore
-  (ROOT.kFullTriangleDown,      0.85),  # type: ignore
-  (ROOT.kFullDoubleDiamond,     1.10),  # type: ignore
+  (ROOT.kFullCircle,            0.75),
+  (ROOT.kFullSquare,            0.70),
+  (ROOT.kFullDiamond,           1.00),
+  (ROOT.kFullCross,             0.85),
+  (ROOT.kFullCrossX,            0.85),
+  (ROOT.kFullStar,              1.00),
+  (ROOT.kFullFourTrianglesX,    0.90),
+  (ROOT.kFullFourTrianglesPlus, 0.85),
+  (ROOT.kFullTriangleUp,        0.85),
+  (ROOT.kFullTriangleDown,      0.85),
+  (ROOT.kFullDoubleDiamond,     1.10),
 )
 # 11 open marker styles
 MARKERS_OPEN: Tuple[Tuple[int, float], ...] = (
-  (ROOT.kOpenCircle,            0.75),  # type: ignore
-  (ROOT.kOpenSquare,            0.70),  # type: ignore
-  (ROOT.kOpenDiamond,           1.00),  # type: ignore
-  (ROOT.kOpenCross,             0.85),  # type: ignore
-  (ROOT.kOpenCrossX,            0.85),  # type: ignore
-  (ROOT.kOpenStar,              1.00),  # type: ignore
-  (ROOT.kOpenFourTrianglesX,    0.90),  # type: ignore
-  (ROOT.kOpenFourTrianglesPlus, 0.85),  # type: ignore
-  (ROOT.kOpenTriangleUp,        0.85),  # type: ignore
-  (ROOT.kOpenTriangleDown,      0.85),  # type: ignore
-  (ROOT.kOpenDoubleDiamond,     1.10),  # type: ignore
+  (ROOT.kOpenCircle,            0.75),
+  (ROOT.kOpenSquare,            0.70),
+  (ROOT.kOpenDiamond,           1.00),
+  (ROOT.kOpenCross,             0.85),
+  (ROOT.kOpenCrossX,            0.85),
+  (ROOT.kOpenStar,              1.00),
+  (ROOT.kOpenFourTrianglesX,    0.90),
+  (ROOT.kOpenFourTrianglesPlus, 0.85),
+  (ROOT.kOpenTriangleUp,        0.85),
+  (ROOT.kOpenTriangleDown,      0.85),
+  (ROOT.kOpenDoubleDiamond,     1.10),
 )
 
 def setCbFriendlyStyle(
@@ -117,19 +117,19 @@ def printGitInfo() -> None:
 def setupPlotStyle() -> None:
   '''Defines ROOT plot style'''
   #TODO remove dependency from external file or add file to repo
-  ROOT.gROOT.LoadMacro("~/rootlogon.C")  # type: ignore
-  ROOT.gROOT.ForceStyle()  # type: ignore
-  ROOT.gStyle.SetCanvasDefW(600)  # type: ignore
-  ROOT.gStyle.SetCanvasDefH(600)  # type: ignore
-  ROOT.gStyle.SetPalette(ROOT.kBird)  # type: ignore
-  # ROOT.gStyle.SetPalette(ROOT.kViridis)  # type: ignore
-  ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)  # type: ignore
-  ROOT.gStyle.SetLegendBorderSize(1)  # type: ignore
-  # ROOT.gStyle.SetOptStat("ni")  # show only name and integral  # type: ignore
-  ROOT.gStyle.SetOptStat("i")  # show only integral  # type: ignore
-  ROOT.gStyle.SetStatFormat("8.8g")  # type: ignore
-  ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white  # type: ignore
-  ROOT.gStyle.SetTitleOffset(1.35, "Y")  # type: ignore
+  ROOT.gROOT.LoadMacro("~/rootlogon.C")
+  ROOT.gROOT.ForceStyle()
+  ROOT.gStyle.SetCanvasDefW(600)
+  ROOT.gStyle.SetCanvasDefH(600)
+  ROOT.gStyle.SetPalette(ROOT.kBird)
+  # ROOT.gStyle.SetPalette(ROOT.kViridis)
+  ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
+  ROOT.gStyle.SetLegendBorderSize(1)
+  # ROOT.gStyle.SetOptStat("ni")  # show only name and integral
+  ROOT.gStyle.SetOptStat("i")  # show only integral
+  ROOT.gStyle.SetStatFormat("8.8g")
+  ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
+  ROOT.gStyle.SetTitleOffset(1.35, "Y")
 
 
 def overlayMissingMassSquared() -> None:
@@ -140,28 +140,28 @@ def overlayMissingMassSquared() -> None:
   rebinFactor:  int             = 100
 
   # get histograms
-  inFiles = tuple(ROOT.TFile(inFileName) for inFileName in inFileNames)  # type: ignore
+  inFiles = tuple(ROOT.TFile(inFileName) for inFileName in inFileNames)
   cases   = ("Found", "Missing", "")
   hists   = tuple({case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases} for inFile in inFiles)
 
   # overlay real-data and bggen MC distributions
-  hStacks = {case : ROOT.THStack("hStackMissingMassSquaredOverlay" + case,  # type: ignore
+  hStacks = {case : ROOT.THStack("hStackMissingMassSquaredOverlay" + case,
                                  ("Total" if case == "" else case) + f";{hists[0][case].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)") for case in cases}
   for case in cases:
     # normalize real data
     hist = hists[0][case]
     hist.Scale(hists[1][case].Integral() / hist.Integral())
     # set style
-    hist.SetLineColor(ROOT.kGray)  # type: ignore
-    hist.SetFillColor(ROOT.kGray)  # type: ignore
-    hists[1][case].SetLineColor(ROOT.kRed + 1)  # type: ignore
+    hist.SetLineColor(ROOT.kGray)
+    hist.SetFillColor(ROOT.kGray)
+    hists[1][case].SetLineColor(ROOT.kRed + 1)
     for i, hist in enumerate(hists):
       hist = hists[i][case]
       hist.SetName(labels[i])
       hist.Rebin(rebinFactor)
       hStacks[case].Add(hist)
     # draw distributions
-    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_MCbggen_overlay" + ("_" + case if case != "" else ""))  # type: ignore
+    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_MCbggen_overlay" + ("_" + case if case != "" else ""))
     hStacks[case].Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
@@ -178,23 +178,23 @@ def drawHistogram(
 ) -> None:
   '''Plots histogram with given name in ROOT file with given name'''
   # get histogram
-  inFile = ROOT.TFile(inFileName)  # type: ignore
+  inFile = ROOT.TFile(inFileName)
   hist = inFile.Get(histName)
-  if isinstance(hist, ROOT.TH2):  # type: ignore
+  if isinstance(hist, ROOT.TH2):
     if isinstance(rebinFactor, int):
       hist.RebinX(rebinFactor)
     elif isinstance(rebinFactor, Sequence):
       hist.Rebin2D(rebinFactor[0], rebinFactor[1])
-  elif isinstance(hist, ROOT.TH1):  # type: ignore
+  elif isinstance(hist, ROOT.TH1):
     hist.Rebin(rebinFactor)
   # draw histogram
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")  # type: ignore
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw(drawOption)
   canv.SaveAs(".pdf")
 
 
 def getHistND(
-  inputData:        ROOT.RDataFrame,  # type: ignore
+  inputData:        ROOT.RDataFrame,
   variables:        Tuple[Union[str, Tuple[str, str]], ...],  # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
   axisTitles:       str,    # semicolon-separated list
   binning:          Tuple,  # tuple with binning definitions
@@ -202,7 +202,7 @@ def getHistND(
   filterExpression: Union[None, str] = None,
   histNameSuffix:   str = "",
   histTitle:        str = "",
-) -> Union[ROOT.TH1D, ROOT.TH2D]:  # type: ignore
+) -> Union[ROOT.TH1D, ROOT.TH2D]:
   '''Creates histogram from given variables in RDataFrame, applying optional weighting and filtering'''
   histDim = len(variables)
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
@@ -254,7 +254,7 @@ def setDefaultYAxisTitle(
 
 
 def plot1D(
-  inputData:         ROOT.RDataFrame,  # type: ignore
+  inputData:         ROOT.RDataFrame,
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
@@ -264,21 +264,21 @@ def plot1D(
   additionalFilter:  Union[None, str] = None,
 ) -> None:
   '''Plots 1D distribution for given variable, applying optional weighting and filtering'''
-  hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)  # type: ignore
+  hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")  # type: ignore
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
   # draw zero line, if necessary
   xAxis = hist.GetXaxis()
   if hist.GetMinimum() < 0 and hist.GetMaximum() > 0:
-    line = ROOT.TLine()  # type: ignore
-    line.SetLineStyle(ROOT.kDashed)  # type: ignore
+    line = ROOT.TLine()
+    line.SetLineStyle(ROOT.kDashed)
     line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
   canv.SaveAs(".pdf")
 
 
 def plot2D(
-  inputData:         ROOT.RDataFrame,  # type: ignore
+  inputData:         ROOT.RDataFrame,
   xVariable:         Union[str, Tuple[str, str]],  # x variable to plot; may be column name, or tuple with new column definition
   yVariable:         Union[str, Tuple[str, str]],  # y variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
@@ -289,15 +289,15 @@ def plot2D(
   additionalFilter:  Union[None, str] = None,
 ) -> None:
   '''Plots 2D distribution for given x and y variables, applying optional weighting and filtering'''
-  hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)  # type: ignore
+  hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")  # type: ignore
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
   canv.SaveAs(".pdf")
 
 
 def overlayCases(
-  inputData:         ROOT.RDataFrame,  # type: ignore
+  inputData:         ROOT.RDataFrame,
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
@@ -309,10 +309,10 @@ def overlayCases(
   '''Overlays 1D distributions of given variable for "Total", "Found", and "Missing" cases'''
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   # overlay distributions for cases
-  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))  # type: ignore
+  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
   for case in FILTER_CASES.keys():
-    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, FILTER_CASES[case],  # type: ignore
+    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, FILTER_CASES[case],
                                 histNameSuffix = case, histTitle = case)
     hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
@@ -320,15 +320,15 @@ def overlayCases(
     hists.append(hist)
     hStack.Add(hist.GetPtr())
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_cases{pdfFileNameSuffix}")  # type: ignore
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_cases{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   # draw zero line, if necessary
   xAxis = hStack.GetXaxis()
   if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
-    line = ROOT.TLine()  # type: ignore
-    line.SetLineStyle(ROOT.kDashed)  # type: ignore
+    line = ROOT.TLine()
+    line.SetLineStyle(ROOT.kDashed)
     line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
   canv.SaveAs(".pdf")
 
@@ -358,7 +358,7 @@ struct fillHistWithTObjString {
 
 };
 """
-ROOT.gInterpreter.Declare(CPP_CODE)  # type: ignore
+ROOT.gInterpreter.Declare(CPP_CODE)
 CPP_CODE = """
 struct fillHistWithTObjStringWeighted {
 
@@ -379,15 +379,15 @@ struct fillHistWithTObjStringWeighted {
 
 };
 """
-ROOT.gInterpreter.Declare(CPP_CODE)  # type: ignore
+ROOT.gInterpreter.Declare(CPP_CODE)
 
 
 def getTopologyHist(
-  inputData:        ROOT.RDataFrame,  # type: ignore
+  inputData:        ROOT.RDataFrame,
   weightVariable:   Union[None, str, Tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
   filterExpression: Union[None, str] = None,
   histNameSuffix:   str = "",
-) -> Tuple[List[str], ROOT.TH1F]:  # type: ignore
+) -> Tuple[List[str], ROOT.TH1F]:
   '''Fills categorical histogram with counts for each generated topology, applying optional weighting and filtering, and returns list of topology strings and histogram'''
   # apply additional filters, if defined
   data = inputData.Filter(filterExpression) if filterExpression else inputData
@@ -405,10 +405,10 @@ def getTopologyHist(
     histName += f"_{filterExpression}"
   if histNameSuffix:
     histName += f"_{histNameSuffix}"
-  hist = ROOT.TH1F(histName, "", 1, 0, 1)  # type: ignore
+  hist = ROOT.TH1F(histName, "", 1, 0, 1)
   # fill histogram
-  fillHistWithTObjString         = ROOT.fillHistWithTObjString        (hist)  # type: ignore
-  fillHistWithTObjStringWeighted = ROOT.fillHistWithTObjStringWeighted(hist)  # type: ignore
+  fillHistWithTObjString         = ROOT.fillHistWithTObjString        (hist)
+  fillHistWithTObjStringWeighted = ROOT.fillHistWithTObjStringWeighted(hist)
   if not weightVariable:
     data.Foreach(fillHistWithTObjString, [variable])
   elif isinstance(weightVariable, str):
@@ -425,7 +425,7 @@ def getTopologyHist(
   return (topoNames, hist)
 
 
-def getCategoricalTH1AsDict(hist: ROOT.TH1) -> Dict[str, float]:  # type: ignore
+def getCategoricalTH1AsDict(hist: ROOT.TH1) -> Dict[str, float]:
   '''Returns categorical histogram as dict { bin label : bin content }'''
   xAxis = hist.GetXaxis()
   return {xAxis.GetBinLabel(binIndex) : hist.GetBinContent(binIndex)
@@ -433,7 +433,7 @@ def getCategoricalTH1AsDict(hist: ROOT.TH1) -> Dict[str, float]:  # type: ignore
 
 
 def plotTopologyHist(
-  inputData:         ROOT.RDataFrame,  # type: ignore
+  inputData:         ROOT.RDataFrame,
   normalize:         bool = False,
   maxNmbTopologies:  int  = 10,
   additionalFilter:  Union[None, str] = None,
@@ -443,17 +443,17 @@ def plotTopologyHist(
   '''Plots categorical histogram with counts or fraction for each generated topology, applying optional weighting and filtering'''
   # get histogram data
   topoNames: Dict[str, List[str]] = {}  # dictionary of ordered list of topology names { case : [ topologyName ] }
-  topoHists: Dict[str, ROOT.TH1F] = {}  # dictionary of topology histograms { case : topologyHist }  # type: ignore
+  topoHists: Dict[str, ROOT.TH1F] = {}  # dictionary of topology histograms { case : topologyHist }
   for case in FILTER_CASES.keys():
     caseData = inputData.Filter(FILTER_CASES[case])
     topoNames[case], topoHists[case] = getTopologyHist(caseData, weightVariable = "AccidWeightFactor", filterExpression = additionalFilter, histNameSuffix = case + ("_norm" if normalize else ""))
   # overlay distributions for cases
-  hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))  # type: ignore
+  hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
   topoLabels = topoNames["Total"]
   hists = {}  # memorize plots to print
   for case in FILTER_CASES.keys():
     # ensure that bin labels in all histograms have same order as defined by the "Total" histogram
-    hist = ROOT.TH1F(f"{pdfFileNamePrefix}topologies_{case}{'_norm' if normalize else ''}{pdfFileNameSuffix}", case, len(topoLabels), 0, len(topoLabels))  # type: ignore
+    hist = ROOT.TH1F(f"{pdfFileNamePrefix}topologies_{case}{'_norm' if normalize else ''}{pdfFileNameSuffix}", case, len(topoLabels), 0, len(topoLabels))
     xAxis = hist.GetXaxis()
     for binIndex, binLabel in enumerate(topoLabels):
       xAxis.SetBinLabel(binIndex + 1, binLabel)
@@ -470,23 +470,23 @@ def plotTopologyHist(
     hists[case] = hist
     hStack.Add(hist)
     print(f"plotTopologyHist(): {case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}topologies{'_norm' if normalize else ''}{pdfFileNameSuffix}")  # type: ignore
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}topologies{'_norm' if normalize else ''}{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   hStack.SetMinimum(0)
   hStack.GetXaxis().SetRangeUser(0, maxNmbTopologies)
   # add legend
   legend = canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   # add labels that show number or fraction outside of plot range
-  legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "Other topologies:", "")  # type: ignore
+  legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "Other topologies:", "")
   for case in FILTER_CASES.keys():
     integralOtherTopos = hists[case].Integral(maxNmbTopologies, hists[case].GetNbinsX())
-    legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")  # type: ignore
-    legendEntry.SetTextColor(ROOT.kBlack if case == "Total" else COLOR_CASES[case])  # type: ignore
+    legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")
+    legendEntry.SetTextColor(ROOT.kBlack if case == "Total" else COLOR_CASES[case])
   canv.SaveAs(".pdf")
 
 
 def overlayTopologies(
-  inputData:         ROOT.RDataFrame,  # type: ignore
+  inputData:         ROOT.RDataFrame,
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
@@ -503,38 +503,38 @@ def overlayTopologies(
     #TODO fix call
     toposToPlot, _ = getTopologyHist(caseData)
     toposToPlot = ["Total"] + toposToPlot[:maxNmbTopologies]
-    hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{setDefaultYAxisTitle(axisTitles)}")  # type: ignore
+    hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{setDefaultYAxisTitle(axisTitles)}")
     hists = []
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot):
-      hist: ROOT.TH1D = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor",  # type: ignore
+      hist: ROOT.TH1D = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor",
                                   (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"), histNameSuffix = f"{case}_{topo}", histTitle = topo)
       if topo == "Total":
-        hist.SetLineColor(ROOT.kGray)  # type: ignore
-        hist.SetFillColor(ROOT.kGray)  # type: ignore
+        hist.SetLineColor(ROOT.kGray)
+        hist.SetFillColor(ROOT.kGray)
       else:
         hist.SetLineColor(index)
       hists.append(hist)
       hStack.Add(hist.GetPtr())
     # draw distributions
-    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}{pdfFileNameSuffix}_{case}")  # type: ignore
+    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}{pdfFileNameSuffix}_{case}")
     hStack.Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
     # draw zero line, if necessary
     xAxis = hStack.GetXaxis()
     if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
-      line = ROOT.TLine()  # type: ignore
-      line.SetLineStyle(ROOT.kDashed)  # type: ignore
+      line = ROOT.TLine()
+      line.SetLineStyle(ROOT.kDashed)
       line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
     canv.SaveAs(".pdf")
 
 
 if __name__ == "__main__":
   #TODO add command-line interface
-  ROOT.gROOT.SetBatch(True)  # type: ignore
+  ROOT.gROOT.SetBatch(True)
   #TODO cannot change multithreading for existing data frame
-  # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()  # type: ignore
+  # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
   # overlayMissingMassSquared()

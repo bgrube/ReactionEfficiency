@@ -37,7 +37,7 @@ def readDataIntegralFromFitFile(
   assert fitVariable, f"Cannot use value '{fitVariable}' as fit variable name"
   fitResultFileName = binInfo.fitResultFileName
   print(f"Reading fitted data histogram from file '{fitResultFileName}'")
-  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
+  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{'' if binInfo.name == 'Overall' else binInfo.name}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
   # get data histogram
@@ -92,7 +92,7 @@ def calculateEfficiencies(yieldInfos: Mapping[str, Sequence[ParInfo]]) -> List[E
     assert yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo), f"Bin infos for 'Found' and 'Missing' are not identical: {yieldInfoFound.binInfo} vs. {yieldInfoMissing.binInfo}"
     # calculate efficiency
     effInfo = EffInfo(yieldInfoFound.binInfo,
-      yieldInfoFound.values["Signal"] / (yieldInfoFound.values["Signal"] + yieldInfoMissing.values["Signal"]))  # type: ignore
+      yieldInfoFound.values["Signal"] / (yieldInfoFound.values["Signal"] + yieldInfoMissing.values["Signal"]))
     print(f"Efficiency = {effInfo}")
     effInfos.append(effInfo)
   return effInfos
@@ -121,31 +121,31 @@ def plotEfficiencies1D(
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   efficiencyGraph = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies))
   efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
-  efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)  # type: ignore
+  efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
   efficiencyGraph.SetMarkerSize(markerSize)
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   efficiencyGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
   efficiencyGraph.GetYaxis().SetTitle("Efficiency")
   efficiencyGraph.SetMinimum(0)
   efficiencyGraph.SetMaximum(1)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}{pdfFileNameSuffix}", "")  # type: ignore
+  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}{pdfFileNameSuffix}", "")
   efficiencyGraph.Draw("APZ")
   # #TODO? # indicate value from fit of overall distributions
-  # line = ROOT.TLine()  # type: ignore
-  # line.SetLineStyle(ROOT.kDashed)  # type: ignore
+  # line = ROOT.TLine()
+  # line.SetLineStyle(ROOT.kDashed)
   # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
   # # indicate weighted average of efficiencies in kinematic bins
   # meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
-  # line.SetLineColor(ROOT.kRed + 1)  # type: ignore
+  # line.SetLineColor(ROOT.kRed + 1)
   # line.DrawLine(efficiencyGraph.GetXaxis().GetXmin(), meanEff, efficiencyGraph.GetXaxis().GetXmax(), meanEff)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 if __name__ == "__main__":
   makePlots.printGitInfo()
-  ROOT.gROOT.SetBatch(True)  # type: ignore
+  ROOT.gROOT.SetBatch(True)
   makePlots.setupPlotStyle()
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")

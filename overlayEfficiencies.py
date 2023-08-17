@@ -63,14 +63,14 @@ def overlayEfficiencies(
 ):
   '''Overlays efficiencies as a function of `binningVar` for all given fits'''
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
-  efficiencyMultiGraph = ROOT.TMultiGraph()  # type: ignore
+  efficiencyMultiGraph = ROOT.TMultiGraph()
   efficiencyGraphs = {}  # store graphs here to keep them in memory
   shiftFraction = 0
   styleIndex = 0
   for (fitResultDirName, fitLabel), efficiencies in effInfos.items():
     graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
     shiftFraction += 0.01
-    graph.SetTitle(fitLabel)  # type: ignore
+    graph.SetTitle(fitLabel)
     makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(effInfos) == 1 else True)
     styleIndex += 1
     efficiencyMultiGraph.Add(graph)
@@ -81,7 +81,7 @@ def overlayEfficiencies(
   efficiencyMultiGraph.SetMinimum(0)
   efficiencyMultiGraph.SetMaximum(1)
   fitLabels = tuple(key[1].replace(' ', '_') for key in effInfos.keys())
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(fitLabels)}{pdfFileNameSuffix}", "")  # type: ignore
+  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(fitLabels)}{pdfFileNameSuffix}", "")
   efficiencyMultiGraph.Draw("APZ")
   canv.BuildLegend()
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
@@ -89,9 +89,9 @@ def overlayEfficiencies(
 
 if __name__ == "__main__":
   makePlots.printGitInfo()
-  ROOT.gROOT.SetBatch(True)  # type: ignore
+  ROOT.gROOT.SetBatch(True)
   makePlots.setupPlotStyle()
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")

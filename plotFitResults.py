@@ -16,7 +16,7 @@ from uncertainties import UFloat, ufloat
 
 import ROOT
 if __name__ == "__main__":
-  ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files  # type: ignore
+  ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
 import makePlots
 
@@ -97,7 +97,7 @@ def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
   if not os.path.isfile(binningFileName):
     return None
   print(f"Loading binning from file '{binningFileName}'")
-  bins = ROOT.Bins("HSBins", binningFileName)  # type: ignore
+  bins = ROOT.Bins("HSBins", binningFileName)
   print("Found binning:")
   bins.PrintAxis()
   binNames = tuple(str(binName) for binName in bins.GetBinNames())
@@ -148,7 +148,7 @@ def readParInfoForBin(
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
   fitResultFileName = binInfo.fitResultFileName
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
-  fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
+  fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")
   fitResult      = fitResultFile.Get("MinuitResult")
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
@@ -187,7 +187,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   return parInfos
 
 
-def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:  # type: ignore
+def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
   '''Helper function that draws zero line when necessary'''
   objType = obj.IsA().GetName()
   if (objType == "TCanvas") or (objType == "TPad"):
@@ -197,7 +197,7 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:  # typ
     yMax = ctypes.c_double()
     obj.GetRangeAxis(xMin, yMin, xMax, yMax)
     if (yMin.value < 0) and (yMax.value > 0):
-      zeroLine = ROOT.TLine()  # type: ignore
+      zeroLine = ROOT.TLine()
       zeroLine.SetLineStyle(style)
       zeroLine.SetLineColor(color)
       return zeroLine.DrawLine(xMin, 0, xMax, 0)
@@ -205,7 +205,7 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:  # typ
     xAxis = obj.GetXaxis()
     yAxis = obj.GetYaxis()
     if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
-      zeroLine = ROOT.TLine()  # type: ignore
+      zeroLine = ROOT.TLine()
       zeroLine.SetLineStyle(style)
       zeroLine.SetLineColor(color)
       return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
@@ -226,7 +226,7 @@ def plotFitResult(
     print(f"Cannot find file '{fitResultFileName}'; skipping")
     return
   print(f"Plotting fit result in file '{fitResultFileName}'")
-  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")  # type: ignore
+  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{binInfo.name or ''}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
   # improve TPaveText with fit parameters
@@ -271,7 +271,7 @@ def getParValuesForGraph1D(
 def getParValueGraph1D(
   graphValues:     Sequence[Tuple[float, UFloat]],
   shiftByFraction: float = 0,
-) -> ROOT.TGraphErrors:  # type: ignore
+) -> ROOT.TGraphErrors:
   '''Creates ROOT.TGraphErrors from given values'''
   if not graphValues:
     print("No data to plot")
@@ -287,7 +287,7 @@ def getParValueGraph1D(
   # report weighted average
   meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
   print(f"    weighted mean of efficiencies = {meanEff}")
-  return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)  # type: ignore
+  return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
 
 
 def plotParValue1D(
@@ -302,14 +302,14 @@ def plotParValue1D(
 ) -> None:
   '''Overlay parameter values for datasets for 1-dimensional binning for given parameter for given binning variable'''
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueMultiGraph = ROOT.TMultiGraph()  # type: ignore
+  parValueMultiGraph = ROOT.TMultiGraph()
   parValueGraphs = {}  # store graphs here to keep them in memory
   shiftFraction = 0
   styleIndex = 0
   for dataSet in parInfos:
     graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]), shiftFraction)
     shiftFraction += 0.01
-    graph.SetTitle(dataSet)  # type: ignore
+    graph.SetTitle(dataSet)
     makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
     parValueMultiGraph.Add(graph)
@@ -317,13 +317,13 @@ def plotParValue1D(
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   parValueMultiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
   parValueMultiGraph.GetYaxis().SetTitle(parName)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")  # type: ignore
+  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")
   parValueMultiGraph.Draw("APZ")
   hist = parValueMultiGraph.GetHistogram()
   plotRange = hist.GetMaximum() - hist.GetMinimum()
-  minVal = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))  # type: ignore
-  maxVal = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))  # type: ignore
-  maxErr = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))  # type: ignore
+  minVal = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
+  maxVal = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
+  maxErr = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))
   if 2 * maxErr / plotRange > 0.9:  # one error bar dominates plot range
     plotRange = 2 * (maxVal - minVal)  # new plot range = 2 * value range
     plotRangeCenter = (maxVal + minVal) / 2
@@ -343,8 +343,8 @@ def plotParValue1D(
 
 if __name__ == "__main__":
   makePlots.printGitInfo()
-  ROOT.gROOT.SetBatch(True)  # type: ignore
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")  # type: ignore
+  ROOT.gROOT.SetBatch(True)
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")

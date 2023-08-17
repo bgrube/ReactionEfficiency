@@ -49,7 +49,7 @@ def makeBruFitTree(
   print(f"Read {rdf.Count().GetValue()} entries from input tree")
 
   # print tree structure
-  outputFile = ROOT.TFile(outputFileName, "READ")  # type: ignore
+  outputFile = ROOT.TFile(outputFileName, "READ")
   tree = outputFile.Get(treeName)
   print(f"Wrote BruFit file '{outputFileName}' with tree:")
   tree.Print()
@@ -57,7 +57,7 @@ def makeBruFitTree(
 
 
 if __name__ == "__main__":
-  ROOT.gROOT.SetBatch(True)  # type: ignore
+  ROOT.gROOT.SetBatch(True)
 
   # dataSets = []
   # dataSets = ["RD_2017_01-ver04_030730"]
