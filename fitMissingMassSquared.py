@@ -5,7 +5,7 @@ import argparse
 import functools
 import os
 import sys
-from typing import Iterable, List, Mapping, Sequence, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import ROOT
 
@@ -16,7 +16,7 @@ import makePlots  # defines helper functions to generate histograms from data tr
 print = functools.partial(print, flush = True)
 
 
-def andCuts(cuts: Iterable[Union[str, None]]) -> str:
+def andCuts(cuts: Iterable[Optional[str]]) -> str:
   '''Creates cut string where given cuts are combined by via logical and, ignoring None and empty cut strings'''
   cutsWithBraces = (f"({cut})" for cut in filter(None, cuts))  # filters out None _and_ ""
   return " && ".join(cutsWithBraces)

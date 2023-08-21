@@ -4,7 +4,7 @@
 from collections.abc import Sequence
 import os
 import subprocess
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import ROOT
 
@@ -198,8 +198,8 @@ def getHistND(
   variables:        Tuple[Union[str, Tuple[str, str]], ...],  # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
   axisTitles:       str,    # semicolon-separated list
   binning:          Tuple,  # tuple with binning definitions
-  weightVariable:   Union[None, str, Tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
-  filterExpression: Union[None, str] = None,
+  weightVariable:   Optional[Union[str, Tuple[str, str]]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression: Optional[str] = None,
   histNameSuffix:   str = "",
   histTitle:        str = "",
 ) -> Union[ROOT.TH1D, ROOT.TH2D]:
@@ -208,7 +208,7 @@ def getHistND(
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
   # apply additional filters, if defined
   data = inputData.Filter(filterExpression) if filterExpression else inputData
-  columnNames: List[Union[None, str]] = [None,] * len(variables)
+  columnNames: List[Optional[str]] = [None,] * len(variables)
   for index, variable in enumerate(variables):
     if isinstance(variable, str):
       # use existing variable column
@@ -258,10 +258,10 @@ def plot1D(
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
-  weightVariable:    Union[None, str, Tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  additionalFilter:  Union[None, str] = None,
+  additionalFilter:  Optional[str] = None,
 ) -> None:
   '''Plots 1D distribution for given variable, applying optional weighting and filtering'''
   hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)
@@ -283,10 +283,10 @@ def plot2D(
   yVariable:         Union[str, Tuple[str, str]],  # y variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float, int, float, float],  # tuple with binning definition
-  weightVariable:    Union[None, str, Tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  additionalFilter:  Union[None, str] = None,
+  additionalFilter:  Optional[str] = None,
 ) -> None:
   '''Plots 2D distribution for given x and y variables, applying optional weighting and filtering'''
   hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)
@@ -301,10 +301,10 @@ def overlayCases(
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
-  weightVariable:    Union[None, str, Tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  additionalFilter:  Union[None, str] = None,
+  additionalFilter:  Optional[str] = None,
 ) -> None:
   '''Overlays 1D distributions of given variable for "Total", "Found", and "Missing" cases'''
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
@@ -384,8 +384,8 @@ ROOT.gInterpreter.Declare(CPP_CODE)
 
 def getTopologyHist(
   inputData:        ROOT.RDataFrame,
-  weightVariable:   Union[None, str, Tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
-  filterExpression: Union[None, str] = None,
+  weightVariable:   Optional[Union[str, Tuple[str, str]]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  filterExpression: Optional[str] = None,
   histNameSuffix:   str = "",
 ) -> Tuple[List[str], ROOT.TH1F]:
   '''Fills categorical histogram with counts for each generated topology, applying optional weighting and filtering, and returns list of topology strings and histogram'''
@@ -436,7 +436,7 @@ def plotTopologyHist(
   inputData:         ROOT.RDataFrame,
   normalize:         bool = False,
   maxNmbTopologies:  int  = 10,
-  additionalFilter:  Union[None, str] = None,
+  additionalFilter:  Optional[str] = None,
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
@@ -490,7 +490,7 @@ def overlayTopologies(
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
-  additionalFilter:  Union[None, str] = None,
+  additionalFilter:  Optional[str] = None,
   maxNmbTopologies:  int  = 10,
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "_MCbggen_topologies",

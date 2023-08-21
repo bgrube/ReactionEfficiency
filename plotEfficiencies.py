@@ -8,7 +8,7 @@ import math
 import numpy as np
 import os
 import sys
-from typing import Dict, List, Mapping, Sequence, Tuple, Union
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from uncertainties import UFloat, ufloat
 
@@ -157,8 +157,8 @@ if __name__ == "__main__":
 
   for readIntegrals in (True, False):
     print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
-    yieldInfos:  Dict[str, List[ParInfo]]           = {}    # yieldInfos[<dataset>][<bin>]
-    binVarNames: Union[List[Tuple[str, ...]], None] = None  # binning variables for each binning
+    yieldInfos:  Dict[str, List[ParInfo]]        = {}    # yieldInfos[<dataset>][<bin>]
+    binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
     for dataSet in dataSets:
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
       fitResultDirName = f"{args.outputDirName}/{dataSet}"

@@ -10,7 +10,7 @@ import itertools
 import numpy as np
 import os
 import sys
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from uncertainties import UFloat, ufloat
 
@@ -91,7 +91,7 @@ class BinningInfo:
     return tuple(binInfo.fitResultFileName for binInfo in self.infos)
 
 
-def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
+def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
   '''Reads binning info from given directory'''
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
@@ -117,9 +117,9 @@ def getBinningFromDir(fitResultDirName: str) -> Union[BinningInfo, None]:
   return BinningInfo(binInfos, fitResultDirName)
 
 
-def getBinningInfosFromDir(fitResultDirName: str) -> List[Union[BinningInfo, None]]:
+def getBinningInfosFromDir(fitResultDirName: str) -> List[Optional[BinningInfo]]:
   '''Reads binning infos from all 1st-level subdirectories that contain a 'DataBinsConfig.root' file'''
-  binningInfos: List[Union[BinningInfo, None]] = []
+  binningInfos: List[Optional[BinningInfo]] = []
   # find all subdirectories with binning files non-recursively
   subDirNames: List[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
   # get binning info from all subdirectories
@@ -354,9 +354,9 @@ if __name__ == "__main__":
   dataSets    = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
-  parInfos:    Dict[str, List[ParInfo]]           = {}    # parInfos[<dataset>][<bin>]
-  parNames:    Union[Tuple[str, ...], None]       = None
-  binVarNames: Union[List[Tuple[str, ...]], None] = None  # binning variables for each binning
+  parInfos:    Dict[str, List[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
+  parNames:    Optional[Tuple[str, ...]]       = None
+  binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")

@@ -6,7 +6,7 @@ from dataclasses import dataclass  # builtin in Python 3.7+
 import functools
 import os
 import sys
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from uncertainties import UFloat, ufloat
 
@@ -27,13 +27,13 @@ def getEfficiencies(
   fitResultDirNames: Sequence[str],
   fitLabels:         Sequence[str] = [],
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
-) -> Tuple[Dict[Tuple[str, str], List[EffInfo]], Union[List[Tuple[str, ...]], None]]:
+) -> Tuple[Dict[Tuple[str, str], List[EffInfo]], Optional[List[Tuple[str, ...]]]]:
   '''Reads yields from given fit directories and calculates efficiencies for each directory'''
   assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"list of fit-result directory names '{fitResultDirNames}' must consist of unique elements"
   assert (not fitLabels) or len(fitLabels) == len(fitResultDirNames), f"Number of given fit labels ({len(fitLabels)}) does not match number of fit directories ({len(fitResultDirNames)})"
   print("Reading yields and calculating efficiencies")
   effInfos:    Dict[Tuple[str, str], List[EffInfo]] = {}    # effInfos[(<fit directory>, <fit label>)][<bin>]
-  binVarNames: Union[List[Tuple[str, ...]], None]   = None  # binning variables for each binning
+  binVarNames: Optional[List[Tuple[str, ...]]]      = None  # binning variables for each binning
   for fitIndex, fitResultDirName in enumerate(fitResultDirNames):
     yieldInfos: Dict[str, List[ParInfo]] = {}  # yieldInfos[<dataset>][<bin>]
     for dataSet in dataSets:
