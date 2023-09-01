@@ -11,7 +11,7 @@
 <package name="geant4" version="10.04.p02"/>
 <package name="gluex_MCwrapper" version="v2.7.0"/>
 <package name="gluex_root_analysis" version="1.24.0" dirtag="hdr441"/>
-<package name="halld_recon" home="/home/bgrube/Analysis/halld_my/halld_recon.PR739" version="4.41.0"/>
+<package name="halld_recon" home="/home/bgrube/Analysis/halld_my/halld_recon.PR741" version="4.41.0"/>
 <package name="halld_sim" version="4.45.0"/>
 <package name="hdds" version="4.15.0"/>
 <package name="hdgeant4" version="2.35.0" dirtag="hdr441"/>
