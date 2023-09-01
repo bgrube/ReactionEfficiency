@@ -15,7 +15,6 @@ data/**
 fits/**
 
 #VSCode
-*.code-workspace
 .vscode
 
 # Python
