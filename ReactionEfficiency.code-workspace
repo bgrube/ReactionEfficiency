@@ -1,0 +1,44 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			".config": "Properties",
+			"*.config": "properties",
+			"DSelector_pippippimpimpmiss.C": "cpp",
+			"*.tcc": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"hashtable": "cpp",
+			"DSelector_omega_misspi.C": "cpp",
+			"doit.C": "cpp",
+			"fit.C": "cpp",
+			"testTHStack.C": "cpp",
+			"ostream": "cpp",
+			"runSelector.C": "cpp",
+			"GraphParameters.C": "cpp"
+		},
+		"files.watcherExclude": {
+			"**/.git/objects/**": true,
+			"**/.git/subtree-cache/**": true,
+			"**/.git": true,
+			"**/node_modules/*/**": true,
+			"**/bak": true,
+			"**/data": true,
+			"**/Justin": true,
+			"**/launch": true,
+			"**/overlays": true,
+			"**/Peter": true,
+			"**/plots*": true,
+			"**/*.root": true
+		},
+		"python.analysis.typeCheckingMode": "basic"
+	}
+}
