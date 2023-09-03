@@ -1,4 +1,4 @@
-#/usr/bin/bash
+#!/usr/bin/bash
 
 # write stdout and stderr to logfile
 LOG_FILE="./hd_root.log"

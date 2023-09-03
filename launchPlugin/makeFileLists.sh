@@ -1,4 +1,4 @@
-#/usr/bin/bash
+#!/usr/bin/bash
 
 MSS_DIR="/mss/halld/RunPeriod-2018-01/recon/ver02/REST"
 RUN_LIST="2018_01-ver02.part.runList"
