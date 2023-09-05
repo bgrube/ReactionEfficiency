@@ -478,7 +478,7 @@ def performFit(
 
   # perform fit and create fit-result plots
   if not kinematicBinning:
-    nmbThreadsPerJob = 8 * nmbThreadsPerJob
+    nmbThreadsPerJob = 5 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
@@ -501,13 +501,13 @@ if __name__ == "__main__":
   ROOT.gBenchmark.Start("Total execution time")
 
   # echo and parse command line
+  # bggenFileName = f"./data/MCbggen/2017_01-ver03/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
+  bggenFileName = f"./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
   # dataFileName  = bggenFileName
-  # dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
-  dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
-  # dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
-  # dataFileName  = f"./pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
-  # bggenFileName = f"./pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
-  bggenFileName = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
+  # dataFileName  = f"./data/RD/2017_01-ver04/pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
+  dataFileName  = f"./data/RD/2018_01-ver02/old/pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
+  # dataFileName  = f"./data/RD/2018_01-ver02/old/pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
+  # dataFileName  = f"./data/RD/2018_01-ver02/old/pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
   print(f"Script was called using: '{' '.join(sys.argv)}'")
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
   parser.add_argument("outputDirName", nargs = "?", type = str, default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
