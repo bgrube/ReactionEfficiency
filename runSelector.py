@@ -57,21 +57,23 @@ if __name__ == "__main__":
   # treeBaseName = "pippippimpimpmiss__B1_T1_U1_Effic"
   treeBaseName = "pippippimpimmissprot__B1_T1_U1_Effic"
   # dataSets = [{"type" : "MCbggen", "period" : "2017_01-ver03"}]
-  dataSets = [{"type" : "MCbggen", "period" : "2018_01-ver02"}]
+  # dataSets = [{"type" : "MCbggen", "period" : "2018_01-ver02"}]
   # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "041003"}]
   # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042030"}]
   # dataSets = [{"type" : "RD",      "period" : "2018_01-ver02", "run" : "042550"}]
-  for dataSet in dataSets:
-    dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_{treeBaseName}_{dataSet['type']}_{dataSet['period']}"
-      + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"})
-  # inFiles = sorted(glob.glob("./data/RD/2019_11-ver01/*.root"))
+  # for dataSet in dataSets:
+  #   dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_{treeBaseName}_{dataSet['type']}_{dataSet['period']}"
+  #     + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"})
+  period = "2018_01-ver02"
+  # period = "2019_11-ver01"
+  inFiles = sorted(glob.glob(f"./data/RD/{period}/*.root"))
   # inFiles = [f"./data/RD/2019_11-ver01/tree_{treeBaseName}_071592.root"]
-  # dataSets = []
-  # for inFile in inFiles:
-  #   runNumber = inFile.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeBaseName}_<run number>.root`
-  #   dataSet = {"type" : "RD", "period" : "2019_11-ver01", "run" : runNumber}
-  #   dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_{treeBaseName}_{dataSet['run']}.root"})
-  #   dataSets.append(dataSet)
+  dataSets = []
+  for inFile in inFiles:
+    runNumber = inFile.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeBaseName}_<run number>.root`
+    dataSet = {"type" : "RD", "period" : period, "run" : runNumber}
+    dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_{treeBaseName}_{dataSet['type']}_{dataSet['period']}_{dataSet['run']}.root"})
+    dataSets.append(dataSet)
   # pi+pi-(p)
   # selectorFileName = "./DSelector_pippimpmiss.C"
   # treeBaseName = "pippimpmiss__B1_T1_U1_Effic_Tree"
@@ -82,10 +84,10 @@ if __name__ == "__main__":
     runSelector(dataSet["fileName"], f"{treeBaseName}_Tree", selectorFileName)
     # rename output files
     channel = "pippippimpimpmiss"
-    histFileName = f"./{channel}.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
+    histFileName = f"./data/{dataSet['type']}/{dataSet['period']}/{channel}.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
     print(f"Moving histogram file to '{histFileName}'")
     os.replace(f"{channel}.root", histFileName)
-    flatTreeFileName = f"./{channel}_flatTree.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
+    flatTreeFileName = f"./data/{dataSet['type']}/{dataSet['period']}/{channel}_flatTree.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
     print(f"Moving flat-tree file to '{flatTreeFileName}'")
     os.replace(f"{channel}_flatTree.root", flatTreeFileName)
     flatTreeFileNames.append(flatTreeFileName)
