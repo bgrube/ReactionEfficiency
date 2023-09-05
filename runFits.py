@@ -5,18 +5,23 @@ import glob
 import os
 import shutil
 import subprocess
+from typing import Dict, List
 
 
 if __name__ == "__main__":
 
-  bggenFileName = f"./pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
-  # period        = "2018_01-ver02"
+  period = "2018_01-ver02"
+  bggenFileName = f"./data/MCbggen/{period}/pippippimpimpmiss_flatTree.MCbggen_{period}.root.brufit"
   # dataFileNames = [f"./pippippimpimpmiss_flatTree.RD_{period}_041003.root.brufit"]
-  period        = "2019_11-ver01"
-  dataFileNames = sorted(glob.glob(f"./pippippimpimpmiss_flatTree.RD_{period}_??????.root.brufit"))
-  dataSamples   = [{"dataFileName" : fileName, "dataLabel" : f"data_{fileName.split('.')[2].split('_')[-1]}"} for fileName in dataFileNames]
+  # period = "2019_11-ver01"
+  # dataFileNames = sorted(glob.glob(f"./data/RD/{period}/pippippimpimpmiss_flatTree.RD_{period}_??????.root.brufit"))
+  # dataSamples: List[Dict[str, str]] = [{"dataFileName" : fileName, "dataLabel" : f"data_{fileName.split('.')[-3].split('_')[-1]}"} for fileName in dataFileNames]
+  dataSamples: List[Dict[str, str]] = [{
+    "dataFileName" : f"./data/RD/{period}/pippippimpimpmiss_flatTree.RD_{period}.root.brufit",
+    "dataLabel" : f"data_{period}",
+  }]
   # print(f"!!! {dataSamples}")
-  fits = [[
+  fits: List[List[Dict[str, str]]] = [[  # list of fits for each data sample
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFixed_noBkg",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
@@ -27,11 +32,11 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram",
     #   "pdfTypeBkg" : "\"\"",
     # },
-    # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
-    #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
-    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    # },
+    {
+      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
+      "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
+      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "shift scale",
@@ -62,11 +67,11 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
-    {
-      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
-      "pdfTypeSig" : "Histogram",
-      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    },
+    # {
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
+    #   "pdfTypeSig" : "Histogram",
+    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    # },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
