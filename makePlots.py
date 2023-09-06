@@ -585,12 +585,12 @@ if __name__ == "__main__":
       #   plotTopologyHist(inputData, normalize = True,  **cutArgs)
 
       cutsArgs: List[Dict[str, str]] = [
-        {},  # no extra cut
-        {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+        # {},  # no extra cut
+        # {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
         # # the two cuts below are equivalent to the one above
         # {"additionalFilter" : "(EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
         # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
-        {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 10))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
+        {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
       ]
       for kwargs in cutsArgs:
         # get topologies with the largest number of combos for given case
