@@ -66,10 +66,10 @@ if __name__ == "__main__":
   #     + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"})
   period = "2018_01-ver02"
   # period = "2019_11-ver01"
-  inFiles = sorted(glob.glob(f"./data/RD/{period}/*.root"))
+  inFileNames = sorted(glob.glob(f"./data/RD/{period}/tree_{treeBaseName}_RD_{period}_??????.root"))
   # inFiles = [f"./data/RD/2019_11-ver01/tree_{treeBaseName}_071592.root"]
   dataSets = []
-  for inFile in inFiles:
+  for inFile in inFileNames:
     runNumber = inFile.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeBaseName}_<run number>.root`
     dataSet = {"type" : "RD", "period" : period, "run" : runNumber}
     dataSet.update({"fileName" : f"./data/{dataSet['type']}/{dataSet['period']}/tree_{treeBaseName}_{dataSet['type']}_{dataSet['period']}_{dataSet['run']}.root"})
@@ -79,11 +79,11 @@ if __name__ == "__main__":
   # treeBaseName = "pippimpmiss__B1_T1_U1_Effic_Tree"
 
   # run selector and create flat-tree file
+  channel = "pippippimpimpmiss"  # used for output tree and file names
   flatTreeFileNames: List[str] = []
   for dataSet in dataSets:
     runSelector(dataSet["fileName"], f"{treeBaseName}_Tree", selectorFileName)
     # rename output files
-    channel = "pippippimpimpmiss"
     histFileName = f"./data/{dataSet['type']}/{dataSet['period']}/{channel}.{dataSet['type']}_{dataSet['period']}" + (f"_{dataSet['run']}" if "run" in dataSet else "") + ".root"
     print(f"Moving histogram file to '{histFileName}'")
     os.replace(f"{channel}.root", histFileName)
