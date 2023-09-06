@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
 
+import functools
 import glob
 import os
 import shutil
 import subprocess
 from typing import Dict, List
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 if __name__ == "__main__":

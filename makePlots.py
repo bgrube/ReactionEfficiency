@@ -2,11 +2,16 @@
 
 
 from collections.abc import Sequence
+import functools
 import os
 import subprocess
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import ROOT
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 # simplified versions of Paul's criteria

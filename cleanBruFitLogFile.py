@@ -2,8 +2,13 @@
 
 
 import argparse
+import functools
 import glob
 import sys
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
 
 
 def filterLinesInFile(

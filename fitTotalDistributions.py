@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 
 
+import functools
+
 import ROOT
 
 import fitFunction
+
+
+# always flush print() to reduce garbling of log files due to buffering
+print = functools.partial(print, flush = True)
+
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetHistMinimumZero(True)
