@@ -51,7 +51,7 @@ def readWeights(
 
 
 def defineGaussianPdf(
-  fitManager:  ROOT.FitManager,
+  fitManager:  "ROOT.FitManager",
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -61,7 +61,7 @@ def defineGaussianPdf(
 
 
 def defineDoubleGaussianPdf(
-  fitManager:  ROOT.FitManager,
+  fitManager:  "ROOT.FitManager",
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -83,7 +83,7 @@ def defineDoubleGaussianPdf(
 
 
 def defineSkewedGaussianPdf(
-  fitManager:  ROOT.FitManager,
+  fitManager:  "ROOT.FitManager",
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -117,7 +117,7 @@ def defineSkewedGaussianPdf(
 
 
 def defineHistogramPdf(
-  fitManager:           ROOT.FitManager,
+  fitManager:           "ROOT.FitManager",
   fitVariable:          str,
   pdfName:              str,
   parDefs:              Mapping[str, str],  # maps parameter names to their definition strings
@@ -170,7 +170,7 @@ def defineHistogramPdf(
 
 
 def defineSigPdf(
-  fitManager:           ROOT.FitManager,
+  fitManager:           "ROOT.FitManager",
   fitVariable:          str,
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
@@ -231,7 +231,7 @@ def defineSigPdf(
 
 
 def defineBkgPdf(
-  fitManager:           ROOT.FitManager,
+  fitManager:           "ROOT.FitManager",
   fitVariable:          str,
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
@@ -343,7 +343,7 @@ def binnedTreeFilesIn(outputDirName: str) -> List[str]:
 
 
 def setRooFitOptions(
-  fitManager:       ROOT.FitManager,
+  fitManager:       "ROOT.FitManager",
   nmbThreadsPerJob: int,
 ) -> None:
   '''Sets general fit options'''
@@ -523,7 +523,7 @@ if __name__ == "__main__":
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
   # additionalCut     = ""
   additionalCut     = "(NmbUnusedShowers == 0)"
-  kinematicBinnings = [
+  kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
     # [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]; spring 2017
