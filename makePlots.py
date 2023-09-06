@@ -553,7 +553,6 @@ if __name__ == "__main__":
   print(f"Reading tree '{treeName}' in file '{treeFileName}'")
   inputData    = ROOT.RDataFrame(treeName, treeFileName) \
                      .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
-                     .Filter("(KinFitPVal > 0.1)") \
                      .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   #TODO determine isMonteCarlo and isMcBggen flags from data
@@ -598,7 +597,7 @@ if __name__ == "__main__":
         overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
         # overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
         overlayTopologies(inputData, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
-        overlayTopologies(inputData, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
+        # overlayTopologies(inputData, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
         # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  toposToPlot = toposToPlot, **kwargs)
         overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (50, -0.5, 4.5),  toposToPlot = toposToPlot, **kwargs)
 
