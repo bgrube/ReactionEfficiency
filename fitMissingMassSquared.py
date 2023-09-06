@@ -51,7 +51,7 @@ def readWeights(
 
 
 def defineGaussianPdf(
-  fitManager,
+  fitManager:  ROOT.FitManager,
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -61,7 +61,7 @@ def defineGaussianPdf(
 
 
 def defineDoubleGaussianPdf(
-  fitManager,
+  fitManager:  ROOT.FitManager,
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -83,7 +83,7 @@ def defineDoubleGaussianPdf(
 
 
 def defineSkewedGaussianPdf(
-  fitManager,
+  fitManager:  ROOT.FitManager,
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -117,7 +117,7 @@ def defineSkewedGaussianPdf(
 
 
 def defineHistogramPdf(
-  fitManager,
+  fitManager:           ROOT.FitManager,
   fitVariable:          str,
   pdfName:              str,
   parDefs:              Mapping[str, str],  # maps parameter names to their definition strings
@@ -170,11 +170,11 @@ def defineHistogramPdf(
 
 
 def defineSigPdf(
-  fitManager,
-  fitVariable: str,
-  pdfType:     str,  # selects type of PDF
-  fixPars:     Sequence[str] = (),  # tuple with fit-parameter names to fix
-  pdfName:     str = "SigPdf",
+  fitManager:           ROOT.FitManager,
+  fitVariable:          str,
+  pdfType:              str,  # selects type of PDF
+  fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
+  pdfName:              str = "SigPdf",
   # arguments only needed for histogram PDF
   outputDirName:        str = "",  # name of directory where weight files are written
   templateDataFileName: str = "",  # name of file from which histogram is filled
@@ -231,11 +231,11 @@ def defineSigPdf(
 
 
 def defineBkgPdf(
-  fitManager,
-  fitVariable: str,
-  pdfType:     str,  # selects type of PDF
-  fixPars:     Sequence[str] = (),  # tuple with fit-parameter names to fix
-  pdfName:     str = "BkgPdf",
+  fitManager:           ROOT.FitManager,
+  fitVariable:          str,
+  pdfType:              str,  # selects type of PDF
+  fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
+  pdfName:              str = "BkgPdf",
   # arguments only needed for histogram PDF
   outputDirName:        str = "",  # name of directory where weight files are written
   templateDataFileName: str = "",  # name of file from which histogram is filled
@@ -343,7 +343,7 @@ def binnedTreeFilesIn(outputDirName: str) -> List[str]:
 
 
 def setRooFitOptions(
-  fitManager,
+  fitManager:       ROOT.FitManager,
   nmbThreadsPerJob: int,
 ) -> None:
   '''Sets general fit options'''
@@ -399,7 +399,7 @@ def performFit(
     binningVars = [binning[0] for binning in kinematicBinning]
     binningDirName = "_".join(binningVars)
     fitDirName = f"{outputDirName}/{binningDirName}"
-  print(f"fitting data in '{dataFileName}'" + ("" if not commonCut else f" applying cut '{commonCut}' to data and template histograms")
+  print(f"Fitting data in '{dataFileName}'" + ("" if not commonCut else f" applying cut '{commonCut}' to data and template histograms")
     + ("" if not dataCut else f" and additional cut '{dataCut}' to data")
     + (" using no binning" if not kinematicBinning else f" using binning '{kinematicBinning}'")
     + f" and writing output to '{fitDirName}'")
@@ -409,7 +409,7 @@ def performFit(
   fitManager.SetUp().SetOutDir(fitDirName)
 
   # define fit variable and set fit range
-  print(f"reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
+  print(f"Reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
   fitManager.SetUp().LoadVariable(f"{fitVariable}[{fitRange}]")
   # define combo-ID variable
   # the data tree must have a double branch of the given name containing a unique combo-ID number
@@ -482,10 +482,10 @@ def performFit(
   setRooFitOptions(fitManager, nmbThreadsPerJob)
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    print(f"running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
+    print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
-    print(f"running {nmbThreadsPerJob} threads in parallel")
+    print(f"Running {nmbThreadsPerJob} threads in parallel")
     ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
@@ -527,8 +527,8 @@ if __name__ == "__main__":
     [],  # no binning -> fit overall distribution
     # 1D binnings; only one binning par variable name allowed
     # [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]; spring 2017
-    # [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
-    [("BeamEnergy",         10,    7.7,   11.2)],  # [GeV]; spring 2020
+    [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
+    # [("BeamEnergy",         10,    7.7,   11.2)],  # [GeV]; spring 2020
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
     [("MissingProtonPhi",   10, -180.0, +180.0)],  # [deg]
