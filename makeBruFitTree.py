@@ -20,11 +20,13 @@ def makeBruFitTree(
 ) -> None:
   '''Converts tree in given file to BruFit format'''
   print(f"Converting tree '{treeName}' in '{inputFileName}' to BruFit format")
+  print(f"!Note! BruFit trees contain a unique-ID column and hence must never be `hadd`ed")
   branchesToWrite = [
     "MissingMassSquared_Measured",  # fit variable
     "AccidWeightFactor",  # weight for removal of RF accidentals
     # cut variables
     "NmbUnusedShowers",
+    "BestMissingMatchDistTOF",
     # binning variables
     "BeamEnergy",
     "MissingProtonP",
@@ -66,11 +68,12 @@ if __name__ == "__main__":
   # dataSets = ["RD_2018_01-ver02_042030"]
   # dataSets = ["RD_2018_01-ver02_042550"]
   # dataSets = ["MCbggen_2018_01-ver02"]
-  dataSets = [fileName.split(".")[2] for fileName in sorted(glob.glob("./pippippimpimpmiss_flatTree.RD_2019_11-ver01_??????.root"))]
-  if dataSets:
-    inputFileNames = [f"./pippippimpimpmiss_flatTree.{dataSet}.root" for dataSet in dataSets]
-  else:
-    inputFileNames = ["./pippippimpimpmiss_flatTree.root"]
+  # if dataSets:
+  #   inputFileNames = [f"./pippippimpimpmiss_flatTree.{dataSet}.root" for dataSet in dataSets]
+  # else:
+  #   inputFileNames = ["./pippippimpimpmiss_flatTree.root"]
+  inputFileNames = sorted(glob.glob("./pippippimpimpmiss_flatTree.RD_2018_01-ver02*.root"))
+  # inputFileNames = sorted(glob.glob("./pippippimpimpmiss_flatTree.RD_2019_11-ver01*.root"))
 
   for inputFileName in inputFileNames:
     makeBruFitTree(inputFileName, outputFileName = f"{inputFileName}.brufit")
