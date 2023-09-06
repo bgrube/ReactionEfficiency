@@ -427,6 +427,10 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 		const UInt_t  locRunNumber  = dComboWrapper->Get_RunNumber();
 		const Float_t locKinFitPVal = dComboWrapper->Get_ConfidenceLevel_KinFit();
+		if (locKinFitPVal < 0.1) {  // Skip events with low P-value; this cut may have been already applied to the input data by the ReactionEfficiency plugin
+			dComboWrapper->Set_IsComboCut(true);
+			continue;
+		}
 
 		// ECAL info
 		const UChar_t locNmbUnusedShowers    = dComboWrapper->Get_NumUnusedShowers();
