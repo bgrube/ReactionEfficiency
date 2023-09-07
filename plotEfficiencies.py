@@ -125,12 +125,12 @@ def plotEfficiencies1D(
   '''Plots efficiency as a function of given binning variable for 1-dimensional binning'''
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   efficiencyGraph = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies))
-  efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
+  # efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
   efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
   efficiencyGraph.SetMarkerSize(markerSize)
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   efficiencyGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  efficiencyGraph.GetYaxis().SetTitle("Efficiency")
+  efficiencyGraph.GetYaxis().SetTitle(f"{particle} Track-Finding Efficiency")
   efficiencyGraph.SetMinimum(0)
   efficiencyGraph.SetMaximum(1)
   canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}{pdfFileNameSuffix}", "")
@@ -143,6 +143,52 @@ def plotEfficiencies1D(
   # meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
   # line.SetLineColor(ROOT.kRed + 1)
   # line.DrawLine(efficiencyGraph.GetXaxis().GetXmin(), meanEff, efficiencyGraph.GetXaxis().GetXmax(), meanEff)
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def getEffValuesForGraph2D(
+  binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
+  effInfos:    Sequence[EffInfo],
+) -> List[Tuple[float, float, UFloat]]:
+  '''Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos'''
+  graphValues: List[Tuple[float, float, UFloat]] = [
+    (effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.centers[binVarNames[1]], effInfo.value)
+    for effInfo in effInfos if (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
+  ]
+  return graphValues
+
+
+def plotEfficiencies2D(
+  efficiencies:      Sequence[EffInfo],
+  binningVars:       Sequence[str],  # name of binning variable to plot
+  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNameSuffix: str   = "",
+  particle:          str   = "Proton",
+  channel:           str   = "4pi",
+  markerSize:        float = 0.75,
+) -> None:
+  '''Plots efficiency as a function of given binning variables for 2-dimensional binning'''
+  print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
+  efficiencyGraph = plotFitResults.getParValueGraph2D(getEffValuesForGraph2D(binningVars, efficiencies))
+  efficiencyGraph.SetMinimum(0)
+  efficiencyGraph.SetMaximum(1)
+  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVars[0]}_{binningVars[1]}_{pdfFileNameSuffix}", "")
+  efficiencyGraph.Draw("TRI2 P0")
+  efficiencyGraph.SetTitle("")
+  efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
+  efficiencyGraph.SetMarkerSize(markerSize)
+  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
+  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  axisTitles = (
+    f"{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})",
+    f"{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
+    f"{particle} Track-Finding Efficiency",
+  )
+  titleOffsets = (2.0, 2.0, 1.5)
+  for index, axis in enumerate((efficiencyGraph.GetXaxis(), efficiencyGraph.GetYaxis(), efficiencyGraph.GetZaxis())):
+    axis.SetTitle(axisTitles[index])
+    axis.CenterTitle(True)
+    axis.SetTitleOffset(titleOffsets[index])
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -176,7 +222,7 @@ if __name__ == "__main__":
       if binVarNames is None:
         binVarNames = binVarNamesInDataSet
       else:
-        assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
+        assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} for dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous dataset"
     effInfos = calculateEfficiencies(yieldInfos)
     if effInfos:
       if effInfos[0].binInfo.name == "Overall":
@@ -184,4 +230,6 @@ if __name__ == "__main__":
       if binVarNames:
         for binningVars in binVarNames:
           if len(binningVars) == 1:
-            plotEfficiencies1D(effInfos, binningVars[0], args.outputDirName, "_integral" if readIntegrals else "")
+            plotEfficiencies1D(effInfos, binningVars[0],  args.outputDirName, "_integral" if readIntegrals else "")
+          elif len(binningVars) == 2:
+            plotEfficiencies2D(effInfos, binningVars[:2], args.outputDirName, "_integral" if readIntegrals else "")

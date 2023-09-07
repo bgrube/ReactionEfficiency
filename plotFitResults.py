@@ -27,7 +27,7 @@ print = functools.partial(print, flush = True)
 
 BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
   "BeamEnergy"         : {"label" : "E_{beam}",                      "unit" : "GeV"},
-  "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c"},
+  "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/#it{c}"},
   "MissingProtonTheta" : {"label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg"},
   "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"},
 }
@@ -292,6 +292,23 @@ def getParValueGraph1D(
   meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
   print(f"    weighted mean of efficiencies = {meanEff}")
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
+
+
+def getParValueGraph2D(
+  graphValues: Sequence[Tuple[float, float, UFloat]],
+) -> ROOT.TGraph2DErrors:
+  '''Creates ROOT.TGraph2DErrors from given values'''
+  if not graphValues:
+    print("No data to plot")
+    return
+  xVals = np.array([graphVal[0]               for graphVal in graphValues], dtype = "d")
+  yVals = np.array([graphVal[1]               for graphVal in graphValues], dtype = "d")
+  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
+  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
+  # report weighted average
+  meanEff = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
+  print(f"    weighted mean of efficiencies = {meanEff}")
+  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, ROOT.nullptr, ROOT.nullptr, zErrs)
 
 
 def plotParValue1D(
