@@ -144,9 +144,12 @@ class ParInfo:
 def readParInfoForBin(
   binInfo:           BinInfo,
   fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
-) -> ParInfo:
+) -> Optional[ParInfo]:
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
   fitResultFileName = binInfo.fitResultFileName
+  if not os.path.isfile(fitResultFileName):
+    print(f"Cannot find file '{fitResultFileName}'; skipping")
+    return None
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
   fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")
   fitResult      = fitResultFile.Get("MinuitResult")
@@ -171,18 +174,19 @@ def readParInfoForBin(
   return ParInfo(binInfo, parValuesInBin)
 
 
-def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
+def readParInfosForBinning(binningInfo: BinningInfo) -> List[Optional[ParInfo]]:
   '''Reads parameter values from fit results for given kinematic binning'''
   parInfos = []
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
     parInfo = readParInfoForBin(binInfo)
-    # ensure that the parameter sets of the fit functions are the same in all kinematic bins
-    parNamesInBin = parInfo.names
-    if parNames is not None:
-      assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
-    parNames = parNamesInBin
-    print(f"Read parameter values for kinematic bin: {parInfo}")
+    if parInfo is not None:
+      # ensure that the parameter sets of the fit functions are the same in all kinematic bins
+      parNamesInBin = parInfo.names
+      if parNames is not None:
+        assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
+      parNames = parNamesInBin
+      print(f"Read parameter values for kinematic bin: {parInfo}")
     parInfos.append(parInfo)
   return parInfos
 
@@ -260,11 +264,11 @@ def plotFitResults(
 def getParValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   parName:    str,  # name of value, i.e. y-axis
-  parInfos:   Sequence[ParInfo],
-) -> Tuple[Tuple[float, UFloat]]:
+  parInfos:   Sequence[Optional[ParInfo]],
+) -> Tuple[Tuple[float, UFloat], ...]:
   '''Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos'''
-  graphValues: Tuple[Tuple[float, UFloat]] = tuple((parInfo.binInfo.centers[binVarName], parInfo.values[parName])
-    for parInfo in parInfos if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names))
+  graphValues: Tuple[Tuple[float, UFloat], ...] = tuple((parInfo.binInfo.centers[binVarName], parInfo.values[parName])
+    for parInfo in parInfos if (parInfo is not None) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names))
   return graphValues
 
 
@@ -291,20 +295,19 @@ def getParValueGraph1D(
 
 
 def plotParValue1D(
-  parInfos:          Mapping[str, Sequence[ParInfo]],
+  parInfos:          Mapping[str, Sequence[Optional[ParInfo]]],
   parName:           str,  # name of parameter to plot
   binningVar:        str,  # name of binning variable to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNameSuffix: str   = "",
   particle:          str   = "Proton",
   channel:           str   = "4pi",
-  markerSize:        float = 0.75,
 ) -> None:
   '''Overlay parameter values for datasets for 1-dimensional binning for given parameter for given binning variable'''
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
   parValueMultiGraph = ROOT.TMultiGraph()
   parValueGraphs = {}  # store graphs here to keep them in memory
-  shiftFraction = 0
+  shiftFraction = 0.0
   styleIndex = 0
   for dataSet in parInfos:
     graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]), shiftFraction)
@@ -321,9 +324,9 @@ def plotParValue1D(
   parValueMultiGraph.Draw("APZ")
   hist = parValueMultiGraph.GetHistogram()
   plotRange = hist.GetMaximum() - hist.GetMinimum()
-  minVal = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
-  maxVal = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
-  maxErr = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))
+  minVal: float = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
+  maxVal: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
+  maxErr: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))
   if 2 * maxErr / plotRange > 0.9:  # one error bar dominates plot range
     plotRange = 2 * (maxVal - minVal)  # new plot range = 2 * value range
     plotRangeCenter = (maxVal + minVal) / 2
@@ -354,9 +357,9 @@ if __name__ == "__main__":
   dataSets    = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
-  parInfos:    Dict[str, List[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
-  parNames:    Optional[Tuple[str, ...]]       = None
-  binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
+  parInfos:    Dict[str, List[Optional[ParInfo]]] = {}    # parInfos[<dataset>][<bin>]
+  parNames:    Optional[Tuple[str, ...]]          = None
+  binVarNames: Optional[List[Tuple[str, ...]]]    = None  # binning variables for each binning
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
@@ -371,11 +374,13 @@ if __name__ == "__main__":
           if not dataSet in parInfos:
             parInfos[dataSet] = []
           parInfos[dataSet][len(parInfos[dataSet]):] = readParInfosForBinning(binningInfo)  # append parameter values
-          parNamesInBinning = parInfos[dataSet][-1].names  # readParInfosForBinning() ensures that parameter names are identical within a binning
-          if parNames is not None:
-            assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of '{dataSet}' dataset and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
-          else:
-            parNames = parNamesInBinning
+          parInfo = parInfos[dataSet][-1]
+          if parInfo is not None:
+            parNamesInBinning = parInfo.names  # readParInfosForBinning() ensures that parameter names are identical within a binning
+            if parNames is not None:
+              assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of '{dataSet}' dataset and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
+            else:
+              parNames = parNamesInBinning
     if binVarNames is not None:
       assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of '{dataSet}' dataset are different from the binning variables {binVarNames} of the previous one"
     else:
