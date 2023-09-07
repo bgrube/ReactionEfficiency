@@ -149,18 +149,18 @@ def plotEfficiencies1D(
 def getEffValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   effInfos:    Sequence[EffInfo],
-) -> List[Tuple[float, float, UFloat]]:
+) -> Tuple[Tuple[float, float, UFloat], ...]:
   '''Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos'''
-  graphValues: List[Tuple[float, float, UFloat]] = [
+  graphValues: Tuple[Tuple[float, float, UFloat], ...] = tuple(
     (effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.centers[binVarNames[1]], effInfo.value)
     for effInfo in effInfos if (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
-  ]
+  )
   return graphValues
 
 
 def plotEfficiencies2D(
   efficiencies:      Sequence[EffInfo],
-  binningVars:       Sequence[str],  # name of binning variable to plot
+  binningVars:       Sequence[str],  # names of binning variables to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNameSuffix: str   = "",
   particle:          str   = "Proton",
@@ -170,6 +170,8 @@ def plotEfficiencies2D(
   '''Plots efficiency as a function of given binning variables for 2-dimensional binning'''
   print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
   efficiencyGraph = plotFitResults.getParValueGraph2D(getEffValuesForGraph2D(binningVars, efficiencies))
+  if efficiencyGraph is None:  # nothing to plot
+    return
   efficiencyGraph.SetMinimum(0)
   efficiencyGraph.SetMaximum(1)
   canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVars[0]}_{binningVars[1]}_{pdfFileNameSuffix}", "")
