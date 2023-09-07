@@ -122,7 +122,7 @@ def printGitInfo() -> None:
 def setupPlotStyle() -> None:
   '''Defines ROOT plot style'''
   #TODO remove dependency from external file or add file to repo
-  ROOT.gROOT.LoadMacro("~/rootlogon.C")
+  ROOT.gROOT.LoadMacro("./rootlogon.C")
   ROOT.gROOT.ForceStyle()
   ROOT.gStyle.SetCanvasDefW(600)
   ROOT.gStyle.SetCanvasDefH(600)
