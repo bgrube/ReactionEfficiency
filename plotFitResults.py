@@ -354,28 +354,34 @@ def getParValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   parName:     str,  # name of value, i.e. z-axis
   parInfos:    Sequence[Optional[ParInfo]],
-) -> Tuple[Tuple[float, float, UFloat], ...]:
+) -> Tuple[Tuple[UFloat, UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos"""
-  graphValues: Tuple[Tuple[float, float, UFloat], ...] = tuple(
-    (parInfo.binInfo.centers[binVarNames[0]], parInfo.binInfo.centers[binVarNames[1]], parInfo.values[parName])
+  graphValues: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = tuple(
+    (
+      ufloat(parInfo.binInfo.centers[binVarNames[0]], parInfo.binInfo.widths[binVarNames[0]] / 2.0),
+      ufloat(parInfo.binInfo.centers[binVarNames[1]], parInfo.binInfo.widths[binVarNames[1]] / 2.0),
+      parInfo.values[parName]
+    )
     for parInfo in parInfos if (parInfo is not None) and (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names)
   )
   return graphValues
 
 
-def getParValueGraph2D(graphValues: Sequence[Tuple[float, float, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
+def getParValueGraph2D(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
   """Creates ROOT.TGraph2DErrors from given parameter values"""
   if not graphValues:
     print("No data to plot")
     return None
-  xVals = np.array([graphVal[0]               for graphVal in graphValues], dtype = "d")
-  yVals = np.array([graphVal[1]               for graphVal in graphValues], dtype = "d")
+  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
+  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
+  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
+  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
   zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
   zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
   # report weighted average
   meanVal = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
   print(f"    weighted mean = {meanVal}")
-  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, ROOT.nullptr, ROOT.nullptr, zErrs)
+  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, xErrs, yErrs, zErrs)
 
 
 def plotParValue2D(
@@ -398,11 +404,11 @@ def plotParValue2D(
     graph = getParValueGraph2D(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
     if graph is not None:
       parValueGraphs[dataSet] = graph
-      xMin = min(xMin, graph.GetXmin())
-      yMin = min(yMin, graph.GetYmin())
+      xMin = min(xMin, graph.GetXminE())
+      yMin = min(yMin, graph.GetYminE())
       zMin = min(zMin, graph.GetZmin())
-      xMax = max(xMax, graph.GetXmax())
-      yMax = max(yMax, graph.GetYmax())
+      xMax = max(xMax, graph.GetXmaxE())
+      yMax = max(yMax, graph.GetYmaxE())
       zMax = max(zMax, graph.GetZmax())
   if not parValueGraphs:  # nothing to plot
     return
@@ -425,7 +431,7 @@ def plotParValue2D(
   hist.Draw()
   styleIndex = 0
   for dataSet, graph in parValueGraphs.items():
-    graph.Draw("P SAME")
+    graph.Draw("P ERR SAME")
     graph.SetName(dataSet)
     graph.SetTitle("")
     makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
