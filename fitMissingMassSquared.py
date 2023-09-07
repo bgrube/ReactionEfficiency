@@ -532,6 +532,11 @@ if __name__ == "__main__":
     [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
     [("MissingProtonPhi",   10, -180.0, +180.0)],  # [deg]
+    # 2D binnings
+    [
+      ("MissingProtonP",     5, 0.0,  2.5),  # [GeV/c]
+      ("MissingProtonTheta", 5, 0.0, 75.0),  # [deg]
+    ],
   ]
 
   dataSets = {
