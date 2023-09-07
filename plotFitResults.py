@@ -40,7 +40,8 @@ REMOVE_PARAM_BOX = False
 class BinInfo:
   """Stores information about a single kinematic bin"""
   name:    str               # bin name
-  centers: Dict[str, float]  # dict with bin centers { <binning var> : <bin center>, ..., }
+  centers: Dict[str, float]  # bin centers { <binning var> : <bin center>, ... }
+  widths:  Dict[str, float]  # bin widths  { <binning var> : <bin width>,  ... }
   dirName: str               # directory name for bins
 
   @property
@@ -108,11 +109,13 @@ def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
   binInfos: List[BinInfo] = []
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
     axisBinCenters = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
+    axisBinWidths  = tuple(axes[axisIndex].GetBinWidth (axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
     binIndex = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only for up to 6 binning dimensions
     binName = binNames[binIndex]
     binInfos.append(BinInfo(
-      name = binName,
+      name    = binName,
       centers = {binVarNames[axisIndex] : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)},
+      widths  = {binVarNames[axisIndex] : axisBinWidth  for axisIndex, axisBinWidth  in enumerate(axisBinWidths )},
       dirName = f"{fitResultDirName}/{str(binName)}",
     ))
   return BinningInfo(binInfos, fitResultDirName)
@@ -388,12 +391,13 @@ def plotParValue2D(
   savedFrameFillColor = ROOT.gStyle.GetFrameFillColor()
   ROOT.gStyle.SetFrameFillColor(0)  # switch back to default; otherwise graphs obstruct histogram frame
   print(f"Plotting parameter '{parName}' as a function of binning variables '{binningVars}'")
-  parValueGraphs = {}  # store graphs here to keep them in memory
+  parValueGraphs: Dict[str, ROOT.TGraph2DErrors] = {}  # store graphs here to keep them in memory
   xMin = yMin = zMin = +math.inf
   xMax = yMax = zMax = -math.inf
   for dataSet in parInfos:
-    graph = parValueGraphs[dataSet] = getParValueGraph2D(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
+    graph = getParValueGraph2D(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
     if graph is not None:
+      parValueGraphs[dataSet] = graph
       xMin = min(xMin, graph.GetXmin())
       yMin = min(yMin, graph.GetYmin())
       zMin = min(zMin, graph.GetZmin())
@@ -452,7 +456,7 @@ if __name__ == "__main__":
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
-    plotFitResult(BinInfo("", {}, fitResultDirName), fitVariable)
+    plotFitResult(BinInfo("", {}, {}, fitResultDirName), fitVariable)
     binVarNamesInDataSet = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:

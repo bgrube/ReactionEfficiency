@@ -63,7 +63,7 @@ def readYieldInfosForBinning(
   """Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning"""
   yieldInfos = []
   # read overall yields
-  overallBinInfo = BinInfo("Overall", {}, binningInfo.dirName)  # special bin for overall fit results
+  overallBinInfo = BinInfo("Overall", {}, {}, binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
