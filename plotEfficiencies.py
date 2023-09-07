@@ -149,10 +149,14 @@ def plotEfficiencies1D(
 def getEffValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   effInfos:    Sequence[EffInfo],
-) -> Tuple[Tuple[float, float, UFloat], ...]:
+) -> Tuple[Tuple[UFloat, UFloat, UFloat], ...]:
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
-  graphValues: Tuple[Tuple[float, float, UFloat], ...] = tuple(
-    (effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.centers[binVarNames[1]], effInfo.value)
+  graphValues: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = tuple(
+    (
+      ufloat(effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.widths[binVarNames[0]] / 2.0),
+      ufloat(effInfo.binInfo.centers[binVarNames[1]], effInfo.binInfo.widths[binVarNames[1]] / 2.0),
+      effInfo.value
+    )
     for effInfo in effInfos if (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
   )
   return graphValues
@@ -175,7 +179,7 @@ def plotEfficiencies2D(
   efficiencyGraph.SetMinimum(0)
   efficiencyGraph.SetMaximum(1)
   canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVars[0]}_{binningVars[1]}_{pdfFileNameSuffix}", "")
-  efficiencyGraph.Draw("TRI2 P0")
+  efficiencyGraph.Draw("TRI2 P0 ERR")
   efficiencyGraph.SetTitle("")
   efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
   efficiencyGraph.SetMarkerSize(markerSize)
