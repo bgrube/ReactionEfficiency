@@ -32,10 +32,13 @@ YIELD_PAR_NAMES: Dict[str, str] = {
 def readDataIntegralFromFitFile(
   binInfo:     BinInfo,
   fitVariable: str,
-) -> ParInfo:
+) -> Optional[ParInfo]:
   '''Reads data histogram for given kinematic bin and returns its integral assuming Poissonian uncertainty'''
   assert fitVariable, f"Cannot use value '{fitVariable}' as fit variable name"
   fitResultFileName = binInfo.fitResultFileName
+  if not os.path.isfile(fitResultFileName):
+    print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
+    return None
   print(f"Reading fitted data histogram from file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{'' if binInfo.name == 'Overall' else binInfo.name}_{fitVariable}"
@@ -64,14 +67,16 @@ def readYieldInfosForBinning(
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
-    print(f"Read overall yields: {yieldInfo}")
-    yieldInfos.append(yieldInfo)  # first entry always contains overall yields
+    if yieldInfo is not None:
+      print(f"Read overall yields: {yieldInfo}")
+      yieldInfos.append(yieldInfo)  # first entry always contains overall yields
   # read yields for each bin
   for binInfo in binningInfo.infos:
     yieldInfo = readDataIntegralFromFitFile(binInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(binInfo, YIELD_PAR_NAMES)
-    print(f"Read yields for kinematic bin: {yieldInfo}")
-    yieldInfos.append(yieldInfo)
+    if yieldInfo is not None:
+      print(f"Read yields for kinematic bin: {yieldInfo}")
+      yieldInfos.append(yieldInfo)
   return yieldInfos
 
 
@@ -167,7 +172,7 @@ if __name__ == "__main__":
       for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
         if binningInfo:
           binVarNamesInDataSet.append(binningInfo.varNames)
-          yieldInfos[dataSet][len(yieldInfos[dataSet]):] = readYieldInfosForBinning(binningInfo, readIntegrals, fitVariable)  # append yield values
+          yieldInfos[dataSet].extend(readYieldInfosForBinning(binningInfo, readIntegrals, fitVariable))
       if binVarNames is None:
         binVarNames = binVarNamesInDataSet
       else:
