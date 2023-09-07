@@ -38,45 +38,45 @@ REMOVE_PARAM_BOX = False
 
 @dataclass
 class BinInfo:
-  '''Stores information about a single kinematic bin'''
+  """Stores information about a single kinematic bin"""
   name:    str               # bin name
   centers: Dict[str, float]  # dict with bin centers { <binning var> : <bin center>, ..., }
   dirName: str               # directory name for bins
 
   @property
   def varNames(self) -> Tuple[str, ...]:
-    '''Returns names of kinematic variables used for binning'''
+    """Returns names of kinematic variables used for binning"""
     return tuple(sorted(self.centers.keys()))
 
   @property
   def fitResultFileName(self) -> str:
-    '''Returns fit result file name for this bin'''
+    """Returns fit result file name for this bin"""
     return f"{self.dirName}/ResultsHSMinuit2.root"
 
   def isSameBinAs(self, other: 'BinInfo') -> bool:
-    '''Returns whether 2 BinInfo objects represent the same kinematic bin'''
+    """Returns whether 2 BinInfo objects represent the same kinematic bin"""
     return (self.name == other.name) and (self.centers == other.centers)
 
 
 @dataclass
 class BinningInfo:
-  '''Stores information about one particular kinematic binning'''
+  """Stores information about one particular kinematic binning"""
   infos:   List[BinInfo]  # info for all bins of the kinematic binning
   dirName: str            # directory that contains all bins of the kinematic binning
 
   @property
   def names(self) -> Tuple[str, ...]:
-    '''Returns tuple with bin names'''
+    """Returns tuple with bin names"""
     return tuple(binInfo.name for binInfo in self.infos)
 
   @property
   def dirNames(self) -> Tuple[str, ...]:
-    '''Returns tuple with directory names for all bins'''
+    """Returns tuple with directory names for all bins"""
     return tuple(binInfo.dirName for binInfo in self.infos)
 
   @property
   def varNames(self) -> Tuple[str, ...]:
-    '''Returns names of kinematic variables used for binning'''
+    """Returns names of kinematic variables used for binning"""
     varNames = None
     for binInfo in self.infos:
       varNamesInBin = binInfo.varNames
@@ -88,12 +88,12 @@ class BinningInfo:
 
   @property
   def fitResultFileNames(self) -> Tuple[str, ...]:
-    '''Returns tuple with fit-result file names for all bin'''
+    """Returns tuple with fit-result file names for all bin"""
     return tuple(binInfo.fitResultFileName for binInfo in self.infos)
 
 
 def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
-  '''Reads binning info from given directory'''
+  """Reads binning info from given directory"""
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
     return None
@@ -119,7 +119,7 @@ def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
 
 
 def getBinningInfosFromDir(fitResultDirName: str) -> List[Optional[BinningInfo]]:
-  '''Reads binning infos from all 1st-level subdirectories that contain a 'DataBinsConfig.root' file'''
+  """Reads binning infos from all 1st-level subdirectories that contain a 'DataBinsConfig.root' file"""
   binningInfos: List[Optional[BinningInfo]] = []
   # find all subdirectories with binning files non-recursively
   subDirNames: List[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
@@ -132,13 +132,13 @@ def getBinningInfosFromDir(fitResultDirName: str) -> List[Optional[BinningInfo]]
 
 @dataclass
 class ParInfo:
-  '''Stores information about parameter values in a single kinematic bin'''
+  """Stores information about parameter values in a single kinematic bin"""
   binInfo: BinInfo            # info for the kinematic bin
   values:  Dict[str, UFloat]  # mapping of parameter names to values
 
   @property
   def names(self) -> Tuple[str, ...]:
-    '''Returns parameter names'''
+    """Returns parameter names"""
     return tuple(sorted(self.values.keys()))
 
 
@@ -146,7 +146,7 @@ def readParInfoForBin(
   binInfo:           BinInfo,
   fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ) -> Optional[ParInfo]:
-  '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
+  """Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names"""
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
@@ -176,7 +176,7 @@ def readParInfoForBin(
 
 
 def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
-  '''Reads parameter values from fit results for given kinematic binning'''
+  """Reads parameter values from fit results for given kinematic binning"""
   parInfos = []
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
@@ -193,7 +193,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
 
 
 def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
-  '''Helper function that draws zero line when necessary'''
+  """Draws zero line when necessary"""
   objType = obj.IsA().GetName()
   if (objType == "TCanvas") or (objType == "TPad"):
     xMin = ctypes.c_double()
@@ -225,7 +225,7 @@ def plotFitResult(
   fitVariable: str,
   pdfDirName:  Optional[str] = None,  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ) -> None:
-  '''Plots fit result for given kinematic bin'''
+  """Plots fit result for given kinematic bin"""
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
@@ -257,7 +257,7 @@ def plotFitResults(
   binningInfo: BinningInfo,
   fitVariable: str,
 ) -> None:
-  '''Plots fit results for all kinematic bins'''
+  """Plots fit results for all kinematic bins"""
   for binInfo in binningInfo.infos:
     plotFitResult(binInfo, fitVariable, pdfDirName = binningInfo.dirName)
 
@@ -267,7 +267,7 @@ def getParValuesForGraph1D(
   parName:    str,  # name of value, i.e. y-axis
   parInfos:   Sequence[Optional[ParInfo]],
 ) -> Tuple[Tuple[float, UFloat], ...]:
-  '''Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos'''
+  """Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos"""
   graphValues: Tuple[Tuple[float, UFloat], ...] = tuple(
     (parInfo.binInfo.centers[binVarName], parInfo.values[parName])
     for parInfo in parInfos if (parInfo is not None) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)
@@ -279,7 +279,7 @@ def getParValueGraph1D(
   graphValues:     Sequence[Tuple[float, UFloat]],
   shiftByFraction: float = 0,
 ) -> ROOT.TGraphErrors:
-  '''Creates ROOT.TGraphErrors from given values'''
+  """Creates ROOT.TGraphErrors from given values"""
   if not graphValues:
     print("No data to plot")
     return
@@ -306,7 +306,7 @@ def plotParValue1D(
   particle:          str   = "Proton",
   channel:           str   = "4pi",
 ) -> None:
-  '''Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables'''
+  """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
   parValueMultiGraph = ROOT.TMultiGraph()
   parValueGraphs = {}  # store graphs here to keep them in memory
@@ -352,7 +352,7 @@ def getParValuesForGraph2D(
   parName:     str,  # name of value, i.e. z-axis
   parInfos:    Sequence[Optional[ParInfo]],
 ) -> Tuple[Tuple[float, float, UFloat], ...]:
-  '''Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos'''
+  """Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos"""
   graphValues: Tuple[Tuple[float, float, UFloat], ...] = tuple(
     (parInfo.binInfo.centers[binVarNames[0]], parInfo.binInfo.centers[binVarNames[1]], parInfo.values[parName])
     for parInfo in parInfos if (parInfo is not None) and (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names)
@@ -361,7 +361,7 @@ def getParValuesForGraph2D(
 
 
 def getParValueGraph2D(graphValues: Sequence[Tuple[float, float, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
-  '''Creates ROOT.TGraph2DErrors from given parameter values'''
+  """Creates ROOT.TGraph2DErrors from given parameter values"""
   if not graphValues:
     print("No data to plot")
     return None
@@ -384,7 +384,7 @@ def plotParValue2D(
   particle:          str   = "Proton",
   channel:           str   = "4pi",
 ) -> None:
-  '''Overlays values of given parameter for given datasets for 2-dimensional binning with given binning variables'''
+  """Overlays values of given parameter for given datasets for 2-dimensional binning with given binning variables"""
   savedFrameFillColor = ROOT.gStyle.GetFrameFillColor()
   ROOT.gStyle.SetFrameFillColor(0)  # switch back to default; otherwise graphs obstruct histogram frame
   print(f"Plotting parameter '{parName}' as a function of binning variables '{binningVars}'")

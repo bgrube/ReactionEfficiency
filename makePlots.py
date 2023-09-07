@@ -58,12 +58,12 @@ COLORS_CB_FRIENDLY: Tuple[str, ...] = (
 )
 
 def getRootColor(hexColor: str) -> int:
-  '''Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created'''
+  """Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created"""
   ROOT.TColor.SetColorThreshold(0)  # ensure GetColor() returns exact color
   return ROOT.TColor.GetColor(hexColor)
 
 def getCbFriendlyRootColor(index: int) -> int:
-  '''Returns ROOT color index for given index in colorblind-friendly palette'''
+  """Returns ROOT color index for given index in colorblind-friendly palette"""
   return getRootColor(COLORS_CB_FRIENDLY[index])
 
 # 11 filled marker styles; the float is a relative scaling factor to obtain equal apparent sizes
@@ -102,7 +102,7 @@ def setCbFriendlyStyle(
   markerSize:    float = 1.5,
   filledMarkers: bool  = True,
 ) -> None:
-  '''Sets line color and marker style, color, and size of a TGraph or TH1 according to a style index'''
+  """Sets line color and marker style, color, and size of a TGraph or TH1 according to a style index"""
   nmbStyles = min(len(COLORS_CB_FRIENDLY) - (1 if skipBlack else 0), len(MARKERS_FILLED), len(MARKERS_OPEN))
   assert styleIndex < nmbStyles, f"The style index {styleIndex} goes beyond the maximum of {nmbStyles} styles that are implemented"
   graphOrHist.SetMarkerStyle(MARKERS_FILLED[styleIndex][0] if filledMarkers else MARKERS_OPEN[styleIndex][0])
@@ -113,14 +113,14 @@ def setCbFriendlyStyle(
 
 
 def printGitInfo() -> None:
-  '''Prints directory of this file and git hash in this directory'''
+  """Prints directory of this file and git hash in this directory"""
   repoDir = os.path.dirname(os.path.abspath(__file__))
   gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
   print(f"Running code in '{repoDir}', git version '{gitInfo}'")
 
 
 def setupPlotStyle() -> None:
-  '''Defines ROOT plot style'''
+  """Defines ROOT plot style"""
   #TODO remove dependency from external file or add file to repo
   ROOT.gROOT.LoadMacro("./rootlogon.C")
   ROOT.gROOT.ForceStyle()
@@ -138,7 +138,7 @@ def setupPlotStyle() -> None:
 
 
 def overlayMissingMassSquared() -> None:
-  '''Overlays missing-mass-squared histograms from two data samples'''
+  """Overlays missing-mass-squared histograms from two data samples"""
   inFileNames:  Tuple[str, str] = ("pippippimpimpmiss.RD_2017_01-ver04_030730.root", "pippippimpimpmiss.MCbggen_2017_01-ver03.root")
   labels:       Tuple[str, str] = ("Real data (scaled)", "bggen MC")
   histBaseName: str             = "MissingMassSquared/MissingMassSquared"
@@ -181,7 +181,7 @@ def drawHistogram(
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
-  '''Plots histogram with given name in ROOT file with given name'''
+  """Plots histogram with given name in ROOT file with given name"""
   # get histogram
   inFile = ROOT.TFile(inFileName)
   hist = inFile.Get(histName)
@@ -208,7 +208,7 @@ def getHistND(
   histNameSuffix:   str = "",
   histTitle:        str = "",
 ) -> Union[ROOT.TH1D, ROOT.TH2D]:
-  '''Creates histogram from given variables in RDataFrame, applying optional weighting and filtering'''
+  """Creates histogram from given variables in RDataFrame, applying optional weighting and filtering"""
   histDim = len(variables)
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
   # apply additional filters, if defined
@@ -251,7 +251,7 @@ def setDefaultYAxisTitle(
   axisTitles:    str,  # semicolon-separated list
   defaultYTitle: str = "Number of Combos (RF-subtracted)",
 ):
-  '''Sets default y-axis title if not provided by `axisTitles`'''
+  """Sets default y-axis title if not provided by `axisTitles`"""
   titles = axisTitles.split(";")
   if (len(titles) == 1):
     return titles[0] + ";" + defaultYTitle
@@ -271,7 +271,7 @@ def plot1D(
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
-  '''Plots 1D distribution for given variable, applying optional weighting and filtering'''
+  """Plots 1D distribution for given variable, applying optional weighting and filtering"""
   hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
@@ -296,7 +296,7 @@ def plot2D(
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
-  '''Plots 2D distribution for given x and y variables, applying optional weighting and filtering'''
+  """Plots 2D distribution for given x and y variables, applying optional weighting and filtering"""
   hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
@@ -314,7 +314,7 @@ def overlayCases(
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
-  '''Overlays 1D distributions of given variable for "Total", "Found", and "Missing" cases'''
+  """Overlays 1D distributions of given variable for "Total", "Found", and "Missing" cases"""
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   # overlay distributions for cases
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
@@ -396,7 +396,7 @@ def getTopologyHist(
   filterExpression: Optional[str] = None,
   histNameSuffix:   str = "",
 ) -> Tuple[List[str], ROOT.TH1F]:
-  '''Fills categorical histogram with counts for each generated topology, applying optional weighting and filtering, and returns list of topology strings and histogram'''
+  """Fills categorical histogram with counts for each generated topology, applying optional weighting and filtering, and returns list of topology strings and histogram"""
   # apply additional filters, if defined
   data = inputData.Filter(filterExpression) if filterExpression else inputData
   if not isinstance(weightVariable, str) and isinstance(weightVariable, Sequence):
@@ -434,7 +434,7 @@ def getTopologyHist(
 
 
 def getCategoricalTH1AsDict(hist: ROOT.TH1) -> Dict[str, float]:
-  '''Returns categorical histogram as dict { bin label : bin content }'''
+  """Returns categorical histogram as dict { bin label : bin content }"""
   xAxis = hist.GetXaxis()
   return {xAxis.GetBinLabel(binIndex) : hist.GetBinContent(binIndex)
     for binIndex in range(1, xAxis.GetNbins() + 1)}
@@ -448,7 +448,7 @@ def plotTopologyHist(
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
-  '''Plots categorical histogram with counts or fraction for each generated topology, applying optional weighting and filtering'''
+  """Plots categorical histogram with counts or fraction for each generated topology, applying optional weighting and filtering"""
   # get histogram data
   topoNames: Dict[str, List[str]] = {}  # dictionary of ordered list of topology names { case : [ topologyName ] }
   topoHists: Dict[str, ROOT.TH1F] = {}  # dictionary of topology histograms { case : topologyHist }
@@ -503,7 +503,7 @@ def overlayTopologies(
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "_MCbggen_topologies",
 ) -> None:
-  '''Overlays 1D distributions for given variable from overall data sample and distributions for the `maxNmbTopologies` topologies with the largest number of combos from the bggen MC sample'''
+  """Overlays 1D distributions for given variable from overall data sample and distributions for the `maxNmbTopologies` topologies with the largest number of combos from the bggen MC sample"""
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
   for case in FILTER_CASES.keys():
     caseData = data.Filter(FILTER_CASES[case])

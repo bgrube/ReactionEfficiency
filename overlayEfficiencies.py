@@ -28,7 +28,7 @@ def getEfficiencies(
   fitLabels:         Sequence[str] = [],
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
 ) -> Tuple[Dict[Tuple[str, str], List[EffInfo]], Optional[List[Tuple[str, ...]]]]:
-  '''Reads yields from given fit directories and calculates efficiencies for each directory'''
+  """Reads yields from given fit directories and calculates efficiencies for each directory"""
   assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"list of fit-result directory names '{fitResultDirNames}' must consist of unique elements"
   assert (not fitLabels) or len(fitLabels) == len(fitResultDirNames), f"Number of given fit labels ({len(fitLabels)}) does not match number of fit directories ({len(fitResultDirNames)})"
   print("Reading yields and calculating efficiencies")
@@ -61,7 +61,7 @@ def overlayEfficiencies(
   particle:          str = "Proton",
   channel:           str = "4pi",
 ):
-  '''Overlays efficiencies as a function of `binningVar` for all given fits'''
+  """Overlays efficiencies as a function of `binningVar` for all given fits"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   efficiencyMultiGraph = ROOT.TMultiGraph()
   efficiencyGraphs = {}  # store graphs here to keep them in memory

@@ -29,7 +29,7 @@ def runSelector(
   runPROOF:         bool = True,
   nmbEntries:       int  = ROOT.TTree.kMaxEntries,
 ) -> None:
-  '''Runs DSelector over data set defined by given file name pattern'''
+  """Runs DSelector over data set defined by given file name pattern"""
   # create TChain with input data
   chain = ROOT.TChain(treeName)
   chain.Add(fileNamePattern)

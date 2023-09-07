@@ -17,7 +17,7 @@ print = functools.partial(print, flush = True)
 
 
 def andCuts(cuts: Iterable[Optional[str]]) -> str:
-  '''Creates cut string where given cuts are combined by via logical and, ignoring None and empty cut strings'''
+  """Creates cut string where given cuts are combined by via logical and, ignoring None and empty cut strings"""
   cutsWithBraces = (f"({cut})" for cut in filter(None, cuts))  # filters out None _and_ ""
   return " && ".join(cutsWithBraces)
 
@@ -33,7 +33,7 @@ def readWeights(
   sWeightObjectName: str,       # name of weight object in ROOT file
   cut:               str = "",  # optional selection cut to apply
 ) -> None:
-  '''Reads weights from input tree and writes them out as a HS::FIT::Weights object'''
+  """Reads weights from input tree and writes them out as a HS::FIT::Weights object"""
   print(f"Reading weights '{weightBranchName}' from tree '{inputTreeName}' in file '{inputFileName}'"
   f", writing them to key '{sWeightObjectName}' in file '{sWeightFileName}', and assigning label '{sWeightLabel}'"
   + ("" if not cut else f" while applying cut(s) '{cut}'"))
@@ -56,7 +56,7 @@ def defineGaussianPdf(
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
 ) -> None:
-  '''Defines Gaussian PDF'''
+  """Defines Gaussian PDF"""
   fitManager.SetUp().FactoryPDF(f"Gaussian::{pdfName}({fitVariable}, mean_{pdfName}[{parDefs['mean']}], width_{pdfName}[{parDefs['width']}])")
 
 
@@ -67,7 +67,7 @@ def defineDoubleGaussianPdf(
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
   commonMean:  bool = False,
 ) -> None:
-  '''Defines two types of double-Gaussian PDFs'''
+  """Defines two types of double-Gaussian PDFs"""
   if commonMean:
     # with same mean
     fitManager.SetUp().FactoryPDF(f"SUM::{pdfName}("
@@ -89,7 +89,7 @@ def defineSkewedGaussianPdf(
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
   pdfType:     str = "skewNormal",
 ) -> None:
-  '''Defines several types of skewed Gaussian PDFs'''
+  """Defines several types of skewed Gaussian PDFs"""
   # various implementations of skewed Gaussians
   if pdfType == "SkewNormal":
     # skew normal PDF (see https://en.wikipedia.org/wiki/Skew_normal_distribution)
@@ -128,7 +128,7 @@ def defineHistogramPdf(
   comboIdName:          str,  # name of branch with unique combo ID
   cut:                  str,  # cut that is applied when filling histogram
 ) -> None:
-  '''Defines histogram-based PDF'''
+  """Defines histogram-based PDF"""
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = "RfSideband"
   rfSWeightFileName   = f"{outputDirName}/rfSidebandWeights{pdfName}.root"
@@ -183,7 +183,7 @@ def defineSigPdf(
   comboIdName:          str = "",  # name of branch with unique combo ID
   cut:                  str = "",  # cut that is applied when filling histogram
 ) -> None:
-  '''Defines signal PDFs of various types'''
+  """Defines signal PDFs of various types"""
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
 
   pdfTypeArgs = pdfType.split("_")
@@ -244,7 +244,7 @@ def defineBkgPdf(
   comboIdName:          str = "",  # name of branch with unique combo ID
   cut:                  str = "",  # cut that is applied when filling histogram
 ):
-  '''Defines signal PDFs of various types'''
+  """Defines signal PDFs of various types"""
   print(f"Defining background PDF '{pdfName}' of type '{pdfType}'")
 
   #TODO add polynomials
@@ -329,7 +329,7 @@ def defineBkgPdf(
 
 
 def binnedTreeFilesIn(outputDirName: str) -> List[str]:
-  '''Returns list of file names with binned data'''
+  """Returns list of file names with binned data"""
   binningFileName = f"{outputDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
     return []
@@ -346,7 +346,7 @@ def setRooFitOptions(
   fitManager:       "ROOT.FitManager",
   nmbThreadsPerJob: int,
 ) -> None:
-  '''Sets general fit options'''
+  """Sets general fit options"""
   print("Setting RooFit options")
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
   fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
@@ -389,7 +389,7 @@ def performFit(
   nmbThreadsPerJob:        int           = 5,
   nmbProofJobs:            int           = 10,  #TODO? automatically determine number of PROOF jobs
 ) -> None:
-  '''Sets up and performs fit'''
+  """Sets up and performs fit"""
   # create the fit manager and set the output directory for fit results, plots, and weights
   fitDirName = None
   if not kinematicBinning:

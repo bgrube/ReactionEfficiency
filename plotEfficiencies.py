@@ -33,7 +33,7 @@ def readDataIntegralFromFitFile(
   binInfo:     BinInfo,
   fitVariable: str,
 ) -> Optional[ParInfo]:
-  '''Reads data histogram for given kinematic bin and returns its integral assuming Poissonian uncertainty'''
+  """Reads data histogram for given kinematic bin and returns its integral assuming Poissonian uncertainty"""
   assert fitVariable, f"Cannot use value '{fitVariable}' as fit variable name"
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
@@ -60,7 +60,7 @@ def readYieldInfosForBinning(
   readIntegrals: bool = False,
   fitVariable:   str  = "",
 ) -> List[ParInfo]:
-  '''Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning'''
+  """Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning"""
   yieldInfos = []
   # read overall yields
   overallBinInfo = BinInfo("Overall", {}, binningInfo.dirName)  # special bin for overall fit results
@@ -82,13 +82,13 @@ def readYieldInfosForBinning(
 
 @dataclass
 class EffInfo:
-  '''Stores information about efficiency in a single kinematic bin'''
+  """Stores information about efficiency in a single kinematic bin"""
   binInfo: BinInfo  # info for the kinematic bin
   value:   UFloat   # efficiency value
 
 
 def calculateEfficiencies(yieldInfos: Mapping[str, Sequence[ParInfo]]) -> List[EffInfo]:
-  '''Calculates efficiencies from yields'''
+  """Calculates efficiencies from yields"""
   assert ("Found" in yieldInfos) and ("Missing" in yieldInfos), "Either 'Found', 'Missing' or both datasets are missing"
   assert len(yieldInfos["Found"]) == len(yieldInfos["Missing"]), f"'Found' and 'Missing' datasets have different number of kinematic bins: {len(yieldInfos['Found'])} vs. {len(yieldInfos['Missing'])}"
   effInfos = []
@@ -107,7 +107,7 @@ def getEffValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   effInfos:   Sequence[EffInfo],
 ) -> List[Tuple[float, UFloat]]:
-  '''Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos'''
+  """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
   graphValues: List[Tuple[float, UFloat]] = [(effInfo.binInfo.centers[binVarName], effInfo.value)
     for effInfo in effInfos if binVarName in effInfo.binInfo.varNames]
   return graphValues
@@ -122,7 +122,7 @@ def plotEfficiencies1D(
   channel:           str   = "4pi",
   markerSize:        float = 0.75,
 ) -> None:
-  '''Plots efficiency as a function of given binning variable for 1-dimensional binning'''
+  """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   efficiencyGraph = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies))
   # efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
@@ -150,7 +150,7 @@ def getEffValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   effInfos:    Sequence[EffInfo],
 ) -> Tuple[Tuple[float, float, UFloat], ...]:
-  '''Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos'''
+  """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
   graphValues: Tuple[Tuple[float, float, UFloat], ...] = tuple(
     (effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.centers[binVarNames[1]], effInfo.value)
     for effInfo in effInfos if (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
@@ -167,7 +167,7 @@ def plotEfficiencies2D(
   channel:           str   = "4pi",
   markerSize:        float = 0.75,
 ) -> None:
-  '''Plots efficiency as a function of given binning variables for 2-dimensional binning'''
+  """Plots efficiency as a function of given binning variables for 2-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
   efficiencyGraph = plotFitResults.getParValueGraph2D(getEffValuesForGraph2D(binningVars, efficiencies))
   if efficiencyGraph is None:  # nothing to plot

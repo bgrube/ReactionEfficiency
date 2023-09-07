@@ -18,7 +18,7 @@ def makeBruFitTree(
   outputFileName: str,
   treeName:       str = "pippippimpimpmiss",
 ) -> None:
-  '''Converts tree in given file to BruFit format'''
+  """Converts tree in given file to BruFit format"""
   print(f"Converting tree '{treeName}' in '{inputFileName}' to BruFit format")
   print(f"!Note! BruFit trees contain a unique-ID column and hence must never be `hadd`ed")
   branchesToWrite = [
