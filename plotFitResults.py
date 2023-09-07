@@ -273,7 +273,7 @@ def getParValuesForGraph1D(
   """Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos"""
   graphValues: Tuple[Tuple[float, UFloat], ...] = tuple(
     (parInfo.binInfo.centers[binVarName], parInfo.values[parName])
-    for parInfo in parInfos if (parInfo is not None) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)
+    for parInfo in parInfos if (parInfo is not None) and (len(parInfo.binInfo.varNames) == 1) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)
   )
   return graphValues
 
@@ -362,7 +362,8 @@ def getParValuesForGraph2D(
       ufloat(parInfo.binInfo.centers[binVarNames[1]], parInfo.binInfo.widths[binVarNames[1]] / 2.0),
       parInfo.values[parName]
     )
-    for parInfo in parInfos if (parInfo is not None) and (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names)
+    for parInfo in parInfos
+    if (parInfo is not None) and (len(parInfo.binInfo.varNames) == 2) and (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names)
   )
   return graphValues
 

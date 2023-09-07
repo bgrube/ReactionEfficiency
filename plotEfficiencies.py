@@ -108,8 +108,9 @@ def getEffValuesForGraph1D(
   effInfos:   Sequence[EffInfo],
 ) -> List[Tuple[float, UFloat]]:
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
-  graphValues: List[Tuple[float, UFloat]] = [(effInfo.binInfo.centers[binVarName], effInfo.value)
-    for effInfo in effInfos if binVarName in effInfo.binInfo.varNames]
+  graphValues: List[Tuple[float, UFloat]] = [
+    (effInfo.binInfo.centers[binVarName], effInfo.value)
+    for effInfo in effInfos if (len(effInfo.binInfo.varNames) == 1) and (binVarName in effInfo.binInfo.varNames)]
   return graphValues
 
 
@@ -125,7 +126,7 @@ def plotEfficiencies1D(
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   efficiencyGraph = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies))
-  # efficiencyGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
+  efficiencyGraph.SetTitle("")
   efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
   efficiencyGraph.SetMarkerSize(markerSize)
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
@@ -157,7 +158,7 @@ def getEffValuesForGraph2D(
       ufloat(effInfo.binInfo.centers[binVarNames[1]], effInfo.binInfo.widths[binVarNames[1]] / 2.0),
       effInfo.value
     )
-    for effInfo in effInfos if (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
+    for effInfo in effInfos if (len(effInfo.binInfo.varNames) == 2) and (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
   )
   return graphValues
 
