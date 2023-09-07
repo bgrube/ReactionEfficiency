@@ -148,7 +148,7 @@ def readParInfoForBin(
   '''Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names'''
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
-    print(f"Cannot find file '{fitResultFileName}'; skipping")
+    print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
     return None
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
   fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")
@@ -174,7 +174,7 @@ def readParInfoForBin(
   return ParInfo(binInfo, parValuesInBin)
 
 
-def readParInfosForBinning(binningInfo: BinningInfo) -> List[Optional[ParInfo]]:
+def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   '''Reads parameter values from fit results for given kinematic binning'''
   parInfos = []
   parNames = None  # used to compare parameter names for current and previous bin
@@ -187,7 +187,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[Optional[ParInfo]]:
         assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
       parNames = parNamesInBin
       print(f"Read parameter values for kinematic bin: {parInfo}")
-    parInfos.append(parInfo)
+      parInfos.append(parInfo)
   return parInfos
 
 
@@ -227,7 +227,7 @@ def plotFitResult(
   '''Plots fit result for given kinematic bin'''
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
-    print(f"Cannot find file '{fitResultFileName}'; skipping")
+    print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
     return
   print(f"Plotting fit result in file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
@@ -357,9 +357,9 @@ if __name__ == "__main__":
   dataSets    = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
-  parInfos:    Dict[str, List[Optional[ParInfo]]] = {}    # parInfos[<dataset>][<bin>]
-  parNames:    Optional[Tuple[str, ...]]          = None
-  binVarNames: Optional[List[Tuple[str, ...]]]    = None  # binning variables for each binning
+  parInfos:    Dict[str, List[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
+  parNames:    Optional[Tuple[str, ...]]       = None
+  binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
@@ -373,16 +373,14 @@ if __name__ == "__main__":
           plotFitResults(binningInfo, fitVariable)
           if not dataSet in parInfos:
             parInfos[dataSet] = []
-          parInfos[dataSet][len(parInfos[dataSet]):] = readParInfosForBinning(binningInfo)  # append parameter values
-          parInfo = parInfos[dataSet][-1]
-          if parInfo is not None:
-            parNamesInBinning = parInfo.names  # readParInfosForBinning() ensures that parameter names are identical within a binning
-            if parNames is not None:
-              assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} of '{dataSet}' dataset and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous one"
-            else:
-              parNames = parNamesInBinning
+          parInfos[dataSet].extend(readParInfosForBinning(binningInfo))
+          parNamesInBinning = parInfos[dataSet][-1].names  # readParInfosForBinning() ensures that parameter names are identical within a binning
+          if parNames is not None:
+            assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} for dataset '{dataSet}' and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous dataset"
+          else:
+            parNames = parNamesInBinning
     if binVarNames is not None:
-      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of '{dataSet}' dataset are different from the binning variables {binVarNames} of the previous one"
+      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} for dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous dataset"
     else:
       binVarNames = binVarNamesInDataSet
 
