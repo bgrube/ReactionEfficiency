@@ -7,6 +7,7 @@ import ctypes
 from dataclasses import dataclass  # builtin in Python 3.7+
 import functools
 import itertools
+import math
 import numpy as np
 import os
 import sys
@@ -267,8 +268,10 @@ def getParValuesForGraph1D(
   parInfos:   Sequence[Optional[ParInfo]],
 ) -> Tuple[Tuple[float, UFloat], ...]:
   '''Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos'''
-  graphValues: Tuple[Tuple[float, UFloat], ...] = tuple((parInfo.binInfo.centers[binVarName], parInfo.values[parName])
-    for parInfo in parInfos if (parInfo is not None) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names))
+  graphValues: Tuple[Tuple[float, UFloat], ...] = tuple(
+    (parInfo.binInfo.centers[binVarName], parInfo.values[parName])
+    for parInfo in parInfos if (parInfo is not None) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)
+  )
   return graphValues
 
 
@@ -289,26 +292,9 @@ def getParValueGraph1D(
     shift  = xRange * shiftByFraction
     xVals = xVals + shift
   # report weighted average
-  meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
-  print(f"    weighted mean of efficiencies = {meanEff}")
+  meanVal = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
+  print(f"    weighted mean = {meanVal}")
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
-
-
-def getParValueGraph2D(
-  graphValues: Sequence[Tuple[float, float, UFloat]],
-) -> ROOT.TGraph2DErrors:
-  '''Creates ROOT.TGraph2DErrors from given values'''
-  if not graphValues:
-    print("No data to plot")
-    return
-  xVals = np.array([graphVal[0]               for graphVal in graphValues], dtype = "d")
-  yVals = np.array([graphVal[1]               for graphVal in graphValues], dtype = "d")
-  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
-  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
-  # report weighted average
-  meanEff = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
-  print(f"    weighted mean of efficiencies = {meanEff}")
-  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, ROOT.nullptr, ROOT.nullptr, zErrs)
 
 
 def plotParValue1D(
@@ -320,7 +306,7 @@ def plotParValue1D(
   particle:          str   = "Proton",
   channel:           str   = "4pi",
 ) -> None:
-  '''Overlay parameter values for datasets for 1-dimensional binning for given parameter for given binning variable'''
+  '''Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables'''
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
   parValueMultiGraph = ROOT.TMultiGraph()
   parValueGraphs = {}  # store graphs here to keep them in memory
@@ -359,6 +345,92 @@ def plotParValue1D(
   legend.SetBorderSize(0)
   drawZeroLine(parValueMultiGraph)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def getParValuesForGraph2D(
+  binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
+  parName:     str,  # name of value, i.e. z-axis
+  parInfos:    Sequence[Optional[ParInfo]],
+) -> Tuple[Tuple[float, float, UFloat], ...]:
+  '''Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos'''
+  graphValues: Tuple[Tuple[float, float, UFloat], ...] = tuple(
+    (parInfo.binInfo.centers[binVarNames[0]], parInfo.binInfo.centers[binVarNames[1]], parInfo.values[parName])
+    for parInfo in parInfos if (parInfo is not None) and (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names)
+  )
+  return graphValues
+
+
+def getParValueGraph2D(graphValues: Sequence[Tuple[float, float, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
+  '''Creates ROOT.TGraph2DErrors from given parameter values'''
+  if not graphValues:
+    print("No data to plot")
+    return None
+  xVals = np.array([graphVal[0]               for graphVal in graphValues], dtype = "d")
+  yVals = np.array([graphVal[1]               for graphVal in graphValues], dtype = "d")
+  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
+  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
+  # report weighted average
+  meanVal = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
+  print(f"    weighted mean = {meanVal}")
+  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, ROOT.nullptr, ROOT.nullptr, zErrs)
+
+
+def plotParValue2D(
+  parInfos:          Mapping[str, Sequence[Optional[ParInfo]]],
+  parName:           str,  # name of parameter to plot
+  binningVars:       Sequence[str],  # names of binning variables to plot
+  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNameSuffix: str   = "",
+  particle:          str   = "Proton",
+  channel:           str   = "4pi",
+) -> None:
+  '''Overlays values of given parameter for given datasets for 2-dimensional binning with given binning variables'''
+  savedFrameFillColor = ROOT.gStyle.GetFrameFillColor()
+  ROOT.gStyle.SetFrameFillColor(0)  # switch back to default; otherwise graphs obstruct histogram frame
+  print(f"Plotting parameter '{parName}' as a function of binning variables '{binningVars}'")
+  parValueGraphs = {}  # store graphs here to keep them in memory
+  xMin = yMin = zMin = +math.inf
+  xMax = yMax = zMax = -math.inf
+  for dataSet in parInfos:
+    graph = parValueGraphs[dataSet] = getParValueGraph2D(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
+    if graph is not None:
+      xMin = min(xMin, graph.GetXmin())
+      yMin = min(yMin, graph.GetYmin())
+      zMin = min(zMin, graph.GetZmin())
+      xMax = max(xMax, graph.GetXmax())
+      yMax = max(yMax, graph.GetYmax())
+      zMax = max(zMax, graph.GetZmax())
+  if not parValueGraphs:  # nothing to plot
+    return
+  canv = ROOT.TCanvas()
+  # construct histogram that ensures same axes for all graphs
+  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
+  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  hist = ROOT.TH3F(
+    f"{particle}_{channel}_{parName}_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}",
+    (f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
+     f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})"
+     f";{parName}"),
+    1, xMin, xMax, 1, yMin, yMax, 1, zMin, zMax
+  )
+  hist.SetStats(False)
+  titleOffsets = (2.0, 2.0, 1.5)
+  for index, axis in enumerate((hist.GetXaxis(), hist.GetYaxis(), hist.GetZaxis())):
+    axis.CenterTitle(True)
+    axis.SetTitleOffset(titleOffsets[index])
+  hist.Draw()
+  styleIndex = 0
+  for dataSet, graph in parValueGraphs.items():
+    graph.Draw("P SAME")
+    graph.SetName(dataSet)
+    graph.SetTitle("")
+    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
+    styleIndex += 1
+  legend = canv.BuildLegend()
+  legend.SetFillStyle(0)
+  legend.SetBorderSize(0)
+  canv.SaveAs(f"{pdfDirName}/{hist.GetName()}.pdf")
+  ROOT.gStyle.SetFrameFillColor(savedFrameFillColor)  # restore previous value
 
 
 if __name__ == "__main__":
@@ -407,4 +479,6 @@ if __name__ == "__main__":
     for parName in parNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          plotParValue1D(parInfos, parName, binningVars[0], args.outputDirName)
+          plotParValue1D(parInfos, parName, binningVars[0],  args.outputDirName)
+        elif len(binningVars) == 2:
+          plotParValue2D(parInfos, parName, binningVars[:2], args.outputDirName)
