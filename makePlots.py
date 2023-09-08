@@ -2,6 +2,7 @@
 
 
 from collections.abc import Sequence
+import ctypes
 import functools
 import os
 import subprocess

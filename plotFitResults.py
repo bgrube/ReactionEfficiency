@@ -3,7 +3,6 @@
 
 import argparse
 import collections
-import ctypes
 from dataclasses import dataclass  # builtin in Python 3.7+
 import functools
 import itertools
