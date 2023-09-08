@@ -634,7 +634,7 @@ if __name__ == "__main__":
     plot1D(inputData, "AccidWeightFactor",        axisTitles = "RF Weight",                             binning = (1000, -2, 2),    **kwargs, weightVariable = None)
     plot1D(inputData, "KinFitPVal",               axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150, 0, 1),      **kwargs)
     plot1D(inputData, "NmbUnusedShowers",         axisTitles = "Number of Unused Showers",              binning = (11, -0.5, 10.5), **kwargs)
-    plot1D(inputData, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                   binning = (11, -0.5, 10.5), **kwargs)
+    plot1D(inputData, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180, 3, 12),     **kwargs)
     plot1D(inputData, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",       binning = (25, 0, 250),     **kwargs)
     plot1D(inputData, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",      binning = (20, 0, 200),     **kwargs)
 
