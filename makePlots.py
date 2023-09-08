@@ -500,6 +500,8 @@ def plotTopologyHist(
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}topologies{'_norm' if normalize else ''}{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   hStack.SetMinimum(0)
+  if normalize:
+    hStack.SetMaximum(100)
   hStack.GetXaxis().SetRangeUser(0, maxNmbTopologies)
   # add legend
   legend = canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
