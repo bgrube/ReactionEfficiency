@@ -686,11 +686,11 @@ if __name__ == "__main__":
     #     overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
 
     plot1D(inputData, "MissingProtonP",     axisTitles = "#it{p}^{miss}_{kin. fit} (GeV/c)",    binning = (500, 0, 10),     **kwargs)
-    plot1D(inputData, "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg)", binning = (500, 0, 100),    **kwargs)
-    plot1D(inputData, "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{kin. fit} (deg)",   binning = (360, -180, 100), **kwargs)
+    plot1D(inputData, "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg)", binning = (200, 0, 100),    **kwargs)
+    plot1D(inputData, "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{kin. fit} (deg)",   binning = (180, -180, 180), **kwargs)
 
     plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9),      **kwargs)
-    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 360, -180, 180), **kwargs)
+    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 180, -180, 180), **kwargs)
     # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{p}^{miss}_{measured} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9),      **kwargs)
     # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{#phi}^{miss}_{measured} (deg)", binning = (180, 0, 90, 360, -180, 180), **kwargs)
 
