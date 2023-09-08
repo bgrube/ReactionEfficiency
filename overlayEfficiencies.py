@@ -65,7 +65,7 @@ def overlayEfficiencies(
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   efficiencyMultiGraph = ROOT.TMultiGraph()
   efficiencyGraphs = {}  # store graphs here to keep them in memory
-  shiftFraction = 0
+  shiftFraction = 0.0
   styleIndex = 0
   for (fitResultDirName, fitLabel), efficiencies in effInfos.items():
     graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   # run = "_041003"
-  fitResults = [
+  fitResults: Tuple[Tuple[str, str], ...] = (
     # no extra cuts
     # ("noCut/BruFitOutput.sig_allFixed",        "MC truth"),
     # ("noCut/BruFitOutput.sig_allFudge",        "bggenSig sig fudge"),
@@ -158,7 +158,8 @@ if __name__ == "__main__":
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_Log",        "data sig fudge bkg LogNormal"),
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_SkewNormal", "data sig fudge bkg SkewNormal"),
     #
-    ("2018_01-ver02/noShowers/BruFitOutput.sig_allFixed",            "bggen MC"),
+    ("2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
+    ("2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
     # 2018 runs
     # ("2018_01-ver02/noShowers/BruFitOutput.data_041003_allFixed",    "Run 41003 (fixed)"),
     # ("2018_01-ver02/noShowers/BruFitOutput.data_042030_allFixed",    "Run 42030 (fixed)"),
@@ -167,11 +168,11 @@ if __name__ == "__main__":
     # ("2018_01-ver02/noShowers/BruFitOutput.data_042030_sigAllFudge", "Run 42030 (sig fudge)"),
     # ("2018_01-ver02/noShowers/BruFitOutput.data_042550_sigAllFudge", "Run 42550 (sig fudge)"),
     # 2020 runs
-    ("2019_11-ver01/noShowers/BruFitOutput.data_071592_allFixed",    "Run 71592 (fixed)"),
-    ("2019_11-ver01/noShowers/BruFitOutput.data_071593_allFixed",    "Run 71593 (fixed)"),
-    ("2019_11-ver01/noShowers/BruFitOutput.data_071594_allFixed",    "Run 71594 (fixed)"),
-    ("2019_11-ver01/noShowers/BruFitOutput.data_071596_allFixed",    "Run 71596 (fixed)"),
-    ("2019_11-ver01/noShowers/BruFitOutput.data_071597_allFixed",    "Run 71597 (fixed)"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.data_071592_allFixed",    "Run 71592 (fixed)"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.data_071593_allFixed",    "Run 71593 (fixed)"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.data_071594_allFixed",    "Run 71594 (fixed)"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.data_071596_allFixed",    "Run 71596 (fixed)"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.data_071597_allFixed",    "Run 71597 (fixed)"),
     # ("2019_11-ver01/noShowers/BruFitOutput.data_071598_allFixed",    "Run 71598 (fixed)"),
     # ("2019_11-ver01/noShowers/BruFitOutput.data_071603_allFixed",    "Run 71603 (fixed)"),
     # ("2019_11-ver01/noShowers/BruFitOutput.data_071612_allFixed",    "Run 71612 (fixed)"),
@@ -187,10 +188,10 @@ if __name__ == "__main__":
     # ("2019_11-ver01/noShowers/BruFitOutput.data_071612_sigAllFudge", "Run 71612 (sig fudge)"),
     # ("2019_11-ver01/noShowers/BruFitOutput.data_071614_sigAllFudge", "Run 71614 (sig fudge)"),
     # ("2019_11-ver01/noShowers/BruFitOutput.data_071615_sigAllFudge", "Run 71615 (sig fudge)"),
-  ]
+  )
   if args.fitResult:
-    fitResultDirNames = [fitResult[0] for fitResult in args.fitResult]
-    fitLabels         = [fitResult[1] for fitResult in args.fitResult]
+    fitResultDirNames = tuple(fitResult[0] for fitResult in args.fitResult)
+    fitLabels         = tuple(fitResult[1] for fitResult in args.fitResult)
   else:
     # fitResultDirNames = tuple(f"./fits/2018_01-ver02/{fitResult[0]}" for fitResult in fitResults)
     fitResultDirNames = tuple(f"./fits/{fitResult[0]}" for fitResult in fitResults)
@@ -201,4 +202,4 @@ if __name__ == "__main__":
     if binVarNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          overlayEfficiencies(effInfos, binningVars[0], "overlays")
+          overlayEfficiencies(effInfos, binningVars[0], pdfDirName = "overlays")
