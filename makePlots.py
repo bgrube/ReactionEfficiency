@@ -137,6 +137,34 @@ def setupPlotStyle() -> None:
   ROOT.gStyle.SetTitleOffset(1.35, "Y")
 
 
+def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
+  """Draws zero line when necessary"""
+  objType = obj.IsA().GetName()
+  if (objType == "TCanvas") or (objType == "TPad"):
+    xMin = ctypes.c_double()
+    xMax = ctypes.c_double()
+    yMin = ctypes.c_double()
+    yMax = ctypes.c_double()
+    obj.GetRangeAxis(xMin, yMin, xMax, yMax)
+    if (yMin.value < 0) and (yMax.value > 0):
+      zeroLine = ROOT.TLine()
+      zeroLine.SetLineStyle(style)
+      zeroLine.SetLineColor(color)
+      return zeroLine.DrawLine(xMin, 0, xMax, 0)
+  elif objType.startswith("TH") or objType.startswith("TGraph") or objType.startswith("TMulti"):
+    xAxis = obj.GetXaxis()
+    yAxis = obj.GetYaxis()
+    if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
+      zeroLine = ROOT.TLine()
+      zeroLine.SetLineStyle(style)
+      zeroLine.SetLineColor(color)
+      return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+    elif (yAxis.GetXmin() > 0) and (yAxis.GetXmax() > 0):
+      obj.SetMinimum(0)
+  else:
+    raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
+
+
 def overlayMissingMassSquared() -> None:
   """Overlays missing-mass-squared histograms from two data samples"""
   inFileNames:  Tuple[str, str] = ("pippippimpimpmiss.RD_2017_01-ver04_030730.root", "pippippimpimpmiss.MCbggen_2017_01-ver03.root")
@@ -276,12 +304,7 @@ def plot1D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
-  # draw zero line, if necessary
-  xAxis = hist.GetXaxis()
-  if hist.GetMinimum() < 0 and hist.GetMaximum() > 0:
-    line = ROOT.TLine()
-    line.SetLineStyle(ROOT.kDashed)
-    line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+  drawZeroLine(hist)
   canv.SaveAs(".pdf")
 
 
@@ -332,12 +355,7 @@ def overlayCases(
   hStack.Draw("NOSTACK HIST")
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  # draw zero line, if necessary
-  xAxis = hStack.GetXaxis()
-  if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
-    line = ROOT.TLine()
-    line.SetLineStyle(ROOT.kDashed)
-    line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+  drawZeroLine(hStack)
   canv.SaveAs(".pdf")
 
 
@@ -526,12 +544,7 @@ def overlayTopologies(
     hStack.Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-    # draw zero line, if necessary
-    xAxis = hStack.GetXaxis()
-    if hStack.GetMinimum() < 0 and hStack.GetMaximum() > 0:
-      line = ROOT.TLine()
-      line.SetLineStyle(ROOT.kDashed)
-      line.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
+    drawZeroLine(hStack)
     canv.SaveAs(".pdf")
 
 

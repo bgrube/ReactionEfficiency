@@ -195,34 +195,6 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   return parInfos
 
 
-def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
-  """Draws zero line when necessary"""
-  objType = obj.IsA().GetName()
-  if (objType == "TCanvas") or (objType == "TPad"):
-    xMin = ctypes.c_double()
-    xMax = ctypes.c_double()
-    yMin = ctypes.c_double()
-    yMax = ctypes.c_double()
-    obj.GetRangeAxis(xMin, yMin, xMax, yMax)
-    if (yMin.value < 0) and (yMax.value > 0):
-      zeroLine = ROOT.TLine()
-      zeroLine.SetLineStyle(style)
-      zeroLine.SetLineColor(color)
-      return zeroLine.DrawLine(xMin, 0, xMax, 0)
-  elif objType.startswith("TH") or objType.startswith("TGraph") or objType.startswith("TMulti"):
-    xAxis = obj.GetXaxis()
-    yAxis = obj.GetYaxis()
-    if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
-      zeroLine = ROOT.TLine()
-      zeroLine.SetLineStyle(style)
-      zeroLine.SetLineColor(color)
-      return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
-    elif (yAxis.GetXmin() > 0) and (yAxis.GetXmax() > 0):
-      obj.SetMinimum(0)
-  else:
-    raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
-
-
 def plotFitResult(
   binInfo:     BinInfo,
   fitVariable: str,
@@ -247,7 +219,7 @@ def plotFitResult(
     # only remove filled frame
     paramBox.SetBorderSize(0)
     paramBox.SetFillStyle(0)
-  drawZeroLine(dataFitPad)
+  makePlots.drawZeroLine(dataFitPad)
   pdfFileName = ("Overall" if binInfo.name == "" else "") + f"{canv.GetName()}.pdf"
   if pdfDirName:
     canv.SaveAs(f"{pdfDirName}/{pdfFileName}")
@@ -346,7 +318,7 @@ def plotParValue1D(
   legend = canv.BuildLegend()
   legend.SetFillStyle(0)
   legend.SetBorderSize(0)
-  drawZeroLine(parValueMultiGraph)
+  makePlots.drawZeroLine(parValueMultiGraph)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
