@@ -26,7 +26,7 @@ print = functools.partial(print, flush = True)
 
 
 BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
-  "BeamEnergy"         : {"label" : "E_{beam}",                      "unit" : "GeV"},
+  "BeamEnergy"         : {"label" : "#it{E}_{beam}",                 "unit" : "GeV"},
   "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/#it{c}"},
   "MissingProtonTheta" : {"label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg"},
   "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"},
