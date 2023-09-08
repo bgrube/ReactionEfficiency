@@ -539,8 +539,8 @@ if __name__ == "__main__":
     [("MissingProtonPhi",   20, -180.0, +180.0)],  # [deg]
     # 2D binnings
     [
-      ("MissingProtonP",     8, 0.0,  3.2),  # [GeV/c]
       ("MissingProtonTheta", 7, 0.0, 70.0),  # [deg]
+      ("MissingProtonP",     8, 0.0,  3.2),  # [GeV/c]
     ],
   ]
 
