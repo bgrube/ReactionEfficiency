@@ -563,13 +563,13 @@ if __name__ == "__main__":
   maxNmbTopologies = 10
   # dataSet = {}
   # dataset = {"type" : "MCbggen", "period" : "2017_01-ver03"}
-  # dataSet = {"type" : "MCbggen", "period" : "2018_01-ver02"}
-  # isMonteCarlo = isMcBggen = True
+  dataSet = {"type" : "MCbggen", "period" : "2018_01-ver02"}
+  isMonteCarlo = isMcBggen = True
   # dataset = "RD_2017_01-ver04_030730"
   # dataset = "RD_2018_01-ver02_041003"
   # dataset = "RD_2019_11-ver01_071592"
-  dataSet = {"type" : "RD", "period" : "2018_01-ver02"}
-  isMonteCarlo = isMcBggen = False
+  # dataSet = {"type" : "RD", "period" : "2018_01-ver02"}
+  # isMonteCarlo = isMcBggen = False
   treeName     = "pippippimpimpmiss"
   treeFileName = f"./{treeName}_flatTree.root" if not dataSet else f"./data/{dataSet['type']}/{dataSet['period']}/{treeName}_flatTree.{dataSet['type']}_{dataSet['period']}.root"
   print(f"Reading tree '{treeName}' in file '{treeFileName}'")
@@ -586,7 +586,7 @@ if __name__ == "__main__":
       "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")',
     }
     for suffix, filter in filterTopologies.items():
-      # overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
+      # overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
       overlayCases(inputData, "TruthDeltaPOverP", axisTitles = "(#it{p}^{miss}_{truth} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
       overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{truth} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
       overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{truth} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
@@ -621,8 +621,8 @@ if __name__ == "__main__":
         # overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
         overlayTopologies(inputData, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
         # overlayTopologies(inputData, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
-        # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
-        overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+        # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+        overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
 
   # the histograms below are filled for all data types
   cutsArgs = [
@@ -644,16 +644,16 @@ if __name__ == "__main__":
     #   "additionalFilter"  : kwargs.get("additionalFilter", None),
     #   "pdfFileNameSuffix" : "_Sb" + kwargs.get("pdfFileNameSuffix", ""),
     # }
-    # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2})",                   binning = (100, 0, 2), **kwargs)
-    # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
-    # plot1D(inputData, "MissingMassSquared",  axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2}",                   binning = (225, -0.5, 4), **kwargs)
-    # plot1D(inputData, "MissingMassSquared",  axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
-    # plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/c^{2})",                   binning = (100, 0, 2), **kwargs)
-    # plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/c^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
+    # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/#it{c}^{2})",                   binning = (100, 0, 2), **kwargs)
+    # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}^{miss}_{kin. fit} (GeV/#it{c}^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
+    # plot1D(inputData, "MissingMassSquared",  axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/#it{c}^{2})^{2}",                   binning = (225, -0.5, 4), **kwargs)
+    # plot1D(inputData, "MissingMassSquared",  axisTitles = "(#it{m}^{miss}_{kin. fit})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
+    # plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/#it{c}^{2})",                   binning = (100, 0, 2), **kwargs)
+    # plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}^{miss}_{measured} (GeV/#it{c}^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
 
     # missing-mass squared distributions
-    mm2HistDef:         Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2}",                   "binning" : (125, -0.5, 4.5)}
-    mm2HistDefSideBand: Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/c^{2})^{2};" + sideBandYTitle, "binning" : (125, -0.5, 4.5), "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor")}
+    mm2HistDef:         Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/#it{c}^{2})^{2}",                   "binning" : (125, -0.5, 4.5)}
+    mm2HistDefSideBand: Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}^{miss}_{measured})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, "binning" : (125, -0.5, 4.5), "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor")}
     overlayCases(inputData, **mm2HistDef, **kwargs)
     overlayCases(inputData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
     # plot overall distributions for each case
@@ -666,7 +666,7 @@ if __name__ == "__main__":
     #   # {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" :  9, "range" : (3.0, 12.0)},  # spring 2017
     #   {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" : 10, "range" : (5.5, 11.5)},  # spring 2018
     #   # momentum of missing proton
-    #   {"variable" : "MissingProtonP",     "label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/c", "nmbBins" : 10, "range" : (0, 3.5)},
+    #   {"variable" : "MissingProtonP",     "label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/#it{c}", "nmbBins" : 10, "range" : (0, 3.5)},
     #   # polar angle of missing proton
     #   {"variable" : "MissingProtonTheta", "label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg",   "nmbBins" : 10, "range" : (0, 65)},
     #   # azimuthal angle of missing proton
@@ -685,24 +685,24 @@ if __name__ == "__main__":
     #     kinBinData = inputData.Filter(kinBinFilter)
     #     overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
 
-    plot1D(inputData, "MissingProtonP",     axisTitles = "#it{p}^{miss}_{kin. fit} (GeV/c)",    binning = (500, 0, 10),     **kwargs)
-    plot1D(inputData, "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg)", binning = (200, 0, 100),    **kwargs)
-    plot1D(inputData, "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{kin. fit} (deg)",   binning = (180, -180, 180), **kwargs)
+    plot1D(inputData, "MissingProtonP",     axisTitles = "#it{p}^{miss}_{kin. fit} (GeV/#it{c})", binning = (500, 0, 10),     **kwargs)
+    plot1D(inputData, "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg)",   binning = (200, 0, 100),    **kwargs)
+    plot1D(inputData, "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
 
-    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9),      **kwargs)
-    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)", binning = (180, 0, 90, 180, -180, 180), **kwargs)
-    # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{p}^{miss}_{measured} (GeV/c)",  binning = (180, 0, 90, 400, 0, 9),      **kwargs)
-    # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{#phi}^{miss}_{measured} (deg)", binning = (180, 0, 90, 360, -180, 180), **kwargs)
+    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{p}^{miss}_{kin. fit} (GeV/#it{c})", binning = (180, 0, 90, 400, 0, 9),      **kwargs)
+    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",     binning = (180, 0, 90, 180, -180, 180), **kwargs)
+    # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{p}^{miss}_{measured} (GeV/#it{c})", binning = (180, 0, 90, 400, 0, 9),      **kwargs)
+    # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}^{miss}_{measured} (deg);#it{#phi}^{miss}_{measured} (deg)",     binning = (180, 0, 90, 360, -180, 180), **kwargs)
 
-    # plot1D(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     **kwargs)
+    # plot1D(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
     plot1D(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     **kwargs)
     plot1D(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
     plot1D(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
-    # overlayCases(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/c)",                      binning = (600, -6, 6),     **kwargs)
+    # overlayCases(inputData, "UnusedDeltaP",      axisTitles = "#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
     overlayCases(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}^{miss}_{unused} #minus #it{p}^{miss}_{kin. fit}) / #it{p}^{miss}_{kin. fit}", binning = (500, -2, 2),     **kwargs)
     overlayCases(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}^{miss}_{unused} #minus #it{#theta}^{miss}_{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
     overlayCases(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}^{miss}_{unused} #minus #it{#phi}^{miss}_{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
     # unusedTrackData = inputData.Filter("(NmbUnusedTracks == 1)")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
-    # plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     axisTitles = "#it{p}^{miss}_{unused} (GeV/c);#it{p}^{miss}_{kin. fit} (GeV/c)",       binning = (400, 0, 9, 400, 0, 9),           **kwargs)
-    # plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)", binning = (360, 0, 180, 360, 0, 180),       **kwargs)
-    # plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",     binning = (360, -180, 180, 360, -180, 180), **kwargs)
+    # plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     axisTitles = "#it{p}^{miss}_{unused} (GeV/#it{c});#it{p}^{miss}_{kin. fit} (GeV/#it{c})", binning = (400, 0, 9, 400, 0, 9),           **kwargs)
+    # plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{unused} (deg);#it{#theta}^{miss}_{kin. fit} (deg)",     binning = (360, 0, 180, 360, 0, 180),       **kwargs)
+    # plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{unused} (deg);#it{#phi}^{miss}_{kin. fit} (deg)",         binning = (360, -180, 180, 360, -180, 180), **kwargs)
