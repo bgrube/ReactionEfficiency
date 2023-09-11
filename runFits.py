@@ -17,6 +17,10 @@ if __name__ == "__main__":
 
   period = "2018_01-ver02"
   bggenFileName = f"./data/MCbggen/{period}/pippippimpimpmiss_flatTree.MCbggen_{period}.root.brufit"
+  # dataSamples: List[Dict[str, str]] = [{
+  #   "dataFileName" : bggenFileName,
+  #   "dataLabel" : f"bggen_{period}",
+  # }]
   # dataFileNames = [f"./pippippimpimpmiss_flatTree.RD_{period}_041003.root.brufit"]
   # period = "2019_11-ver01"
   # dataFileNames = sorted(glob.glob(f"./data/RD/{period}/pippippimpimpmiss_flatTree.RD_{period}_??????.root.brufit"))
@@ -37,21 +41,21 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram",
     #   "pdfTypeBkg" : "\"\"",
     # },
-    {
-      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
-      "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
-      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    },
+    # {
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
+    #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
+    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    # },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
-    # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigShift",
-    #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear scale",
-    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    # },
+    {
+      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigShift",
+      "pdfTypeSig" : "Histogram", "fixParsSig" : "smear scale",
+      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigScale",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift",
@@ -72,11 +76,11 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
-    # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
-    #   "pdfTypeSig" : "Histogram",
-    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    # },
+    {
+      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
+      "pdfTypeSig" : "Histogram",
+      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
