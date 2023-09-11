@@ -175,7 +175,7 @@ def callMemberFunctionsWithArgs(
     function = getattr(instance, functionName, None)
     if function is None:
       continue
-    print(f"Calling member function '{functionName}({argument})' of {instance}")
+    # print(f"Calling member function '{functionName}({argument})' of {instance}")
     function(argument)
 
 
@@ -215,10 +215,12 @@ def overlayDataSamples1D(
     for hist in hists:
       hist.Scale(normIntegral / hist.Integral())
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_overlay_{'_'.join(dataSamples.keys())}_{pdfFileNameSuffix}")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_overlay_{'_'.join(dataSamples.keys())}{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   # add legend
-  canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+  # canv.BuildLegend()  # automatic placement with width 0.3 and height 0.21
+  canv.BuildLegend(0.3, 0.15, 0.3, 0.15)  # automatic placement with width 0.3 and height 0.15
+  # canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   canv.SaveAs(".pdf")
 
 
@@ -590,14 +592,24 @@ if __name__ == "__main__":
       "normToThis" : True,
     },
   }
-  overlayDataSamples1D(
-    dataSamplesToOverlay,
-    treeName = "pippippimpimpmiss",
-    variable = "KinFitPVal",
-    axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value",
-    binning = (150, 0, 1),
-  )
-  raise ValueError
+  overlayArgs = {
+    "dataSamples" : dataSamplesToOverlay,
+    "treeName"    : "pippippimpimpmiss",
+  }
+  overlayDataSamples1D(variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), **overlayArgs)
+  overlayArgs = {
+    **overlayArgs,
+    "additionalFilter"  : "(NmbUnusedShowers == 0)",
+    "pdfFileNameSuffix" : "_noUnusedShowers",
+  }
+  overlayDataSamples1D(variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150, 0, 1),      **overlayArgs)
+  overlayDataSamples1D(variable = "MissingProtonP",     axisTitles = "#it{p}^{miss}_{kin. fit} (GeV/#it{c})", binning = (500, 0, 10),     **overlayArgs)
+  overlayDataSamples1D(variable = "MissingProtonTheta", axisTitles = "#it{#theta}^{miss}_{kin. fit} (deg)",   binning = (200, 0, 100),    **overlayArgs)
+  overlayDataSamples1D(variable = "MissingProtonPhi",   axisTitles = "#it{#phi}^{miss}_{kin. fit} (deg)",     binning = (180, -180, 180), **overlayArgs)
+  for case, caseFilter in FILTER_CASES.items():
+    overlayDataSamples1D(dataSamplesToOverlay, treeName = "pippippimpimpmiss", variable = "MissingMassSquared_Measured",
+                         axisTitles = "(#it{m}^{miss}_{measured})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5),
+                         additionalFilter = f"((NmbUnusedShowers == 0) and {caseFilter})", pdfFileNameSuffix = f"_{case}_noUnusedShowers")
 
   maxNmbTopologies = 10
   # dataSet = {}
@@ -666,7 +678,7 @@ if __name__ == "__main__":
   # the histograms below are filled for all data types
   cutsArgs = [
     {},  # no extra cut
-    {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+    {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},
   ]
   for kwargs in cutsArgs:
 
