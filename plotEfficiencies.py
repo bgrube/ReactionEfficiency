@@ -8,7 +8,14 @@ import math
 import numpy as np
 import os
 import sys
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+  Dict,
+  List,
+  Mapping,
+  Optional,
+  Sequence,
+  Tuple,
+)
 
 from uncertainties import UFloat, ufloat
 
@@ -16,7 +23,12 @@ import ROOT
 
 import makePlots
 import plotFitResults
-from plotFitResults import BinInfo, BinningInfo, ParInfo, BINNING_VAR_PLOT_INFO
+from plotFitResults import (
+  BinInfo,
+  BinningInfo,
+  ParInfo,
+  BINNING_VAR_PLOT_INFO,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering

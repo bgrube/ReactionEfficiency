@@ -6,7 +6,15 @@ from dataclasses import dataclass  # builtin in Python 3.7+
 import functools
 import os
 import sys
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+  Dict,
+  Iterable,
+  List,
+  Mapping,
+  Optional,
+  Sequence,
+  Tuple,
+)
 
 from uncertainties import UFloat, ufloat
 

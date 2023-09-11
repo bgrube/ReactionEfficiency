@@ -5,7 +5,14 @@ import argparse
 import functools
 import os
 import sys
-from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+  Iterable,
+  List,
+  Mapping,
+  Optional,
+  Sequence,
+  Tuple,
+)
 
 import ROOT
 

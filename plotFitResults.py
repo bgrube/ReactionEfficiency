@@ -10,7 +10,14 @@ import math
 import numpy as np
 import os
 import sys
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+  Dict,
+  List,
+  Mapping,
+  Optional,
+  Sequence,
+  Tuple,
+)
 
 from uncertainties import UFloat, ufloat
 

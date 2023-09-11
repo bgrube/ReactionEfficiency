@@ -6,7 +6,10 @@ import glob
 import os
 import shutil
 import subprocess
-from typing import Dict, List
+from typing import (
+  Dict,
+  List,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
