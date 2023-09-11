@@ -166,50 +166,57 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
     raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
 
 
+def callMemberFunctionsWithArgs(
+  instance:          Any,             # instance for which member functions will be called
+  functionsWithArgs: Dict[str, Any],  # member-function names with argments
+) -> None:
+  """Calls member functions of given object with given arguments"""
+  for functionName, argument in functionsWithArgs.items():
+    function = getattr(instance, functionName, None)
+    if function is None:
+      continue
+    print(f"Calling member function '{functionName}({argument})' of {instance}")
+    function(argument)
+
+
 def overlayDataSamples1D(
-  treeFileNames:     Sequence[str],  # paths to input files to overlay
-  dataLabels:        Sequence[str],  # labels for each input file
+  dataSamples:       Dict[str, Dict[str, Any]],  # file name and style definition for each data-set label
   treeName:          str,  # tree name to read
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
-  normIndex:         Optional[int] = 0,  # index of histogram to normalize all other histograms to; if None, no normalization is performed
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "justin_Proton_4pi_",
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Overlays 1D histograms from given data samples"""
-  # get trees
-  print(f"Reading tree '{treeName}' from files '{treeFileNames}'")
-  dataSamples: Tuple[ROOT.RDataFrame, ...] = tuple(
-     ROOT.RDataFrame(treeName, treeFileName) \
-                     .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
-                     .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
-    for treeFileName in treeFileNames
-  )
-  # overlay distributions from data samples
+  print(f"Overlaying distributions for '{variable}' for data samples {', '.join(dataSamples.keys())}")
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
-  hists: List[ROOT.TH1D] = []
-  for dataIndex, dataSample in enumerate(dataSamples):
-    hist: ROOT.TH1D = getHistND(dataSample, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
-                                histNameSuffix = dataLabels[dataIndex], histTitle = dataLabels[dataIndex])
+  hists: List[ROOT.TH1D] = []  # keep histograms in memory
+  normIndex = None  # index of histogram to normalize to
+  for dataLabel, dataSample in dataSamples.items():
+    # get tree
+    treeFileName = dataSample["fileName"]
+    print(f"Reading data sample '{dataLabel}' from tree '{treeName}' in file '{treeFileName}'")
+    data = ROOT.RDataFrame(treeName, treeFileName) \
+               .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
+               .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
+                                histNameSuffix = dataLabel, histTitle = dataLabel)
+    callMemberFunctionsWithArgs(hist, dataSample)
+    if dataSample.get("normToThis", None) is not None:
+      print(f"Normalizing all histograms to '{dataLabel}'")
+      normIndex = len(hists)
     hists.append(hist)
     hStack.Add(hist.GetPtr())
-    # # normalize real data
-    # hist = hists[0][case]
-    # hist.Scale(hists[1][case].Integral() / hist.Integral())
-    # set style
-    # hist.SetLineColor(ROOT.kGray)
-    # hist.SetFillColor(ROOT.kGray)
-    # hists[1][case].SetLineColor(ROOT.kRed + 1)
-    # for i, hist in enumerate(hists):
-    #   hist = hists[i][case]
-    #   hist.SetName(dataLabels[i])
-    #   hist.Rebin(rebinFactor)
-    #   hStacks[case].Add(hist)
+  # normalize histograms
+  if normIndex is not None:
+    normIntegral = hists[normIndex].Integral()
+    for hist in hists:
+      hist.Scale(normIntegral / hist.Integral())
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_overlay_{'_'.join(dataLabels)}_{pdfFileNameSuffix}")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_overlay_{'_'.join(dataSamples.keys())}_{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
@@ -572,9 +579,20 @@ if __name__ == "__main__":
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
+  dataSamples = {
+    "bggen MC (scaled)" : {
+      "fileName" : "./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root",
+      # define plot style
+      "SetLineColor" : ROOT.kGray,
+      "SetFillColor" : ROOT.kGray,
+    },
+    "Real Data" : {
+      "fileName"   : "./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root",
+      "normToThis" : True,
+    },
+  }
   overlayDataSamples1D(
-    treeFileNames = ("./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root", "./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root"),
-    dataLabels = ("Real Data", "bggen MC (scaled)"),
+    dataSamples,
     treeName = "pippippimpimpmiss",
     variable = "KinFitPVal",
     axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value",
