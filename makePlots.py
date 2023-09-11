@@ -194,7 +194,7 @@ def overlayDataSamples1D(
   print(f"Overlaying distributions for '{variable}' for data samples {', '.join(dataSamples.keys())}")
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists: List[ROOT.TH1D] = []  # keep histograms in memory
-  normIndex = None  # index of histogram to normalize to
+  normIntegral = None  # index of histogram to normalize to
   for dataLabel, dataSample in dataSamples.items():
     # get tree
     treeFileName = dataSample["fileName"]
@@ -207,12 +207,11 @@ def overlayDataSamples1D(
     callMemberFunctionsWithArgs(hist, dataSample)
     if dataSample.get("normToThis", None) is not None:
       print(f"Normalizing all histograms to '{dataLabel}'")
-      normIndex = len(hists)
+      normIntegral = hist.Integral()
     hists.append(hist)
     hStack.Add(hist.GetPtr())
   # normalize histograms
-  if normIndex is not None:
-    normIntegral = hists[normIndex].Integral()
+  if normIntegral is not None:
     for hist in hists:
       hist.Scale(normIntegral / hist.Integral())
   # draw distributions
@@ -579,7 +578,7 @@ if __name__ == "__main__":
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
-  dataSamples = {
+  dataSamplesToOverlay = {
     "bggen MC (scaled)" : {
       "fileName" : "./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root",
       # define plot style
@@ -592,7 +591,7 @@ if __name__ == "__main__":
     },
   }
   overlayDataSamples1D(
-    dataSamples,
+    dataSamplesToOverlay,
     treeName = "pippippimpimpmiss",
     variable = "KinFitPVal",
     axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value",
