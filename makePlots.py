@@ -166,40 +166,54 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
     raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
 
 
-def overlayMissingMassSquared() -> None:
-  """Overlays missing-mass-squared histograms from two data samples"""
-  inFileNames:  Tuple[str, str] = ("pippippimpimpmiss.RD_2017_01-ver04_030730.root", "pippippimpimpmiss.MCbggen_2017_01-ver03.root")
-  labels:       Tuple[str, str] = ("Real data (scaled)", "bggen MC")
-  histBaseName: str             = "MissingMassSquared/MissingMassSquared"
-  rebinFactor:  int             = 100
-
-  # get histograms
-  inFiles = tuple(ROOT.TFile(inFileName) for inFileName in inFileNames)
-  cases   = ("Found", "Missing", "")
-  hists   = tuple({case : inFile.Get(histBaseName + ("_" + case if case != "" else "")) for case in cases} for inFile in inFiles)
-
-  # overlay real-data and bggen MC distributions
-  hStacks = {case : ROOT.THStack("hStackMissingMassSquaredOverlay" + case,
-                                 ("Total" if case == "" else case) + f";{hists[0][case].GetXaxis().GetTitle()};Number of Combos (RF-subtracted)") for case in cases}
-  for case in cases:
-    # normalize real data
-    hist = hists[0][case]
-    hist.Scale(hists[1][case].Integral() / hist.Integral())
+def overlayDataSamples1D(
+  treeFileNames:     Sequence[str],  # paths to input files to overlay
+  dataLabels:        Sequence[str],  # labels for each input file
+  treeName:          str,  # tree name to read
+  variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,  # semicolon-separated list
+  binning:           Tuple[int, float, float],  # tuple with binning definition
+  normIndex:         Optional[int] = 0,  # index of histogram to normalize all other histograms to; if None, no normalization is performed
+  weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNameSuffix: str = "",
+  additionalFilter:  Optional[str] = None,
+) -> None:
+  """Overlays 1D histograms from given data samples"""
+  # get trees
+  print(f"Reading tree '{treeName}' from files '{treeFileNames}'")
+  dataSamples: Tuple[ROOT.RDataFrame, ...] = tuple(
+     ROOT.RDataFrame(treeName, treeFileName) \
+                     .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
+                     .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+    for treeFileName in treeFileNames
+  )
+  # overlay distributions from data samples
+  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
+  hists: List[ROOT.TH1D] = []
+  for dataIndex, dataSample in enumerate(dataSamples):
+    hist: ROOT.TH1D = getHistND(dataSample, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
+                                histNameSuffix = dataLabels[dataIndex], histTitle = dataLabels[dataIndex])
+    hists.append(hist)
+    hStack.Add(hist.GetPtr())
+    # # normalize real data
+    # hist = hists[0][case]
+    # hist.Scale(hists[1][case].Integral() / hist.Integral())
     # set style
-    hist.SetLineColor(ROOT.kGray)
-    hist.SetFillColor(ROOT.kGray)
-    hists[1][case].SetLineColor(ROOT.kRed + 1)
-    for i, hist in enumerate(hists):
-      hist = hists[i][case]
-      hist.SetName(labels[i])
-      hist.Rebin(rebinFactor)
-      hStacks[case].Add(hist)
-    # draw distributions
-    canv = ROOT.TCanvas("justin_Proton_4pi_mm2_MCbggen_overlay" + ("_" + case if case != "" else ""))
-    hStacks[case].Draw("NOSTACK HIST")
-    # add legend
-    canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-    canv.SaveAs(".pdf")
+    # hist.SetLineColor(ROOT.kGray)
+    # hist.SetFillColor(ROOT.kGray)
+    # hists[1][case].SetLineColor(ROOT.kRed + 1)
+    # for i, hist in enumerate(hists):
+    #   hist = hists[i][case]
+    #   hist.SetName(dataLabels[i])
+    #   hist.Rebin(rebinFactor)
+    #   hStacks[case].Add(hist)
+  # draw distributions
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_overlay_{'_'.join(dataLabels)}_{pdfFileNameSuffix}")
+  hStack.Draw("NOSTACK HIST")
+  # add legend
+  canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+  canv.SaveAs(".pdf")
 
 
 def drawHistogram(
@@ -558,7 +572,15 @@ if __name__ == "__main__":
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
-  # overlayMissingMassSquared()
+  overlayDataSamples1D(
+    treeFileNames = ("./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root", "./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root"),
+    dataLabels = ("Real Data", "bggen MC (scaled)"),
+    treeName = "pippippimpimpmiss",
+    variable = "KinFitPVal",
+    axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value",
+    binning = (150, 0, 1),
+  )
+  raise ValueError
 
   maxNmbTopologies = 10
   # dataSet = {}
