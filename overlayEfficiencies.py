@@ -86,7 +86,6 @@ def overlayEfficiencies1D(
   if graphTitle is None:
     efficiencyMultiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
   else:
-    print("!!! FOO")
     efficiencyMultiGraph.SetTitle(graphTitle)
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   efficiencyMultiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
@@ -110,6 +109,7 @@ def overlayEfficiencies2D(
   channel:           str = "4pi",
 ):
   """Overlays efficiencies as a function of one binning variable and stepping through the bins of the other variable given by `steppingVar` for all fits with matching 2D binning"""
+  print(f"Overlaying efficiencies for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   # filter efficiency infos that belong to given binning variables
   effInfos2D: Dict[Tuple[str, str], List[EffInfo]] = {}
   for key, efficiencies in effInfos.items():
@@ -126,11 +126,6 @@ def overlayEfficiencies2D(
   steppingVarValues = set(effInfo.binInfo.centers[steppingVar] for effInfo in effInfos2D[firstKey])
   steppingVarWidth = effInfos2D[firstKey][0].binInfo.widths[steppingVar]  # assume equidistant binning
   for steppingVarValue in steppingVarValues:
-    steppingRange = (f"{steppingVarValue - steppingVarWidth / 2.0}", f"{steppingVarValue + steppingVarWidth / 2.0}")
-    steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
-      f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
-      f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    print(f"!!! {steppingVarValue}; {steppingVarLabel}")
     # construct input for 1D plotting function
     effInfos1D: Dict[Tuple[str, str], List[EffInfo]] = {}
     for key, efficiencies in effInfos2D.items():
@@ -143,7 +138,11 @@ def overlayEfficiencies2D(
         ), efficiency.value) for efficiency in efficiencies if efficiency.binInfo.centers[steppingVar] == steppingVarValue
       ]
       assert effInfos1D[key], f"Could not find any efficiencies for bin center {steppingVar} == {steppingVarValue}"
-      print(f"??? {effInfos1D[key]}")
+    # plot current bin of stepping variable
+    steppingRange = (f"{steppingVarValue - steppingVarWidth / 2.0}", f"{steppingVarValue + steppingVarWidth / 2.0}")
+    steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
+      f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
+      f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
     overlayEfficiencies1D(
       effInfos = effInfos1D,
       binningVar = xAxisVar,
@@ -270,6 +269,6 @@ if __name__ == "__main__":
     if binVarNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          overlayEfficiencies(effInfos, binningVars[0], pdfDirName = "overlays")
+          overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName = "overlays")
         if len(binningVars) == 2:
           overlayEfficiencies2D(effInfos, binningVars[:2], steppingVar = binningVars[1], pdfDirName = "overlays")
