@@ -247,24 +247,25 @@ def getParValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   parName:    str,  # name of value, i.e. y-axis
   parInfos:   Sequence[Optional[ParInfo]],
-) -> Tuple[Tuple[float, UFloat], ...]:
+) -> Tuple[Tuple[UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos"""
-  graphValues: Tuple[Tuple[float, UFloat], ...] = tuple(
-    (parInfo.binInfo.centers[binVarName], parInfo.values[parName])
+  graphValues: Tuple[Tuple[UFloat, UFloat], ...] = tuple(
+    (ufloat(parInfo.binInfo.centers[binVarName], parInfo.binInfo.widths[binVarName] / 2.0), parInfo.values[parName])
     for parInfo in parInfos if (parInfo is not None) and (len(parInfo.binInfo.varNames) == 1) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)
   )
   return graphValues
 
 
 def getParValueGraph1D(
-  graphValues:     Sequence[Tuple[float, UFloat]],
+  graphValues:     Sequence[Tuple[UFloat, UFloat]],
   shiftByFraction: float = 0,
 ) -> ROOT.TGraphErrors:
   """Creates ROOT.TGraphErrors from given values"""
   if not graphValues:
     print("No data to plot")
     return
-  xVals = np.array([graphVal[0]               for graphVal in graphValues], dtype = "d")
+  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
+  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
   yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
   yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
   # shift x values by fraction of total x range
@@ -275,7 +276,7 @@ def getParValueGraph1D(
   # report weighted average
   meanVal = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
   print(f"    weighted mean = {meanVal}")
-  return ROOT.TGraphErrors(len(xVals), xVals, yVals, ROOT.nullptr, yErrs)
+  return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
 def plotParValue1D(

@@ -118,10 +118,10 @@ def calculateEfficiencies(yieldInfos: Mapping[str, Sequence[ParInfo]]) -> List[E
 def getEffValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   effInfos:   Sequence[EffInfo],
-) -> List[Tuple[float, UFloat]]:
+) -> List[Tuple[UFloat, UFloat]]:
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
-  graphValues: List[Tuple[float, UFloat]] = [
-    (effInfo.binInfo.centers[binVarName], effInfo.value)
+  graphValues: List[Tuple[UFloat, UFloat]] = [
+    (ufloat(effInfo.binInfo.centers[binVarName], effInfo.binInfo.widths[binVarName] / 2.0), effInfo.value)
     for effInfo in effInfos if (len(effInfo.binInfo.varNames) == 1) and (binVarName in effInfo.binInfo.varNames)]
   return graphValues
 
