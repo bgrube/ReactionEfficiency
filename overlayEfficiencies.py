@@ -24,7 +24,7 @@ import makePlots
 import plotFitResults
 from plotFitResults import ParInfo, BINNING_VAR_PLOT_INFO
 import plotEfficiencies
-from plotEfficiencies import EffInfo
+from plotEfficiencies import EffInfo, BinInfo
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -37,7 +37,7 @@ def getEfficiencies(
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
 ) -> Tuple[Dict[Tuple[str, str], List[EffInfo]], Optional[List[Tuple[str, ...]]]]:
   """Reads yields from given fit directories and calculates efficiencies for each directory"""
-  assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"list of fit-result directory names '{fitResultDirNames}' must consist of unique elements"
+  assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"List of fit-result directory names '{fitResultDirNames}' has duplicate elements"
   assert (not fitLabels) or len(fitLabels) == len(fitResultDirNames), f"Number of given fit labels ({len(fitLabels)}) does not match number of fit directories ({len(fitResultDirNames)})"
   print("Reading yields and calculating efficiencies")
   effInfos:    Dict[Tuple[str, str], List[EffInfo]] = {}    # effInfos[(<fit directory>, <fit label>)][<bin>]
@@ -61,15 +61,16 @@ def getEfficiencies(
   return effInfos, binVarNames
 
 
-def overlayEfficiencies(
+def overlayEfficiencies1D(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNameSuffix: str = "",
   particle:          str = "Proton",
   channel:           str = "4pi",
+  graphTitle:        Optional[str] = None,
 ):
-  """Overlays efficiencies as a function of `binningVar` for all given fits"""
+  """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   efficiencyMultiGraph = ROOT.TMultiGraph()
   efficiencyGraphs = {}  # store graphs here to keep them in memory
@@ -77,12 +78,16 @@ def overlayEfficiencies(
   styleIndex = 0
   for (fitResultDirName, fitLabel), efficiencies in effInfos.items():
     graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
-    shiftFraction += 0.01
+    # shiftFraction += 0.01
     graph.SetTitle(fitLabel)
     makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(effInfos) == 1 else True)
     styleIndex += 1
     efficiencyMultiGraph.Add(graph)
-  efficiencyMultiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
+  if graphTitle is None:
+    efficiencyMultiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
+  else:
+    print("!!! FOO")
+    efficiencyMultiGraph.SetTitle(graphTitle)
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   efficiencyMultiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
   efficiencyMultiGraph.GetYaxis().SetTitle("Efficiency")
@@ -93,6 +98,61 @@ def overlayEfficiencies(
   efficiencyMultiGraph.Draw("APZ")
   canv.BuildLegend()
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def overlayEfficiencies2D(
+  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
+  binningVars:       Sequence[str],
+  steppingVar:       str,
+  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNameSuffix: str = "",
+  particle:          str = "Proton",
+  channel:           str = "4pi",
+):
+  """Overlays efficiencies as a function of one binning variable and stepping through the bins of the other variable given by `steppingVar` for all fits with matching 2D binning"""
+  # filter efficiency infos that belong to given binning variables
+  effInfos2D: Dict[Tuple[str, str], List[EffInfo]] = {}
+  for key, efficiencies in effInfos.items():
+    effInfos2D[key] = [
+      efficiency for efficiency in efficiencies
+      if (len(efficiency.binInfo.varNames) == 2) and (binningVars[0] in efficiency.binInfo.varNames) and (binningVars[1] in efficiency.binInfo.varNames)
+    ]
+    assert effInfos2D[key], f"Could not find any efficiencies that match binning variables '{binningVars}'"
+  assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
+  assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
+  xAxisVar = binningVars[0] if steppingVar == binningVars[1] else binningVars[1]
+  firstKey = list(effInfos2D.keys())[0]
+  # assume that binning info is identical for data sets
+  steppingVarValues = set(effInfo.binInfo.centers[steppingVar] for effInfo in effInfos2D[firstKey])
+  steppingVarWidth = effInfos2D[firstKey][0].binInfo.widths[steppingVar]  # assume equidistant binning
+  for steppingVarValue in steppingVarValues:
+    steppingRange = (f"{steppingVarValue - steppingVarWidth / 2.0}", f"{steppingVarValue + steppingVarWidth / 2.0}")
+    steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
+      f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
+      f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
+    print(f"!!! {steppingVarValue}; {steppingVarLabel}")
+    # construct input for 1D plotting function
+    effInfos1D: Dict[Tuple[str, str], List[EffInfo]] = {}
+    for key, efficiencies in effInfos2D.items():
+      effInfos1D[key] = [
+        EffInfo(BinInfo(
+          name    = efficiency.binInfo.name,
+          centers = {xAxisVar : efficiency.binInfo.centers[xAxisVar]},
+          widths  = {xAxisVar : efficiency.binInfo.widths[xAxisVar]},
+          dirName = efficiency.binInfo.dirName,
+        ), efficiency.value) for efficiency in efficiencies if efficiency.binInfo.centers[steppingVar] == steppingVarValue
+      ]
+      assert effInfos1D[key], f"Could not find any efficiencies for bin center {steppingVar} == {steppingVarValue}"
+      print(f"??? {effInfos1D[key]}")
+    overlayEfficiencies1D(
+      effInfos = effInfos1D,
+      binningVar = xAxisVar,
+      pdfDirName = pdfDirName,
+      pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
+      particle = particle,
+      channel = channel,
+      graphTitle = steppingVarLabel,
+    )
 
 
 if __name__ == "__main__":
@@ -211,3 +271,5 @@ if __name__ == "__main__":
       for binningVars in binVarNames:
         if len(binningVars) == 1:
           overlayEfficiencies(effInfos, binningVars[0], pdfDirName = "overlays")
+        if len(binningVars) == 2:
+          overlayEfficiencies2D(effInfos, binningVars[:2], steppingVar = binningVars[1], pdfDirName = "overlays")
