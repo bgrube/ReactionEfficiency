@@ -34,9 +34,9 @@ print = functools.partial(print, flush = True)
 
 BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
   "BeamEnergy"         : {"label" : "#it{E}_{beam}",                 "unit" : "GeV"},
-  "MissingProtonP"     : {"label" : "#it{p}^{miss}_{kin. fit}",      "unit" : "GeV/#it{c}"},
-  "MissingProtonTheta" : {"label" : "#it{#theta}^{miss}_{kin. fit}", "unit" : "deg"},
-  "MissingProtonPhi"   : {"label" : "#it{#phi}^{miss}_{kin. fit}",   "unit" : "deg"},
+  "MissingProtonP"     : {"label" : "#it{p}_{miss}^{kin. fit}",      "unit" : "GeV/#it{c}"},
+  "MissingProtonTheta" : {"label" : "#it{#theta}_{miss}^{kin. fit}", "unit" : "deg"},
+  "MissingProtonPhi"   : {"label" : "#it{#phi}_{miss}^{kin. fit}",   "unit" : "deg"},
 }
 
 REMOVE_PARAM_BOX = False
