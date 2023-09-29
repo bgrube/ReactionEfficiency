@@ -57,11 +57,11 @@ if __name__ == "__main__":
   channel = "pippippimpimpmiss"  # used for output tree and file names
   treeName = "pippippimpimmissprot__B1_T1_U1_Effic"
   # pi+pi-(p)
-  channel = "pippimpmiss"
+  # channel = "pippimpmiss"
   # treeName = "pippimpmiss__B1_T1_U1_Effic"
   selectorFileName = f"./DSelector_{channel}.C"
 
-  # define data
+  # define input files
   dataType = "MCbggen"
   # dataType = "RD"
   # dataPeriod = "2017_01-ver03"
