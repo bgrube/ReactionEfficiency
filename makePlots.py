@@ -194,7 +194,7 @@ def overlayDataSamples1D(
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
@@ -237,7 +237,7 @@ def drawHistogram(
   histName:          str,
   rebinFactor:       Union[int, Sequence[int]] = 1,  # if integer -> rebin x axis; if sequence of 2 integers -> rebin x and y axes
   drawOption:        str = "HIST",
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
   """Plots histogram with given name in ROOT file with given name"""
@@ -326,7 +326,7 @@ def plot1D(
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
@@ -346,7 +346,7 @@ def plot2D(
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float, int, float, float],  # tuple with binning definition
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
@@ -364,7 +364,7 @@ def overlayCases(
   axisTitles:        str,  # semicolon-separated list
   binning:           Tuple[int, float, float],  # tuple with binning definition
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   additionalFilter:  Optional[str] = None,
 ) -> None:
@@ -373,8 +373,8 @@ def overlayCases(
   # overlay distributions for cases
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
-  for case in FILTER_CASES.keys():
-    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, FILTER_CASES[case],
+  for case, caseFilter in FILTER_CASES.items():
+    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, caseFilter,
                                 histNameSuffix = case, histTitle = case)
     hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
@@ -494,15 +494,15 @@ def plotTopologyHist(
   normalize:         bool = False,
   maxNmbTopologies:  int  = 10,
   additionalFilter:  Optional[str] = None,
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
   """Plots categorical histogram with counts or fraction for each generated topology, applying optional weighting and filtering"""
   # get histogram data
   topoNames: Dict[str, List[str]] = {}  # dictionary of ordered list of topology names { case : [ topologyName ] }
   topoHists: Dict[str, ROOT.TH1F] = {}  # dictionary of topology histograms { case : topologyHist }
-  for case in FILTER_CASES.keys():
-    caseData = inputData.Filter(FILTER_CASES[case])
+  for case, caseFilter in FILTER_CASES.items():
+    caseData = inputData.Filter(caseFilter)
     topoNames[case], topoHists[case] = getTopologyHist(caseData, weightVariable = "AccidWeightFactor", filterExpression = additionalFilter, histNameSuffix = case + ("_norm" if normalize else ""))
   # overlay distributions for cases
   hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
@@ -519,14 +519,15 @@ def plotTopologyHist(
     # set bin content of histogram
     for binLabel in topoLabels:
       hist.Fill(binLabel, histValues[binLabel] if binLabel in histValues else 0)
-    if normalize:
-      hist.Scale(100 / hist.Integral())
+    integral = hist.Integral()
+    if normalize and integral != 0:
+      hist.Scale(100 / integral)
     hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
       hist.SetFillColor(COLOR_CASES[case])
     hists[case] = hist
     hStack.Add(hist)
-    print(f"plotTopologyHist(): {case} signal: {hist.GetBinContent(1)}{'%' if normalize else ' combos'}")
+    print(f"plotTopologyHist(): {case} " + (f"purity = {hist.GetBinContent(1)}%" if normalize else f"signal = {hist.GetBinContent(1)} of {integral} combos"))
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}topologies{'_norm' if normalize else ''}{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   hStack.SetMinimum(0)
@@ -551,13 +552,13 @@ def overlayTopologies(
   binning:           Tuple[int, float, float],  # tuple with binning definition
   toposToPlot:       Dict[str, List[str]],  # topologies to plot for each case
   additionalFilter:  Optional[str] = None,
-  pdfFileNamePrefix: str = "justin_Proton_4pi_",
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "_MCbggen_topologies",
 ) -> None:
   """Overlays 1D distributions for given variable from overall data sample and distributions for the `maxNmbTopologies` topologies with the largest number of combos from the bggen MC sample"""
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
-  for case in FILTER_CASES.keys():
-    caseData = data.Filter(FILTER_CASES[case])
+  for case, caseFilter in FILTER_CASES.items():
+    caseData = data.Filter(caseFilter)
     # get topologies with largest number of combos for given case
     hStack = ROOT.THStack(f"{variable}_{case}", f"{case};{setDefaultYAxisTitle(axisTitles)}")
     hists = []
@@ -654,8 +655,8 @@ if __name__ == "__main__":
 
       cutsArgs: List[Dict[str, Any]] = [
         {},  # no extra cut
-        {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
-        {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
+        {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : f"_noUnusedShowers"},  # no unused showers
+        {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : f"_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
       ]
       for kwargs in cutsArgs:
         plotTopologyHist(inputData, normalize = False, **kwargs)
@@ -663,17 +664,17 @@ if __name__ == "__main__":
 
       cutsArgs = [
         {},  # no extra cut
-        {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers and hence no unused energy in calorimeters
+        {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers
         {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
         # # the two cuts below are equivalent to the one above
-        # {"additionalFilter" : "(EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
+        # {"additionalFilter" : "(EnergyUnusedShowers == 0)",                             "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
         # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
       ]
       for kwargs in cutsArgs:
         # get topologies with the largest number of combos for given case
         toposToPlot: Dict[str, List[str]] = {}
-        for case in FILTER_CASES.keys():
-          caseData = inputData.Filter(FILTER_CASES[case])
+        for case, caseFilter in FILTER_CASES.items():
+          caseData = inputData.Filter(caseFilter)
           toposToPlot[case], _ = getTopologyHist(caseData, filterExpression = kwargs.get("additionalFilter", None))
           toposToPlot[case] = ["Total"] + toposToPlot[case][:maxNmbTopologies]
         overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
