@@ -12,3 +12,8 @@ source /group/halld/Software/build_scripts/gluex_env_jlab.sh /work/halld/bgrube/
 
 # #try geometry from ccdb
 # export JANA_GEOMETRY_URL="ccdb:///GEOMETRY/main_HDDS.xml"
+
+# use local file-based CDDB
+export SQLITE_PATH="/work/halld/ccdb_sqlite/55/ccdb.sqlite"
+export CCDB_CONNECTION="sqlite:///${SQLITE_PATH}"
+export JANA_CALIB_URL="sqlite:///${SQLITE_PATH}"
