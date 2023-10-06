@@ -532,22 +532,17 @@ if __name__ == "__main__":
   additionalCut     = "(NmbUnusedShowers == 0)"
   kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
-    # # 1D binnings; only one binning par variable name allowed
-    # # [("BeamEnergy",          9,    3.0,   12.0)],  # [GeV]; spring 2017
-    # [("BeamEnergy",         10,    5.5,   11.5)],  # [GeV]; spring 2018
-    # # [("BeamEnergy",         10,    7.7,   11.2)],  # [GeV]; spring 2020
-    # [("MissingProtonP",     10,    0.0,    3.5)],  # [GeV/c]
-    # [("MissingProtonTheta", 10,    0.0,   65.0)],  # [deg]
-    # [("MissingProtonPhi",   10, -180.0, +180.0)],  # [deg]
-    # finer 1D binnings for total sample
-    [("BeamEnergy",         20,    5.5,   11.5)],  # [GeV]; spring 2018
+    # 1D binnings
+    # [("BeamEnergy",         20,    2.9,   11.5)],  # [GeV]; Spring 2017
+    [("BeamEnergy",         20,    5.3,   11.5)],  # [GeV]; Spring and Fall 2018
+    # [("BeamEnergy",         20,    5.2,   11.2)],  # [GeV]; Spring 2020
     [("MissingProtonP",     20,    0.0,    3.5)],  # [GeV/c]
     [("MissingProtonTheta", 20,    0.0,   65.0)],  # [deg]
     [("MissingProtonPhi",   20, -180.0, +180.0)],  # [deg]
     # 2D binnings
     [
-      ("MissingProtonTheta", 7, 0.0, 70.0),  # [deg]
-      ("MissingProtonP",     8, 0.0,  3.2),  # [GeV/c]
+      ("MissingProtonTheta", 9, 0.0, 90.0),  # [deg]
+      ("MissingProtonP",    17, 0.1,  3.5),  # [GeV/c]
     ],
   ]
 
