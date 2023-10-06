@@ -1,7 +1,8 @@
 #!/usr/bin/bash
 
+PERIOD="2017_01-ver03"
 # PERIOD="2018_01-ver02"
-PERIOD="2018_08-ver02"
+# PERIOD="2018_08-ver02"
 
 RUN_LIST="${PERIOD}.part.runList"
 
