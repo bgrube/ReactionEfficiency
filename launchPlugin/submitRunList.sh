@@ -8,7 +8,8 @@ RUN_LIST="${PERIOD}.part.runList"
 
 swif2 create ReactionEfficiency_RD_${PERIOD}
 
-while read RUN_NMB; do
+while read RUN_NMB
+do
   ./launch.orig.py --verbose=True jobs_ReactionEfficiency_RD.config "${RUN_NMB}" "${RUN_NMB}" &> "ReactionEfficiency_RD_${PERIOD}_${RUN_NMB}.log"
 done <${RUN_LIST}
 
