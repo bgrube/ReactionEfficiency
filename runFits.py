@@ -18,21 +18,19 @@ print = functools.partial(print, flush = True)
 
 if __name__ == "__main__":
 
-  period = "2018_01-ver02"
+  # period = "2017_01-ver03"
+  # period = "2018_01-ver02"
+  period = "2018_08-ver02"
+  # period = "2019_11-ver01"
+
   bggenFileName = f"./data/MCbggen/{period}/pippippimpimpmiss_flatTree.MCbggen_{period}.root.brufit"
-  # dataSamples: List[Dict[str, str]] = [{
+  dataSamples: List[Dict[str, str]] = [{
   #   "dataFileName" : bggenFileName,
   #   "dataLabel" : f"bggen_{period}",
-  # }]
-  # dataFileNames = [f"./pippippimpimpmiss_flatTree.RD_{period}_041003.root.brufit"]
-  # period = "2019_11-ver01"
-  # dataFileNames = sorted(glob.glob(f"./data/RD/{period}/pippippimpimpmiss_flatTree.RD_{period}_??????.root.brufit"))
-  # dataSamples: List[Dict[str, str]] = [{"dataFileName" : fileName, "dataLabel" : f"data_{fileName.split('.')[-3].split('_')[-1]}"} for fileName in dataFileNames]
-  dataSamples: List[Dict[str, str]] = [{
     "dataFileName" : f"./data/RD/{period}/pippippimpimpmiss_flatTree.RD_{period}.root.brufit",
     "dataLabel" : f"data_{period}",
   }]
-  # print(f"!!! {dataSamples}")
+
   fits: List[List[Dict[str, str]]] = [[  # list of fits for each data sample
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFixed_noBkg",
@@ -44,11 +42,11 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram",
     #   "pdfTypeBkg" : "\"\"",
     # },
-    # {
-    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
-    #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
-    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    # },
+    {
+      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_allFixed",
+      "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
+      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "shift scale",
@@ -146,6 +144,7 @@ if __name__ == "__main__":
       os.makedirs(fitDirectory, exist_ok = True)
       print(f"Created directory '{fitDirectory}'")
       # run fits
+      #TODO call python functions directly instead of making the detour via the command-line interface
       print(f"Starting fits ...")
       cmdLineOptions = [(f"--{option} {study[option]}" if option in study else "") for option in ("pdfTypeSig", "fixParsSig", "pdfTypeBkg", "fixParsBkg")]
       result = subprocess.run(
