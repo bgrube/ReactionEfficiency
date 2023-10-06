@@ -62,14 +62,17 @@ if __name__ == "__main__":
   selectorFileName = f"./DSelector_{channel}.C"
 
   # define input files
-  dataType = "MCbggen"
-  # dataType = "RD"
+  # dataType = "MCbggen"
+  dataType = "RD"
   # dataPeriod = "2017_01-ver03"
   # dataPeriod = "2018_01-ver02"
-  dataPeriod = "2018_08-ver02"
-  # dataPeriod = "2019_11-ver01"
+  # dataPeriod = "2018_08-ver02"
+  dataPeriod = "2019_11-ver01"
   dataDir = f"./data/{dataType}/{dataPeriod}"
-  inFileNames = sorted(glob.glob(f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"))
+  inFileNamePattern = f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"
+  print(f"Running DSelector over files '{inFileNamePattern}'")
+  inFileNames = sorted(glob.glob(inFileNamePattern))
+  assert inFileNames, f"Did not find any files matching the name pattern"
 
   # run selector and create flat-tree file
   flatTreeFileNames: List[str] = []
