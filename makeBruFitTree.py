@@ -3,6 +3,7 @@
 
 import functools
 import glob
+from typing import Sequence
 
 import ROOT
 
@@ -14,12 +15,12 @@ print = functools.partial(print, flush = True)
 
 
 def makeBruFitTree(
-  inputFileName:  str,
+  inputFileNames: Sequence[str],
   outputFileName: str,
   treeName:       str = "pippippimpimpmiss",
 ) -> None:
-  """Converts tree in given file to BruFit format"""
-  print(f"Converting tree '{treeName}' in '{inputFileName}' to BruFit format")
+  """Reads given files and writes out tree in BruFit format"""
+  print(f"Converting tree '{treeName}' to BruFit format merging the data from {len(inputFileNames)} files: {inputFileNames}")
   print(f"!Note! BruFit trees contain a unique-ID column and hence must never be `hadd`ed")
   branchesToWrite = [
     "MissingMassSquared_Measured",  # fit variable
@@ -42,7 +43,7 @@ def makeBruFitTree(
   # see https://root-forum.cern.ch/t/accessing-entry-information-using-rdataframe/52378
   # and https://root.cern/doc/master/df007__snapshot_8C.html
   #TODO convert ThrownTopology only for bggen MC
-  rdf = ROOT.RDataFrame(treeName, inputFileName) \
+  rdf = ROOT.RDataFrame(treeName, inputFileNames) \
             .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION) \
             .Define("ComboID", "(double)rdfentry_") \
             .Define("IsSignal", 'ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p"') \
@@ -61,19 +62,11 @@ def makeBruFitTree(
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
 
-  # dataSets = []
-  # dataSets = ["RD_2017_01-ver04_030730"]
-  # dataSets = ["MCbggen_2017_01-ver03"]
-  # dataSets = ["RD_2018_01-ver02_041003"]
-  # dataSets = ["RD_2018_01-ver02_042030"]
-  # dataSets = ["RD_2018_01-ver02_042550"]
-  # dataSets = ["MCbggen_2018_01-ver02"]
-  # if dataSets:
-  #   inputFileNames = [f"./pippippimpimpmiss_flatTree.{dataSet}.root" for dataSet in dataSets]
-  # else:
-  #   inputFileNames = ["./pippippimpimpmiss_flatTree.root"]
-  inputFileNames = sorted(glob.glob("./pippippimpimpmiss_flatTree.RD_2018_01-ver02*.root"))
-  # inputFileNames = sorted(glob.glob("./pippippimpimpmiss_flatTree.RD_2019_11-ver01*.root"))
+  treeName   = "pippippimpimpmiss"
+  dataPeriod = "2018_01-ver02"
+  # dataPeriod = "2018_08-ver02"
+  inputFileNames = sorted(glob.glob(f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}*.root"))
 
-  for inputFileName in inputFileNames:
-    makeBruFitTree(inputFileName, outputFileName = f"{inputFileName}.brufit")
+  # for inputFileName in inputFileNames:
+  #   makeBruFitTree(inputFileName, outputFileName = f"{inputFileName}.brufit")
+  makeBruFitTree(inputFileNames, outputFileName = f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}.root.brufit")
