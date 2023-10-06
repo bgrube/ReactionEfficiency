@@ -51,6 +51,7 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
 
   deleteFlatTreeFiles = False
+  writeBruFitFilesForAllInputFiles = False
 
   # define channel
   # pi+pi+pi-pi-(p)
@@ -74,27 +75,31 @@ if __name__ == "__main__":
   inFileNames = sorted(glob.glob(inFileNamePattern))
   assert inFileNames, f"Did not find any files matching the name pattern"
 
-  # run selector and create flat-tree file
+  # run selector and create flat-tree files
   flatTreeFileNames: List[str] = []
   for inFileName in inFileNames:
     runNumber = inFileName.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeName}_<run number>.root`
     if not runNumber.isnumeric():
       runNumber = None
-    runSelector(inFileName, f"{treeName}_Tree", selectorFileName)
+    # runSelector(inFileName, f"{treeName}_Tree", selectorFileName)
     # rename output files
-    histFileName = f"{dataDir}/{channel}.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
-    print(f"Moving histogram file to '{histFileName}'")
-    os.replace(f"{channel}.root", histFileName)
+    # histFileName = f"{dataDir}/{channel}.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
+    # print(f"Moving histogram file to '{histFileName}'")
+    # os.replace(f"{channel}.root", histFileName)
     flatTreeFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
-    print(f"Moving flat-tree file to '{flatTreeFileName}'")
-    os.replace(f"{channel}_flatTree.root", flatTreeFileName)
+    # print(f"Moving flat-tree file to '{flatTreeFileName}'")
+    # os.replace(f"{channel}_flatTree.root", flatTreeFileName)
     flatTreeFileNames.append(flatTreeFileName)
     print()
 
-  # convert flat tree to BruFit tree
-  for flatTreeFileName in flatTreeFileNames:
-    bruFitTreeFileName = f"{flatTreeFileName}.brufit"
-    makeBruFitTree.makeBruFitTree(flatTreeFileName, outputFileName = bruFitTreeFileName)
-    if deleteFlatTreeFiles:
+  # merge all flat-tree files into single BruFit file
+  makeBruFitTree.makeBruFitTree(flatTreeFileNames, outputFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}.root.brufit")
+  if writeBruFitFilesForAllInputFiles and len(flatTreeFileNames) > 1:
+    # write BruFit-tree file for each flat-tree file
+    for flatTreeFileName in flatTreeFileNames:
+      bruFitTreeFileName = f"{flatTreeFileName}.brufit"
+      makeBruFitTree.makeBruFitTree(flatTreeFileName, outputFileName = bruFitTreeFileName)
+  if deleteFlatTreeFiles:
+    for flatTreeFileName in flatTreeFileNames:
       print(f"Removing flat-tree file '{flatTreeFileName}'")
       os.remove(flatTreeFileName)
