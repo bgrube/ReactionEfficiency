@@ -190,8 +190,8 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
     parInfo = readParInfoForBin(binInfo)
-    if parInfo is not None:
-      # ensure that the parameter sets of the fit functions are the same in all kinematic bins
+    if parInfo.values:
+      # ensure that the parameter sets of the fit functions are the same in all kinematic bins, for which parameters could be read successfully
       parNamesInBin = parInfo.names
       if parNames is not None:
         assert parNamesInBin == parNames, f"The parameter set {parNamesInBin} of this bin is different from the parameter set {parNames} of the previous one"
@@ -297,7 +297,7 @@ def plotParValue1D(
   styleIndex = 0
   for dataSet in parInfos:
     graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]), shiftFraction)
-    shiftFraction += 0.01
+    # shiftFraction += 0.01
     graph.SetTitle(dataSet)
     makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
@@ -437,6 +437,7 @@ if __name__ == "__main__":
   dataSets    = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
+  # plot fits and read parameter values from fit results
   parInfos:    Dict[str, List[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
   parNames:    Optional[Tuple[str, ...]]       = None
   binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
@@ -464,7 +465,7 @@ if __name__ == "__main__":
     else:
       binVarNames = binVarNamesInDataSet
 
-  # plot fit parameters as 1D function of binning variable
+  # plot fit parameters as function of binning variable(s)
   makePlots.setupPlotStyle()
   if parNames and binVarNames:
     for parName in parNames:
