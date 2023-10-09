@@ -533,16 +533,17 @@ if __name__ == "__main__":
   kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # 1D binnings
-    # [("BeamEnergy",         40,    2.9,   11.5)],  # [GeV]; Spring 2017
-    [("BeamEnergy",         40,    5.3,   11.5)],  # [GeV]; Spring and Fall 2018
-    # [("BeamEnergy",         40,    5.2,   11.2)],  # [GeV]; Spring 2020
-    [("MissingProtonP",     40,    0,      4)],  # [GeV/c]
-    [("MissingProtonTheta", 36,    0,     90)],  # [deg]
-    [("MissingProtonPhi",   36, -180,   +180)],  # [deg]
+    #TODO unify energy binning for periods
+    # [("BeamEnergy",          80,    2.9,   11.5)],  # [GeV]; Spring 2017
+    [("BeamEnergy",          80,    5.3,   11.5)],  # [GeV]; Spring and Fall 2018
+    # [("BeamEnergy",          80,    5.2,   11.2)],  # [GeV]; Spring 2020
+    [("MissingProtonP",     100,    0,      5)],  # [GeV/c]
+    [("MissingProtonTheta",  72,    0,     90)],  # [deg]
+    [("MissingProtonPhi",    72, -180,   +180)],  # [deg]
     # 2D binnings
     [
       ("MissingProtonTheta", 9, 0, 90),  # [deg]
-      ("MissingProtonP",    20, 0,  4),  # [GeV/c]
+      ("MissingProtonP",    25, 0,  5),  # [GeV/c]
     ],
   ]
 
