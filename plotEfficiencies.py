@@ -44,13 +44,13 @@ YIELD_PAR_NAMES: Dict[str, str] = {
 def readDataIntegralFromFitFile(
   binInfo:     BinInfo,
   fitVariable: str,
-) -> Optional[ParInfo]:
+) -> ParInfo:
   """Reads data histogram for given kinematic bin and returns its integral assuming Poissonian uncertainty"""
   assert fitVariable, f"Cannot use value '{fitVariable}' as fit variable name"
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
-    return None
+    return ParInfo(binInfo, {})
   print(f"Reading fitted data histogram from file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{'' if binInfo.name == 'Overall' else binInfo.name}_{fitVariable}"
@@ -79,16 +79,14 @@ def readYieldInfosForBinning(
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
-    if yieldInfo is not None:
-      print(f"Read overall yields: {yieldInfo}")
-      yieldInfos.append(yieldInfo)  # first entry always contains overall yields
+    print(f"Read overall yields: {yieldInfo}")
+    yieldInfos.append(yieldInfo)  # first entry always contains overall yields
   # read yields for each bin
   for binInfo in binningInfo.infos:
     yieldInfo = readDataIntegralFromFitFile(binInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(binInfo, YIELD_PAR_NAMES)
-    if yieldInfo is not None:
-      print(f"Read yields for kinematic bin: {yieldInfo}")
-      yieldInfos.append(yieldInfo)
+    print(f"Read yields for kinematic bin: {yieldInfo}")
+    yieldInfos.append(yieldInfo)
   return yieldInfos
 
 
@@ -108,8 +106,15 @@ def calculateEfficiencies(yieldInfos: Mapping[str, Sequence[ParInfo]]) -> List[E
     yieldInfoMissing = yieldInfos["Missing"][index]
     assert yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo), f"Bin infos for 'Found' and 'Missing' are not identical: {yieldInfoFound.binInfo} vs. {yieldInfoMissing.binInfo}"
     # calculate efficiency
-    effInfo = EffInfo(yieldInfoFound.binInfo,
-      yieldInfoFound.values["Signal"] / (yieldInfoFound.values["Signal"] + yieldInfoMissing.values["Signal"]))
+    if "Signal" not in yieldInfoFound.names:
+      print(f"No 'Signal' yield info for 'Found' case: {yieldInfoFound}")
+      continue
+    if "Signal" not in yieldInfoMissing.names:
+      print(f"No 'Signal' yield info for 'Missing' case: {yieldInfoMissing}")
+      continue
+    nmbFound   = yieldInfoFound.values  ["Signal"]
+    nmbMissing = yieldInfoMissing.values["Signal"]
+    effInfo = EffInfo(yieldInfoFound.binInfo, nmbFound / (nmbFound + nmbMissing))
     print(f"Efficiency = {effInfo}")
     effInfos.append(effInfo)
   return effInfos
@@ -122,7 +127,8 @@ def getEffValuesForGraph1D(
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
   graphValues: List[Tuple[UFloat, UFloat]] = [
     (ufloat(effInfo.binInfo.centers[binVarName], effInfo.binInfo.widths[binVarName] / 2.0), effInfo.value)
-    for effInfo in effInfos if (len(effInfo.binInfo.varNames) == 1) and (binVarName in effInfo.binInfo.varNames)]
+    for effInfo in effInfos
+    if (binVarName in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 1)]
   return graphValues
 
 
@@ -170,7 +176,8 @@ def getEffValuesForGraph2D(
       ufloat(effInfo.binInfo.centers[binVarNames[1]], effInfo.binInfo.widths[binVarNames[1]] / 2.0),
       effInfo.value
     )
-    for effInfo in effInfos if (len(effInfo.binInfo.varNames) == 2) and (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames)
+    for effInfo in effInfos
+    if (binVarNames[0] in effInfo.binInfo.varNames) and (binVarNames[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2)
   )
   return graphValues
 

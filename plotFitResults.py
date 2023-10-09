@@ -154,12 +154,12 @@ class ParInfo:
 def readParInfoForBin(
   binInfo:           BinInfo,
   fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
-) -> Optional[ParInfo]:
+) -> ParInfo:
   """Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names"""
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
-    return None
+    return ParInfo(binInfo, {})
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
   fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")
   fitResult      = fitResultFile.Get("MinuitResult")
@@ -246,12 +246,13 @@ def plotFitResults(
 def getParValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   parName:    str,  # name of value, i.e. y-axis
-  parInfos:   Sequence[Optional[ParInfo]],
+  parInfos:   Sequence[ParInfo],
 ) -> Tuple[Tuple[UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos"""
   graphValues: Tuple[Tuple[UFloat, UFloat], ...] = tuple(
     (ufloat(parInfo.binInfo.centers[binVarName], parInfo.binInfo.widths[binVarName] / 2.0), parInfo.values[parName])
-    for parInfo in parInfos if (parInfo is not None) and (len(parInfo.binInfo.varNames) == 1) and (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names)
+    for parInfo in parInfos
+    if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names) and (len(parInfo.binInfo.varNames) == 1)
   )
   return graphValues
 
@@ -280,7 +281,7 @@ def getParValueGraph1D(
 
 
 def plotParValue1D(
-  parInfos:          Mapping[str, Sequence[Optional[ParInfo]]],
+  parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
   binningVar:        str,  # name of binning variable to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
@@ -332,7 +333,7 @@ def plotParValue1D(
 def getParValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   parName:     str,  # name of value, i.e. z-axis
-  parInfos:    Sequence[Optional[ParInfo]],
+  parInfos:    Sequence[ParInfo],
 ) -> Tuple[Tuple[UFloat, UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos"""
   graphValues: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = tuple(
@@ -342,7 +343,7 @@ def getParValuesForGraph2D(
       parInfo.values[parName]
     )
     for parInfo in parInfos
-    if (parInfo is not None) and (len(parInfo.binInfo.varNames) == 2) and (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names)
+    if (binVarNames[0] in parInfo.binInfo.varNames) and (binVarNames[1] in parInfo.binInfo.varNames) and (parName in parInfo.names) and (len(parInfo.binInfo.varNames) == 2)
   )
   return graphValues
 
@@ -365,7 +366,7 @@ def getParValueGraph2D(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -> 
 
 
 def plotParValue2D(
-  parInfos:          Mapping[str, Sequence[Optional[ParInfo]]],
+  parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
   binningVars:       Sequence[str],  # names of binning variables to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
