@@ -394,7 +394,7 @@ def performFit(
   comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
   regenBinnedTrees:        bool          = False,                          # if set, force regeneration of files with binned trees
   nmbThreadsPerJob:        int           = 5,
-  nmbProofJobs:            int           = 10,  #TODO? automatically determine number of PROOF jobs
+  nmbProofJobs:            int           = 20,  #TODO? automatically determine number of PROOF jobs
 ) -> None:
   """Sets up and performs fit"""
   # create the fit manager and set the output directory for fit results, plots, and weights
@@ -533,16 +533,16 @@ if __name__ == "__main__":
   kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # 1D binnings
-    # [("BeamEnergy",         20,    2.9,   11.5)],  # [GeV]; Spring 2017
-    [("BeamEnergy",         20,    5.3,   11.5)],  # [GeV]; Spring and Fall 2018
-    # [("BeamEnergy",         20,    5.2,   11.2)],  # [GeV]; Spring 2020
-    [("MissingProtonP",     20,    0.0,    3.5)],  # [GeV/c]
-    [("MissingProtonTheta", 20,    0.0,   65.0)],  # [deg]
-    [("MissingProtonPhi",   20, -180.0, +180.0)],  # [deg]
+    # [("BeamEnergy",         40,    2.9,   11.5)],  # [GeV]; Spring 2017
+    [("BeamEnergy",         40,    5.3,   11.5)],  # [GeV]; Spring and Fall 2018
+    # [("BeamEnergy",         40,    5.2,   11.2)],  # [GeV]; Spring 2020
+    [("MissingProtonP",     40,    0,      4)],  # [GeV/c]
+    [("MissingProtonTheta", 36,    0,     90)],  # [deg]
+    [("MissingProtonPhi",   36, -180,   +180)],  # [deg]
     # 2D binnings
     [
-      ("MissingProtonTheta", 9, 0.0, 90.0),  # [deg]
-      ("MissingProtonP",    17, 0.1,  3.5),  # [GeV/c]
+      ("MissingProtonTheta", 9, 0, 90),  # [deg]
+      ("MissingProtonP",    20, 0,  4),  # [GeV/c]
     ],
   ]
 
