@@ -482,9 +482,9 @@ def makeKinematicPlotsOverlays(
 
 
 def makeKinematicPlotsMc(
-  dataSample:  ROOT.RDataFrame,
-  isMcBggen:   bool,
-  pdfDirName:  str = "./",
+  dataSample: ROOT.RDataFrame,
+  isMcBggen:  bool,
+  pdfDirName: str = "./",
 ) -> None:
   """Plots kinematic distributions for given Monte Carlo data"""
   filterTopologies = {
@@ -539,6 +539,96 @@ def makeKinematicPlotsMc(
       overlayTopologies(dataSample, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
 
 
+def makeKinematicPlotsData(
+  dataSample: ROOT.RDataFrame,
+  pdfDirName: str = "./",
+) -> None:
+  """Plots kinematic distributions for given Monte Carlo data"""
+  cutsArgs: List[Dict[str, Any]] = [
+    {},  # no extra cut
+    {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},
+  ]
+  for kwargs in cutsArgs:
+    kwargs.update({"pdfDirName" : pdfDirName})
+
+    plot1D(dataSample, "AccidWeightFactor",        axisTitles = "RF Weight",                             binning = (1000, -2, 2),    **kwargs, weightVariable = None)
+    plot1D(dataSample, "KinFitPVal",               axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150, 0, 1),      **kwargs)
+    plot1D(dataSample, "NmbUnusedShowers",         axisTitles = "Number of Unused Showers",              binning = (11, -0.5, 10.5), **kwargs)
+    plot1D(dataSample, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180, 3, 12),     **kwargs)
+    plot1D(dataSample, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",       binning = (25, 0, 250),     **kwargs)
+    plot1D(dataSample, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",      binning = (20, 0, 200),     **kwargs)
+
+    sideBandYTitle = "Number of Combos (RF-Sideband)"
+    # sideBandArgs: Dict[str, Any] = {
+    #   "weightVariable"    : ("AccidWeightFactorSb", "1 - AccidWeightFactor"),
+    #   "additionalFilter"  : kwargs.get("additionalFilter", None),
+    #   "pdfFileNameSuffix" : "_Sb" + kwargs.get("pdfFileNameSuffix", ""),
+    #   "pdfDirName"        : pdfDirName,
+    # }
+    # plot1D(dataSample, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}_{miss}^{kin. fit} (GeV/#it{c}^{2})",                   binning = (100, 0, 2), **kwargs)
+    # plot1D(dataSample, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}_{miss}^{kin. fit} (GeV/#it{c}^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
+    # plot1D(dataSample, "MissingMassSquared",  axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}",                   binning = (225, -0.5, 4), **kwargs)
+    # plot1D(dataSample, "MissingMassSquared",  axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
+    # plot1D(dataSample, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}_{miss}^{meas.} (GeV/#it{c}^{2})",                   binning = (100, 0, 2), **kwargs)
+    # plot1D(dataSample, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}_{miss}^{meas.} (GeV/#it{c}^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
+
+    # missing-mass squared distributions
+    mm2HistDef:         Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",                   "binning" : (125, -0.5, 4.5)}
+    mm2HistDefSideBand: Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, "binning" : (125, -0.5, 4.5), "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor")}
+    overlayCases(dataSample, **mm2HistDef, **kwargs)
+    overlayCases(dataSample, **mm2HistDefSideBand, pdfFileNameSuffix = f"_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+    # plot overall distributions for each case
+    for case, caseFilter in FILTER_CASES.items():
+      caseData = dataSample.Filter(caseFilter)
+      plot1D(caseData, **mm2HistDef,         pdfFileNameSuffix = f"_{case}"    + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+      plot1D(caseData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_{case}_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+    # kinematicBinnings  = [
+    #   # beam energy
+    #   # {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" :  9, "range" : (3.0, 12.0)},  # spring 2017
+    #   {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" : 10, "range" : (5.5, 11.5)},  # spring 2018
+    #   # momentum of missing proton
+    #   {"variable" : "MissingProtonP",     "label" : "#it{p}_{miss}^{kin. fit}",      "unit" : "GeV/#it{c}", "nmbBins" : 10, "range" : (0, 3.5)},
+    #   # polar angle of missing proton
+    #   {"variable" : "MissingProtonTheta", "label" : "#it{#theta}_{miss}^{kin. fit}", "unit" : "deg",   "nmbBins" : 10, "range" : (0, 65)},
+    #   # azimuthal angle of missing proton
+    #   {"variable" : "MissingProtonPhi",   "label" : "#it{#phi}_{miss}^{kin. fit}",   "unit" : "deg",   "nmbBins" : 10, "range" : (-180, +180)},
+    # ]
+    # for kinematicBinning in kinematicBinnings:
+    #   kinBinVariable = kinematicBinning["variable"]
+    #   nmbKinBins     = kinematicBinning["nmbBins"]
+    #   kinBinRange    = kinematicBinning["range"]
+    #   kinBinWidth    = (kinBinRange[1] - kinBinRange[0]) / float(nmbKinBins)
+    #   # plot distributions for kinematic bins
+    #   for kinBinIndex in range(nmbKinBins):
+    #     kinBinMin = kinBinRange[0] + kinBinIndex * kinBinWidth
+    #     kinBinMax = kinBinMin + kinBinWidth
+    #     kinBinFilter = f"(({kinBinMin} < {kinBinVariable}) and ({kinBinVariable} < {kinBinMax}))"
+    #     kinBinData = dataSample.Filter(kinBinFilter)
+    #     overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+
+    plot1D(dataSample, "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500, 0, 10),     **kwargs)
+    plot1D(dataSample, "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200, 0, 100),    **kwargs)
+    plot1D(dataSample, "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
+
+    plot2D(dataSample, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg);#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (180, 0, 90, 400, 0, 9),      **kwargs)
+    plot2D(dataSample, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg);#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, 0, 90, 180, -180, 180), **kwargs)
+    # plot2D(dataSample, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}_{miss}^{meas.} (deg);#it{p}_{miss}^{meas.} (GeV/#it{c})", binning = (180, 0, 90, 400, 0, 9),      **kwargs)
+    # plot2D(dataSample, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}_{miss}^{meas.} (deg);#it{#phi}_{miss}^{meas.} (deg)",     binning = (180, 0, 90, 360, -180, 180), **kwargs)
+
+    # plot1D(dataSample, "UnusedDeltaP",      axisTitles = "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
+    plot1D(dataSample, "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     **kwargs)
+    plot1D(dataSample, "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
+    plot1D(dataSample, "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
+    # overlayCases(dataSample, "UnusedDeltaP",      axisTitles = "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
+    overlayCases(dataSample, "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     **kwargs)
+    overlayCases(dataSample, "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
+    overlayCases(dataSample, "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
+    # unusedTrackData = dataSample.Filter("(NmbUnusedTracks == 1)")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
+    # plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{unused} (GeV/#it{c});#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (400, 0, 9, 400, 0, 9),           **kwargs)
+    # plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{unused} (deg);#it{#theta}_{miss}^{kin. fit} (deg)",     binning = (360, 0, 180, 360, 0, 180),       **kwargs)
+    # plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{unused} (deg);#it{#phi}_{miss}^{kin. fit} (deg)",         binning = (360, -180, 180, 360, -180, 180), **kwargs)
+
+
 def makeDirPath(dirPath: str) -> str:
   """Create path to directory and return directory path as given"""
   try:
@@ -555,12 +645,9 @@ def makeDirPath(dirPath: str) -> str:
 if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
-  #TODO cannot change multithreading for existing data frame
+  #TODO cannot change multithreading after data frame was instantiated
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   plotTools.setupPlotStyle()
-
-  #TODO write plots into directories
-  #TODO make plots for RD and MC in one go
 
   dataPeriods = [
     # "2017_01-ver03",
@@ -585,119 +672,41 @@ if __name__ == "__main__":
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
-  # overlay all periods for bggen MC and real data
-  dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
-  if len(inputData) > 1:
-    for dataType in ("MCbggen", "RD"):
-      dataSamplesToOverlay = {}
-      for index, dataPeriod in enumerate(inputData.keys()):
-        dataSamplesToOverlay[dataPeriod] = {
-          "RDataFrame"   : inputData[dataPeriod][dataType],
-          "normToThis"   : True if index == 0 else False,
-          # define plot style
-          "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
-          "SetLineWidth" : 2,
-        }
-      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
-  # overlay bggen MC and real data for each period
-  for dataPeriod in inputData.keys():
-    dataSamplesToOverlay = {
-      "bggen MC (scaled)" : {
-        "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
-        # define plot style
-        "SetLineColor" : ROOT.kGray,
-        "SetFillColor" : ROOT.kGray,
-      },
-      "Real Data" : {
-        "RDataFrame" : inputData[dataPeriod]["RD"],
-        "normToThis" : True,
-      },
-    }
-    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+  # # overlay all periods for bggen MC and real data
+  # dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
+  # if len(inputData) > 1:
+  #   for dataType in ("MCbggen", "RD"):
+  #     dataSamplesToOverlay = {}
+  #     for index, dataPeriod in enumerate(inputData.keys()):
+  #       dataSamplesToOverlay[dataPeriod] = {
+  #         "RDataFrame"   : inputData[dataPeriod][dataType],
+  #         "normToThis"   : True if index == 0 else False,
+  #         # define plot style
+  #         "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
+  #         "SetLineWidth" : 2,
+  #       }
+  #     makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
+  # # overlay bggen MC and real data for each period
+  # for dataPeriod in inputData.keys():
+  #   dataSamplesToOverlay = {
+  #     "bggen MC (scaled)" : {
+  #       "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
+  #       # define plot style
+  #       "SetLineColor" : ROOT.kGray,
+  #       "SetFillColor" : ROOT.kGray,
+  #     },
+  #     "Real Data" : {
+  #       "RDataFrame" : inputData[dataPeriod]["RD"],
+  #       "normToThis" : True,
+  #     },
+  #   }
+  #   makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
 
-  for dataPeriod in inputData.keys():
-    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
-  raise ValueError
+  # # make Monte Carlo plots for each period
+  # for dataPeriod in inputData.keys():
+  #   makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
 
-  # the histograms below are filled for all data types
-  cutsArgs = [
-    {},  # no extra cut
-    {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},
-  ]
-  for kwargs in cutsArgs:
-
-    plot1D(inputData, "AccidWeightFactor",        axisTitles = "RF Weight",                             binning = (1000, -2, 2),    **kwargs, weightVariable = None)
-    plot1D(inputData, "KinFitPVal",               axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150, 0, 1),      **kwargs)
-    plot1D(inputData, "NmbUnusedShowers",         axisTitles = "Number of Unused Showers",              binning = (11, -0.5, 10.5), **kwargs)
-    plot1D(inputData, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180, 3, 12),     **kwargs)
-    plot1D(inputData, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",       binning = (25, 0, 250),     **kwargs)
-    plot1D(inputData, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",      binning = (20, 0, 200),     **kwargs)
-
-    sideBandYTitle = "Number of Combos (RF-Sideband)"
-    # sideBandArgs: Dict[str, Any] = {
-    #   "weightVariable"    : ("AccidWeightFactorSb", "1 - AccidWeightFactor"),
-    #   "additionalFilter"  : kwargs.get("additionalFilter", None),
-    #   "pdfFileNameSuffix" : "_Sb" + kwargs.get("pdfFileNameSuffix", ""),
-    # }
-    # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}_{miss}^{kin. fit} (GeV/#it{c}^{2})",                   binning = (100, 0, 2), **kwargs)
-    # plot1D(inputData, ("MissingMass", "sqrt(MissingMassSquared)"), axisTitles = "#it{m}_{miss}^{kin. fit} (GeV/#it{c}^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
-    # plot1D(inputData, "MissingMassSquared",  axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}",                   binning = (225, -0.5, 4), **kwargs)
-    # plot1D(inputData, "MissingMassSquared",  axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, binning = (225, -0.5, 4), **sideBandArgs)
-    # plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}_{miss}^{meas.} (GeV/#it{c}^{2})",                   binning = (100, 0, 2), **kwargs)
-    # plot1D(inputData, ("MissingMass_Measured", "sqrt(MissingMassSquared_Measured)"), axisTitles = "#it{m}_{miss}^{meas.} (GeV/#it{c}^{2});" + sideBandYTitle, binning = (100, 0, 2), **sideBandArgs)
-
-    # missing-mass squared distributions
-    mm2HistDef:         Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",                   "binning" : (125, -0.5, 4.5)}
-    mm2HistDefSideBand: Dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, "binning" : (125, -0.5, 4.5), "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor")}
-    overlayCases(inputData, **mm2HistDef, **kwargs)
-    overlayCases(inputData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
-    # plot overall distributions for each case
-    for case, caseFilter in FILTER_CASES.items():
-      caseData = inputData.Filter(caseFilter)
-      plot1D(caseData, **mm2HistDef,         pdfFileNameSuffix = f"_{case}"    + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
-      plot1D(caseData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_{case}_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
-    # kinematicBinnings  = [
-    #   # beam energy
-    #   # {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" :  9, "range" : (3.0, 12.0)},  # spring 2017
-    #   {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" : 10, "range" : (5.5, 11.5)},  # spring 2018
-    #   # momentum of missing proton
-    #   {"variable" : "MissingProtonP",     "label" : "#it{p}_{miss}^{kin. fit}",      "unit" : "GeV/#it{c}", "nmbBins" : 10, "range" : (0, 3.5)},
-    #   # polar angle of missing proton
-    #   {"variable" : "MissingProtonTheta", "label" : "#it{#theta}_{miss}^{kin. fit}", "unit" : "deg",   "nmbBins" : 10, "range" : (0, 65)},
-    #   # azimuthal angle of missing proton
-    #   {"variable" : "MissingProtonPhi",   "label" : "#it{#phi}_{miss}^{kin. fit}",   "unit" : "deg",   "nmbBins" : 10, "range" : (-180, +180)},
-    # ]
-    # for kinematicBinning in kinematicBinnings:
-    #   kinBinVariable = kinematicBinning["variable"]
-    #   nmbKinBins     = kinematicBinning["nmbBins"]
-    #   kinBinRange    = kinematicBinning["range"]
-    #   kinBinWidth    = (kinBinRange[1] - kinBinRange[0]) / float(nmbKinBins)
-    #   # plot distributions for kinematic bins
-    #   for kinBinIndex in range(nmbKinBins):
-    #     kinBinMin = kinBinRange[0] + kinBinIndex * kinBinWidth
-    #     kinBinMax = kinBinMin + kinBinWidth
-    #     kinBinFilter = f"(({kinBinMin} < {kinBinVariable}) and ({kinBinVariable} < {kinBinMax}))"
-    #     kinBinData = inputData.Filter(kinBinFilter)
-    #     overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None))
-
-    plot1D(inputData, "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500, 0, 10),     **kwargs)
-    plot1D(inputData, "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200, 0, 100),    **kwargs)
-    plot1D(inputData, "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
-
-    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonP",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg);#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (180, 0, 90, 400, 0, 9),      **kwargs)
-    plot2D(inputData, xVariable = "MissingProtonTheta", yVariable = "MissingProtonPhi", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg);#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, 0, 90, 180, -180, 180), **kwargs)
-    # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonP_Measured",   axisTitles = "#it{#theta}_{miss}^{meas.} (deg);#it{p}_{miss}^{meas.} (GeV/#it{c})", binning = (180, 0, 90, 400, 0, 9),      **kwargs)
-    # plot2D(inputData, xVariable = "MissingProtonTheta_Measured", yVariable = "MissingProtonPhi_Measured", axisTitles = "#it{#theta}_{miss}^{meas.} (deg);#it{#phi}_{miss}^{meas.} (deg)",     binning = (180, 0, 90, 360, -180, 180), **kwargs)
-
-    # plot1D(inputData, "UnusedDeltaP",      axisTitles = "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
-    plot1D(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     **kwargs)
-    plot1D(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
-    plot1D(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
-    # overlayCases(inputData, "UnusedDeltaP",      axisTitles = "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
-    overlayCases(inputData, "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     **kwargs)
-    overlayCases(inputData, "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
-    overlayCases(inputData, "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
-    # unusedTrackData = inputData.Filter("(NmbUnusedTracks == 1)")  # make sure unused track info exists; NOTE! this assumes that there is maximum 1 unused track
-    # plot2D(unusedTrackData, xVariable = ("UnusedP_",     "UnusedP[0]"),     yVariable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{unused} (GeV/#it{c});#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (400, 0, 9, 400, 0, 9),           **kwargs)
-    # plot2D(unusedTrackData, xVariable = ("UnusedTheta_", "UnusedTheta[0]"), yVariable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{unused} (deg);#it{#theta}_{miss}^{kin. fit} (deg)",     binning = (360, 0, 180, 360, 0, 180),       **kwargs)
-    # plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{unused} (deg);#it{#phi}_{miss}^{kin. fit} (deg)",         binning = (360, -180, 180, 360, -180, 180), **kwargs)
+  # make general plots for each data type and period
+  for dataType in ("MCbggen", "RD"):
+    for dataPeriod in inputData.keys():
+      makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
