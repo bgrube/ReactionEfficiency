@@ -73,17 +73,19 @@ def setCbFriendlyStyle(
   graphOrHist:   Any,
   styleIndex:    int,  # index that switches between styles
   skipBlack:     bool  = True,  # if set black color is not used
+  setMarker:     bool  = True,
   markerSize:    float = 1.5,
   filledMarkers: bool  = True,
 ) -> None:
   """Sets line color and marker style, color, and size of a TGraph or TH1 according to a style index"""
   nmbStyles = min(len(COLORS_CB_FRIENDLY) - (1 if skipBlack else 0), len(MARKERS_FILLED), len(MARKERS_OPEN))
   assert styleIndex < nmbStyles, f"The style index {styleIndex} goes beyond the maximum of {nmbStyles} styles that are implemented"
-  graphOrHist.SetMarkerStyle(MARKERS_FILLED[styleIndex][0] if filledMarkers else MARKERS_OPEN[styleIndex][0])
-  graphOrHist.SetMarkerSize(markerSize * MARKERS_FILLED[styleIndex][1] if filledMarkers else MARKERS_OPEN[styleIndex][1])
   color = getCbFriendlyRootColor(styleIndex, skipBlack)
-  graphOrHist.SetMarkerColor(color)
   graphOrHist.SetLineColor(color)
+  if setMarker:
+    graphOrHist.SetMarkerColor(color)
+    graphOrHist.SetMarkerStyle(MARKERS_FILLED[styleIndex][0] if filledMarkers else MARKERS_OPEN[styleIndex][0])
+    graphOrHist.SetMarkerSize(markerSize * MARKERS_FILLED[styleIndex][1] if filledMarkers else MARKERS_OPEN[styleIndex][1])
 
 
 def setupPlotStyle(rootLogonPath: str = "./rootlogon.C") -> None:
