@@ -3,7 +3,6 @@
 
 from collections import defaultdict
 from collections.abc import Sequence
-import ctypes
 import functools
 import os
 import subprocess
@@ -18,6 +17,8 @@ from typing import (
 )
 
 import ROOT
+
+import plotTools
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -52,140 +53,11 @@ COLOR_CASES = {
 }
 
 
-# black + 7 colorblind-friendly colors rom M. Okabe and K. Ito, "How to make figures and presentations that are friendly to color blind people," University of Tokyo, 2002.
-# see also Bang Wong, https://www.nature.com/articles/nmeth.1618.pdf
-#     https://davidmathlogic.com/colorblind
-#     https://yoshke.org/blog/colorblind-friendly-diagrams
-COLORS_CB_FRIENDLY: Tuple[str, ...] = (
-  "#000000",  # black
-  "#0072B2",  # blue
-  "#D55E00",  # vermillion
-  "#009E73",  # bluish green
-  "#CC79A7",  # reddish purple
-  "#56B4E9",  # sky blue
-  "#E69F00",  # orange
-  "#F0E442",  # yellow
-)
-
-def getRootColor(hexColor: str) -> int:
-  """Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created"""
-  ROOT.TColor.SetColorThreshold(0)  # ensure GetColor() returns exact color
-  return ROOT.TColor.GetColor(hexColor)
-
-def getCbFriendlyRootColor(index: int) -> int:
-  """Returns ROOT color index for given index in colorblind-friendly palette"""
-  return getRootColor(COLORS_CB_FRIENDLY[index])
-
-# 11 filled marker styles; the float is a relative scaling factor to obtain equal apparent sizes
-MARKERS_FILLED: Tuple[Tuple[int, float], ...] = (
-  (ROOT.kFullCircle,            0.75),
-  (ROOT.kFullSquare,            0.70),
-  (ROOT.kFullDiamond,           1.00),
-  (ROOT.kFullCross,             0.85),
-  (ROOT.kFullCrossX,            0.85),
-  (ROOT.kFullStar,              1.00),
-  (ROOT.kFullFourTrianglesX,    0.90),
-  (ROOT.kFullFourTrianglesPlus, 0.85),
-  (ROOT.kFullTriangleUp,        0.85),
-  (ROOT.kFullTriangleDown,      0.85),
-  (ROOT.kFullDoubleDiamond,     1.10),
-)
-# 11 open marker styles
-MARKERS_OPEN: Tuple[Tuple[int, float], ...] = (
-  (ROOT.kOpenCircle,            0.75),
-  (ROOT.kOpenSquare,            0.70),
-  (ROOT.kOpenDiamond,           1.00),
-  (ROOT.kOpenCross,             0.85),
-  (ROOT.kOpenCrossX,            0.85),
-  (ROOT.kOpenStar,              1.00),
-  (ROOT.kOpenFourTrianglesX,    0.90),
-  (ROOT.kOpenFourTrianglesPlus, 0.85),
-  (ROOT.kOpenTriangleUp,        0.85),
-  (ROOT.kOpenTriangleDown,      0.85),
-  (ROOT.kOpenDoubleDiamond,     1.10),
-)
-
-def setCbFriendlyStyle(
-  graphOrHist:   Any,
-  styleIndex:    int,  # index that switches between styles
-  skipBlack:     bool  = True,  # if set black color is not used
-  markerSize:    float = 1.5,
-  filledMarkers: bool  = True,
-) -> None:
-  """Sets line color and marker style, color, and size of a TGraph or TH1 according to a style index"""
-  nmbStyles = min(len(COLORS_CB_FRIENDLY) - (1 if skipBlack else 0), len(MARKERS_FILLED), len(MARKERS_OPEN))
-  assert styleIndex < nmbStyles, f"The style index {styleIndex} goes beyond the maximum of {nmbStyles} styles that are implemented"
-  graphOrHist.SetMarkerStyle(MARKERS_FILLED[styleIndex][0] if filledMarkers else MARKERS_OPEN[styleIndex][0])
-  graphOrHist.SetMarkerSize(markerSize * MARKERS_FILLED[styleIndex][1] if filledMarkers else MARKERS_OPEN[styleIndex][1])
-  color = getCbFriendlyRootColor(styleIndex + (1 if skipBlack else 0))
-  graphOrHist.SetMarkerColor(color)
-  graphOrHist.SetLineColor(color)
-
-
 def printGitInfo() -> None:
   """Prints directory of this file and git hash in this directory"""
   repoDir = os.path.dirname(os.path.abspath(__file__))
   gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
   print(f"Running code in '{repoDir}', git version '{gitInfo}'")
-
-
-def setupPlotStyle() -> None:
-  """Defines ROOT plot style"""
-  #TODO remove dependency from external file or add file to repo
-  ROOT.gROOT.LoadMacro("./rootlogon.C")
-  ROOT.gROOT.ForceStyle()
-  ROOT.gStyle.SetCanvasDefW(600)
-  ROOT.gStyle.SetCanvasDefH(600)
-  ROOT.gStyle.SetPalette(ROOT.kBird)
-  # ROOT.gStyle.SetPalette(ROOT.kViridis)
-  ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
-  ROOT.gStyle.SetLegendBorderSize(1)
-  # ROOT.gStyle.SetOptStat("ni")  # show only name and integral
-  ROOT.gStyle.SetOptStat("i")  # show only integral
-  ROOT.gStyle.SetStatFormat("8.8g")
-  ROOT.gStyle.SetTitleColor(1, "X")  # fix that for some mysterious reason x-axis titles of 2D plots and graphs are white
-  ROOT.gStyle.SetTitleOffset(1.35, "Y")
-
-
-def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
-  """Draws zero line when necessary"""
-  objType = obj.IsA().GetName()
-  if (objType == "TCanvas") or (objType == "TPad"):
-    xMin = ctypes.c_double()
-    xMax = ctypes.c_double()
-    yMin = ctypes.c_double()
-    yMax = ctypes.c_double()
-    obj.GetRangeAxis(xMin, yMin, xMax, yMax)
-    if (yMin.value < 0) and (yMax.value > 0):
-      zeroLine = ROOT.TLine()
-      zeroLine.SetLineStyle(style)
-      zeroLine.SetLineColor(color)
-      return zeroLine.DrawLine(xMin, 0, xMax, 0)
-  elif objType.startswith("TH") or objType.startswith("TGraph") or objType.startswith("TMulti"):
-    xAxis = obj.GetXaxis()
-    yAxis = obj.GetYaxis()
-    if (yAxis.GetXmin() < 0) and (yAxis.GetXmax() > 0):
-      zeroLine = ROOT.TLine()
-      zeroLine.SetLineStyle(style)
-      zeroLine.SetLineColor(color)
-      return zeroLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 0, xAxis.GetBinUpEdge(xAxis.GetLast()), 0)
-    elif (yAxis.GetXmin() > 0) and (yAxis.GetXmax() > 0):
-      obj.SetMinimum(0)
-  else:
-    raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
-
-
-def callMemberFunctionsWithArgs(
-  instance:          Any,             # instance for which member functions will be called
-  functionsWithArgs: Dict[str, Any],  # member-function names with argments
-) -> None:
-  """Calls member functions of given object with given arguments"""
-  for functionName, argument in functionsWithArgs.items():
-    function = getattr(instance, functionName, None)
-    if function is None:
-      continue
-    # print(f"Calling member function '{functionName}({argument})' of {instance}")
-    function(argument)
 
 
 def overlayDataSamples1D(
@@ -208,7 +80,7 @@ def overlayDataSamples1D(
     data = dataSample["RDataFrame"]
     hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
                                 histNameSuffix = dataLabel, histTitle = dataLabel)
-    callMemberFunctionsWithArgs(hist, dataSample)
+    plotTools.callMemberFunctionsWithArgs(hist, dataSample)
     if dataSample.get("normToThis", False):
       print(f"Normalizing all histograms to '{dataLabel}'")
       normIntegral = hist.Integral()
@@ -333,7 +205,7 @@ def plot1D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
-  drawZeroLine(hist)
+  plotTools.drawZeroLine(hist)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -386,7 +258,7 @@ def overlayCases(
   hStack.Draw("NOSTACK HIST")
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  drawZeroLine(hStack)
+  plotTools.drawZeroLine(hStack)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -580,7 +452,7 @@ def overlayTopologies(
     hStack.Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-    drawZeroLine(hStack)
+    plotTools.drawZeroLine(hStack)
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -685,7 +557,7 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
   #TODO cannot change multithreading for existing data frame
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
-  setupPlotStyle()
+  plotTools.setupPlotStyle()
 
   #TODO write plots into directories
   #TODO make plots for RD and MC in one go
@@ -714,21 +586,22 @@ if __name__ == "__main__":
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   # overlay all periods for bggen MC and real data
+  dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
   if len(inputData) > 1:
     for dataType in ("MCbggen", "RD"):
-      dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
+      dataSamplesToOverlay = {}
       for index, dataPeriod in enumerate(inputData.keys()):
         dataSamplesToOverlay[dataPeriod] = {
           "RDataFrame"   : inputData[dataPeriod][dataType],
           "normToThis"   : True if index == 0 else False,
           # define plot style
-          "SetLineColor" : getCbFriendlyRootColor(index + 1),
+          "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
           "SetLineWidth" : 2,
         }
       makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
   # overlay bggen MC and real data for each period
   for dataPeriod in inputData.keys():
-    dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {
+    dataSamplesToOverlay = {
       "bggen MC (scaled)" : {
         "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
         # define plot style

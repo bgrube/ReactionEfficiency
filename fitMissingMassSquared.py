@@ -16,7 +16,8 @@ from typing import (
 
 import ROOT
 
-import makePlots  # defines helper functions to generate histograms from data trees
+import makePlots
+import plotTools
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -503,7 +504,7 @@ if __name__ == "__main__":
   makePlots.printGitInfo()
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
-  makePlots.setupPlotStyle()
+  plotTools.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
   ROOT.gBenchmark.Start("Total execution time")
 

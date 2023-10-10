@@ -29,6 +29,7 @@ from plotFitResults import (
   ParInfo,
   BINNING_VAR_PLOT_INFO,
 )
+import plotTools
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -221,7 +222,7 @@ def plotEfficiencies2D(
 if __name__ == "__main__":
   makePlots.printGitInfo()
   ROOT.gROOT.SetBatch(True)
-  makePlots.setupPlotStyle()
+  plotTools.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
