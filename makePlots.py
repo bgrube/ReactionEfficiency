@@ -584,10 +584,11 @@ def overlayTopologies(
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
-def makeKinematicOverlayPlots(
-  dataSamples: Dict[str, Dict[str, Any]],    # RDataFrame and style definitions for each data-set label
+def makeKinematicPlotsOverlays(
+  dataSamples: Dict[str, Dict[str, Any]],  # RDataFrame and style definitions for each data-set label
   pdfDirName:  str = "./",
-):
+) -> None:
+  """Overlays kinematic distributions of given data samples"""
   overlayDataSamples1D(dataSamples, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
   kwargs = {
     "additionalFilter"  : "(NmbUnusedShowers == 0)",
@@ -595,17 +596,75 @@ def makeKinematicOverlayPlots(
     "pdfDirName"        : pdfDirName,
   }
   overlayDataSamples1D(dataSamples, variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
-  # overlayDataSamples1D(dataSamples, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
-  # overlayDataSamples1D(dataSamples, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **kwargs)
-  # overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
-  # overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
-  # for case, caseFilter in FILTER_CASES.items():
-  #   kwargs = {
-  #     "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
-  #     "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
-  #   }
-  #   overlayDataSamples1D(dataSamples, variable = "MissingMassSquared_Measured",
-  #                         axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
+  overlayDataSamples1D(dataSamples, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
+  overlayDataSamples1D(dataSamples, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **kwargs)
+  overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
+  overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
+  for case, caseFilter in FILTER_CASES.items():
+    kwargs = {
+      "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
+      "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
+    }
+    overlayDataSamples1D(dataSamples, variable = "MissingMassSquared_Measured",
+                          axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
+
+
+def makeKinematicPlotsMc(
+  dataSample:  ROOT.RDataFrame,
+  isMcBggen:   bool,
+  pdfDirName:  str = "./",
+) -> None:
+  """Plots kinematic distributions for given Monte Carlo data"""
+  filterTopologies = {
+    ""                                             : None,
+    # "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
+    # "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
+    "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")',
+  }
+  for suffix, filter in filterTopologies.items():
+    kwargs = {
+      "additionalFilter"  : filter,
+      "pdfFileNameSuffix" : suffix,
+      "pdfDirName"        : pdfDirName,
+    }
+    # overlayCases(dataSample, "TruthDeltaP",      axisTitles = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
+    overlayCases(dataSample, "TruthDeltaPOverP", axisTitles = "(#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     **kwargs)
+    overlayCases(dataSample, "TruthDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
+    overlayCases(dataSample, "TruthDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
+
+  if isMcBggen:  # fill plots for bggen Monte Carlo
+
+    cutsArgs: List[Dict[str, Any]] = [
+      {},  # no extra cut
+      {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : f"_noUnusedShowers"},  # no unused showers
+      # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : f"_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
+    ]
+    for kwargs in cutsArgs:
+      plotTopologyHist(dataSample, normalize = False, pdfDirName = pdfDirName, **kwargs)
+      plotTopologyHist(dataSample, normalize = True,  pdfDirName = pdfDirName, **kwargs)
+
+    cutsArgs = [
+      {},  # no extra cut
+      {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers
+      # # the two cuts below are equivalent to the one above
+      # {"additionalFilter" : "(EnergyUnusedShowers == 0)",                                   "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
+      # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)",       "pdfFileNameSuffix" : "_noShowers"}
+      # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
+    ]
+    for kwargs in cutsArgs:
+      kwargs.update({"pdfDirName" : pdfDirName})
+      # get topologies with the largest number of combos for given case
+      toposToPlot: Dict[str, List[str]] = {}
+      for case, caseFilter in FILTER_CASES.items():
+        caseData = dataSample.Filter(caseFilter)
+        toposToPlot[case], _ = getTopologyHist(caseData, filterExpression = kwargs.get("additionalFilter", None))
+        toposToPlot[case] = ["Total"] + toposToPlot[case][:maxNmbTopologies]
+      overlayTopologies(dataSample, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "MissingMassSquared",          axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+      overlayTopologies(dataSample, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
 
 
 def makeDirPath(dirPath: str) -> str:
@@ -632,10 +691,10 @@ if __name__ == "__main__":
   #TODO make plots for RD and MC in one go
 
   dataPeriods = [
-    "2017_01-ver03",
+    # "2017_01-ver03",
     "2018_01-ver02",
     "2018_08-ver02",
-    "2019_11-ver01",
+    # "2019_11-ver01",
   ]
   treeName = "pippippimpimpmiss"
   pdfBaseDirName = "./plots_test"
@@ -666,7 +725,7 @@ if __name__ == "__main__":
           "SetLineColor" : getCbFriendlyRootColor(index + 1),
           "SetLineWidth" : 2,
         }
-      makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
+      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
   # overlay bggen MC and real data for each period
   for dataPeriod in inputData.keys():
     dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {
@@ -681,55 +740,11 @@ if __name__ == "__main__":
         "normToThis" : True,
       },
     }
-    makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+
+  for dataPeriod in inputData.keys():
+    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
   raise ValueError
-
-  #TODO determine isMonteCarlo and isMcBggen flags from data
-  if isMonteCarlo:
-    filterTopologies = {
-      ""                                             : None,
-      # "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
-      # "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
-      "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")',
-    }
-    for suffix, filter in filterTopologies.items():
-      # overlayCases(inputData, "TruthDeltaP",      axisTitles = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-      overlayCases(inputData, "TruthDeltaPOverP", axisTitles = "(#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     additionalFilter = filter, pdfFileNameSuffix = suffix)
-      overlayCases(inputData, "TruthDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), additionalFilter = filter, pdfFileNameSuffix = suffix)
-      overlayCases(inputData, "TruthDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), additionalFilter = filter, pdfFileNameSuffix = suffix)
-
-    if isMcBggen:
-
-      cutsArgs: List[Dict[str, Any]] = [
-        {},  # no extra cut
-        {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : f"_noUnusedShowers"},  # no unused showers
-        # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : f"_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
-      ]
-      for kwargs in cutsArgs:
-        plotTopologyHist(inputData, normalize = False, **kwargs)
-        plotTopologyHist(inputData, normalize = True,  **kwargs)
-
-      cutsArgs = [
-        {},  # no extra cut
-        {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers
-        # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
-        # # the two cuts below are equivalent to the one above
-        # {"additionalFilter" : "(EnergyUnusedShowers == 0)",                             "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
-        # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
-      ]
-      for kwargs in cutsArgs:
-        # get topologies with the largest number of combos for given case
-        toposToPlot: Dict[str, List[str]] = {}
-        for case, caseFilter in FILTER_CASES.items():
-          caseData = inputData.Filter(caseFilter)
-          toposToPlot[case], _ = getTopologyHist(caseData, filterExpression = kwargs.get("additionalFilter", None))
-          toposToPlot[case] = ["Total"] + toposToPlot[case][:maxNmbTopologies]
-        overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
-        # overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
-        # overlayTopologies(inputData, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
-        # overlayTopologies(inputData, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
-        # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
-        overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
 
   # the histograms below are filled for all data types
   cutsArgs = [
