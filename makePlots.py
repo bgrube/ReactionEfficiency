@@ -196,6 +196,7 @@ def overlayDataSamples1D(
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
+  pdfDirName:        str = "./",
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Overlays 1D histograms from given data samples"""
@@ -229,7 +230,7 @@ def overlayDataSamples1D(
   # canv.BuildLegend()  # automatic placement with width 0.3 and height 0.21
   canv.BuildLegend(0.3, 0.15, 0.3, 0.15)  # automatic placement with width 0.3 and height 0.15
   # canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  canv.SaveAs(".pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def drawHistogram(
@@ -239,6 +240,7 @@ def drawHistogram(
   drawOption:        str = "HIST",
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
+  pdfDirName:        str = "./",
 ) -> None:
   """Plots histogram with given name in ROOT file with given name"""
   # get histogram
@@ -254,7 +256,7 @@ def drawHistogram(
   # draw histogram
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw(drawOption)
-  canv.SaveAs(".pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def getHistND(
@@ -328,6 +330,7 @@ def plot1D(
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
+  pdfDirnName:       str = "./",
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Plots 1D distribution for given variable, applying optional weighting and filtering"""
@@ -336,7 +339,7 @@ def plot1D(
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
   drawZeroLine(hist)
-  canv.SaveAs(".pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def plot2D(
@@ -348,6 +351,7 @@ def plot2D(
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
+  pdfDirName:        str = "./",
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Plots 2D distribution for given x and y variables, applying optional weighting and filtering"""
@@ -355,7 +359,7 @@ def plot2D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
-  canv.SaveAs(".pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def overlayCases(
@@ -366,6 +370,7 @@ def overlayCases(
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
+  pdfDirName:        str = "./",
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Overlays 1D distributions of given variable for "Total", "Found", and "Missing" cases"""
@@ -387,7 +392,7 @@ def overlayCases(
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   drawZeroLine(hStack)
-  canv.SaveAs(".pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 # C++ helper functors that fill TObjString into TH1
@@ -496,6 +501,7 @@ def plotTopologyHist(
   additionalFilter:  Optional[str] = None,
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
+  pdfDirName:        str = "./",
 ) -> None:
   """Plots categorical histogram with counts or fraction for each generated topology, applying optional weighting and filtering"""
   # get histogram data
@@ -542,7 +548,7 @@ def plotTopologyHist(
     integralOtherTopos = hists[case].Integral(maxNmbTopologies, hists[case].GetNbinsX())
     legendEntry = legend.AddEntry(ROOT.MakeNullPointer(ROOT.TObject), "    " + str(round(integralOtherTopos)) + ("%" if normalize else " Combos"), "")
     legendEntry.SetTextColor(ROOT.kBlack if case == "Total" else COLOR_CASES[case])
-  canv.SaveAs(".pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def overlayTopologies(
@@ -554,6 +560,7 @@ def overlayTopologies(
   additionalFilter:  Optional[str] = None,
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "_MCbggen_topologies",
+  pdfDirName:        str = "./",
 ) -> None:
   """Overlays 1D distributions for given variable from overall data sample and distributions for the `maxNmbTopologies` topologies with the largest number of combos from the bggen MC sample"""
   data = inputData.Filter(additionalFilter) if additionalFilter else inputData
@@ -579,7 +586,7 @@ def overlayTopologies(
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
     drawZeroLine(hStack)
-    canv.SaveAs(".pdf")
+    canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 if __name__ == "__main__":
