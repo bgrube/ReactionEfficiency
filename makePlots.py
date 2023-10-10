@@ -608,6 +608,19 @@ def makeKinematicOverlayPlots(
   #                         axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
 
 
+def makeDirPath(dirPath: str) -> str:
+  """Create path to directory and return directory path as given"""
+  try:
+    os.makedirs(dirPath, exist_ok = False)
+  except FileExistsError:
+    pass  # directory already exists; do nothing
+  except Exception:
+    raise  # something went wrong
+  else:
+    print(f"Created directory '{dirPath}'")
+  return dirPath
+
+
 if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
@@ -624,18 +637,9 @@ if __name__ == "__main__":
     "2018_08-ver02",
     "2019_11-ver01",
   ]
-  treeName         = "pippippimpimpmiss"
+  treeName = "pippippimpimpmiss"
+  pdfBaseDirName = "./plots_test"
   maxNmbTopologies = 10
-
-  # dataSet = {}
-  # dataset = {"type" : "MCbggen", "period" : "2017_01-ver03"}
-  # dataSet = {"type" : "MCbggen", "period" : "2018_01-ver02"}
-  # isMonteCarlo = isMcBggen = True
-  # dataset = "RD_2017_01-ver04_030730"
-  # dataset = "RD_2018_01-ver02_041003"
-  # dataset = "RD_2019_11-ver01_071592"
-  # dataSet = {"type" : "RD", "period" : "2018_01-ver02"}
-  # isMonteCarlo = isMcBggen = False
 
   # open input files
   inputData: Dict[str, Dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # Dict[<data period>][<data type>]
@@ -650,20 +654,19 @@ if __name__ == "__main__":
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
-  pdfDirName = "./plots_test"
   # overlay all periods for bggen MC and real data
   if len(inputData) > 1:
-    dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
-    for index, dataPeriod in enumerate(inputData.keys()):
-      dataSamplesToOverlay[dataPeriod] = {
-        "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
-        "normToThis"   : True if index == 0 else False,
-        # define plot style
-        "SetLineColor" : getCbFriendlyRootColor(index + 1),
-        "SetLineWidth" : 2,
-      }
-    makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName)
-  raise ValueError
+    for dataType in ("MCbggen", "RD"):
+      dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
+      for index, dataPeriod in enumerate(inputData.keys()):
+        dataSamplesToOverlay[dataPeriod] = {
+          "RDataFrame"   : inputData[dataPeriod][dataType],
+          "normToThis"   : True if index == 0 else False,
+          # define plot style
+          "SetLineColor" : getCbFriendlyRootColor(index + 1),
+          "SetLineWidth" : 2,
+        }
+      makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
   # overlay bggen MC and real data for each period
   for dataPeriod in inputData.keys():
     dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {
@@ -678,7 +681,8 @@ if __name__ == "__main__":
         "normToThis" : True,
       },
     }
-    makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName)
+    makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+  raise ValueError
 
   #TODO determine isMonteCarlo and isMcBggen flags from data
   if isMonteCarlo:
