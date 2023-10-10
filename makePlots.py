@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+from collections import defaultdict
 from collections.abc import Sequence
 import ctypes
 import functools
@@ -188,11 +189,10 @@ def callMemberFunctionsWithArgs(
 
 
 def overlayDataSamples1D(
-  dataSamples:       Dict[str, Dict[str, Any]],  # file name and style definition for each data-set label
-  treeName:          str,  # tree name to read
+  dataSamples:       Dict[str, Dict[str, Any]],    # RDataFrame and style definitions for each data-set label
   variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
-  axisTitles:        str,  # semicolon-separated list
-  binning:           Tuple[int, float, float],  # tuple with binning definition
+  axisTitles:        str,                          # semicolon-separated list
+  binning:           Tuple[int, float, float],     # tuple with binning definition
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
@@ -200,17 +200,12 @@ def overlayDataSamples1D(
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Overlays 1D histograms from given data samples"""
-  print(f"Overlaying distributions for '{variable}' for data samples {', '.join(dataSamples.keys())}")
+  print(f"Overlaying distributions for '{variable}' for data samples '{', '.join(dataSamples.keys())}'")
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists: List[ROOT.TH1D] = []  # keep histograms in memory
   normIntegral = None  # index of histogram to normalize to
   for dataLabel, dataSample in dataSamples.items():
-    # get tree
-    treeFileName = dataSample["fileName"]
-    print(f"Reading data sample '{dataLabel}' from tree '{treeName}' in file '{treeFileName}'")
-    data = ROOT.RDataFrame(treeName, treeFileName) \
-               .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
-               .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+    data = dataSample["RDataFrame"]
     hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
                                 histNameSuffix = dataLabel, histTitle = dataLabel)
     callMemberFunctionsWithArgs(hist, dataSample)
@@ -330,7 +325,7 @@ def plot1D(
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  pdfDirnName:       str = "./",
+  pdfDirName:        str = "./",
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Plots 1D distribution for given variable, applying optional weighting and filtering"""
@@ -589,6 +584,9 @@ def overlayTopologies(
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
+# def makeKinematicOverlayPlots():
+
+
 if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
@@ -600,56 +598,73 @@ if __name__ == "__main__":
   #TODO write plots into directories
   #TODO make plots for RD and MC in one go
 
-  # dataPeriod = "2018_01-ver02"
-  dataPeriod = "2018_08-ver02"
-  dataSamplesToOverlay = {
-    "bggen MC (scaled)" : {
-      "fileName" : f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root",
-      # define plot style
-      "SetLineColor" : ROOT.kGray,
-      "SetFillColor" : ROOT.kGray,
-    },
-    "Real Data" : {
-      "fileName"   : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root",
-      "normToThis" : True,
-    },
-  }
-  overlayArgs = {
-    "dataSamples" : dataSamplesToOverlay,
-    "treeName"    : "pippippimpimpmiss",
-  }
-  overlayDataSamples1D(variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), **overlayArgs)
-  overlayArgs = {
-    **overlayArgs,
-    "additionalFilter"  : "(NmbUnusedShowers == 0)",
-    "pdfFileNameSuffix" : "_noUnusedShowers",
-  }
-  overlayDataSamples1D(variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **overlayArgs)
-  overlayDataSamples1D(variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **overlayArgs)
-  overlayDataSamples1D(variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **overlayArgs)
-  overlayDataSamples1D(variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **overlayArgs)
-  overlayDataSamples1D(variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **overlayArgs)
-  for case, caseFilter in FILTER_CASES.items():
-    overlayDataSamples1D(dataSamplesToOverlay, treeName = "pippippimpimpmiss", variable = "MissingMassSquared_Measured",
-                         axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5),
-                         additionalFilter = f"((NmbUnusedShowers == 0) and {caseFilter})", pdfFileNameSuffix = f"_{case}_noUnusedShowers")
-
+  dataPeriods = [
+    # "2017_01-ver03",
+    # "2018_01-ver02",
+    "2018_08-ver02",
+    # "2019_11-ver01",
+  ]
+  treeName         = "pippippimpimpmiss"
   maxNmbTopologies = 10
+
   # dataSet = {}
   # dataset = {"type" : "MCbggen", "period" : "2017_01-ver03"}
-  dataSet = {"type" : "MCbggen", "period" : "2018_01-ver02"}
-  isMonteCarlo = isMcBggen = True
+  # dataSet = {"type" : "MCbggen", "period" : "2018_01-ver02"}
+  # isMonteCarlo = isMcBggen = True
   # dataset = "RD_2017_01-ver04_030730"
   # dataset = "RD_2018_01-ver02_041003"
   # dataset = "RD_2019_11-ver01_071592"
   # dataSet = {"type" : "RD", "period" : "2018_01-ver02"}
   # isMonteCarlo = isMcBggen = False
-  treeName     = "pippippimpimpmiss"
-  treeFileName = f"./{treeName}_flatTree.root" if not dataSet else f"./data/{dataSet['type']}/{dataSet['period']}/{treeName}_flatTree.{dataSet['type']}_{dataSet['period']}.root"
-  print(f"Reading tree '{treeName}' in file '{treeFileName}'")
-  inputData    = ROOT.RDataFrame(treeName, treeFileName) \
-                     .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
-                     .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+
+  # open input files
+  inputData: Dict[str, Dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # Dict[<data period>][<data type>]
+  for dataPeriod in dataPeriods:
+    inputFileNames = {
+      "MCbggen" : f"./data/MCbggen/{dataPeriod}/{treeName}_flatTree.MCbggen_{dataPeriod}.root",
+      "RD"      : f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}.root",
+    }
+    print(f"Reading tree '{treeName}' from files {inputFileNames}")
+    for dataType, inputFileName in inputFileNames.items():
+      inputData[dataPeriod][dataType] = ROOT.RDataFrame(treeName, inputFileName) \
+                                            .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
+                                            .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+  print(f"!!! {inputData}")
+
+  # overlay bggen MC and real data for each period
+  pdfDirName = "./plots_test"
+  for dataPeriod in inputData.keys():
+    dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {
+      "bggen MC (scaled)" : {
+        "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
+        # define plot style
+        "SetLineColor" : ROOT.kGray,
+        "SetFillColor" : ROOT.kGray,
+      },
+      "Real Data" : {
+        "RDataFrame" : inputData[dataPeriod]["RD"],
+        "normToThis" : True,
+      },
+    }
+    overlayDataSamples1D(dataSamplesToOverlay, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
+    kwargs = {
+      "additionalFilter"  : "(NmbUnusedShowers == 0)",
+      "pdfFileNameSuffix" : "_noUnusedShowers",
+      "pdfDirName"        : pdfDirName,
+    }
+    overlayDataSamples1D(dataSamplesToOverlay, variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
+    # overlayDataSamples1D(dataSamplesToOverlay, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
+    # overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **kwargs)
+    # overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
+    # overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
+    # for case, caseFilter in FILTER_CASES.items():
+    #   kwargs = {
+    #     "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
+    #     "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
+    #   }
+    #   overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingMassSquared_Measured",
+    #                        axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
+  raise ValueError
 
   #TODO determine isMonteCarlo and isMcBggen flags from data
   if isMonteCarlo:
