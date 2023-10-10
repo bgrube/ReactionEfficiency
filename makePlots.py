@@ -209,7 +209,7 @@ def overlayDataSamples1D(
     hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
                                 histNameSuffix = dataLabel, histTitle = dataLabel)
     callMemberFunctionsWithArgs(hist, dataSample)
-    if dataSample.get("normToThis", None) is not None:
+    if dataSample.get("normToThis", False):
       print(f"Normalizing all histograms to '{dataLabel}'")
       normIntegral = hist.Integral()
     hists.append(hist)
@@ -584,7 +584,28 @@ def overlayTopologies(
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
-# def makeKinematicOverlayPlots():
+def makeKinematicOverlayPlots(
+  dataSamples: Dict[str, Dict[str, Any]],    # RDataFrame and style definitions for each data-set label
+  pdfDirName:  str = "./",
+):
+  overlayDataSamples1D(dataSamples, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
+  kwargs = {
+    "additionalFilter"  : "(NmbUnusedShowers == 0)",
+    "pdfFileNameSuffix" : "_noUnusedShowers",
+    "pdfDirName"        : pdfDirName,
+  }
+  overlayDataSamples1D(dataSamples, variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
+  # overlayDataSamples1D(dataSamples, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
+  # overlayDataSamples1D(dataSamples, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **kwargs)
+  # overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
+  # overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
+  # for case, caseFilter in FILTER_CASES.items():
+  #   kwargs = {
+  #     "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
+  #     "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
+  #   }
+  #   overlayDataSamples1D(dataSamples, variable = "MissingMassSquared_Measured",
+  #                         axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
 
 
 if __name__ == "__main__":
@@ -594,15 +615,14 @@ if __name__ == "__main__":
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
-  #TODO move into MC block
   #TODO write plots into directories
   #TODO make plots for RD and MC in one go
 
   dataPeriods = [
-    # "2017_01-ver03",
-    # "2018_01-ver02",
+    "2017_01-ver03",
+    "2018_01-ver02",
     "2018_08-ver02",
-    # "2019_11-ver01",
+    "2019_11-ver01",
   ]
   treeName         = "pippippimpimpmiss"
   maxNmbTopologies = 10
@@ -629,10 +649,22 @@ if __name__ == "__main__":
       inputData[dataPeriod][dataType] = ROOT.RDataFrame(treeName, inputFileName) \
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
-  print(f"!!! {inputData}")
 
-  # overlay bggen MC and real data for each period
   pdfDirName = "./plots_test"
+  # overlay all periods for bggen MC and real data
+  if len(inputData) > 1:
+    dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
+    for index, dataPeriod in enumerate(inputData.keys()):
+      dataSamplesToOverlay[dataPeriod] = {
+        "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
+        "normToThis"   : True if index == 0 else False,
+        # define plot style
+        "SetLineColor" : getCbFriendlyRootColor(index + 1),
+        "SetLineWidth" : 2,
+      }
+    makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName)
+  raise ValueError
+  # overlay bggen MC and real data for each period
   for dataPeriod in inputData.keys():
     dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {
       "bggen MC (scaled)" : {
@@ -646,25 +678,7 @@ if __name__ == "__main__":
         "normToThis" : True,
       },
     }
-    overlayDataSamples1D(dataSamplesToOverlay, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
-    kwargs = {
-      "additionalFilter"  : "(NmbUnusedShowers == 0)",
-      "pdfFileNameSuffix" : "_noUnusedShowers",
-      "pdfDirName"        : pdfDirName,
-    }
-    overlayDataSamples1D(dataSamplesToOverlay, variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
-    # overlayDataSamples1D(dataSamplesToOverlay, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
-    # overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **kwargs)
-    # overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
-    # overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
-    # for case, caseFilter in FILTER_CASES.items():
-    #   kwargs = {
-    #     "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
-    #     "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
-    #   }
-    #   overlayDataSamples1D(dataSamplesToOverlay, variable = "MissingMassSquared_Measured",
-    #                        axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
-  raise ValueError
+    makeKinematicOverlayPlots(dataSamplesToOverlay, pdfDirName)
 
   #TODO determine isMonteCarlo and isMcBggen flags from data
   if isMonteCarlo:
