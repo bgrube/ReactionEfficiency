@@ -589,15 +589,21 @@ if __name__ == "__main__":
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
+  #TODO move into MC block
+  #TODO write plots into directories
+  #TODO make plots for RD and MC in one go
+
+  # dataPeriod = "2018_01-ver02"
+  dataPeriod = "2018_08-ver02"
   dataSamplesToOverlay = {
     "bggen MC (scaled)" : {
-      "fileName" : "./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root",
+      "fileName" : f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root",
       # define plot style
       "SetLineColor" : ROOT.kGray,
       "SetFillColor" : ROOT.kGray,
     },
     "Real Data" : {
-      "fileName"   : "./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root",
+      "fileName"   : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root",
       "normToThis" : True,
     },
   }
@@ -611,9 +617,10 @@ if __name__ == "__main__":
     "additionalFilter"  : "(NmbUnusedShowers == 0)",
     "pdfFileNameSuffix" : "_noUnusedShowers",
   }
-  overlayDataSamples1D(variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150, 0, 1),      **overlayArgs)
-  overlayDataSamples1D(variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500, 0, 10),     **overlayArgs)
-  overlayDataSamples1D(variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200, 0, 100),    **overlayArgs)
+  overlayDataSamples1D(variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **overlayArgs)
+  overlayDataSamples1D(variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kim. fit} #it{P}-value", binning = (150,    0,   1), **overlayArgs)
+  overlayDataSamples1D(variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (500,    0,  10), **overlayArgs)
+  overlayDataSamples1D(variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **overlayArgs)
   overlayDataSamples1D(variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **overlayArgs)
   for case, caseFilter in FILTER_CASES.items():
     overlayDataSamples1D(dataSamplesToOverlay, treeName = "pippippimpimpmiss", variable = "MissingMassSquared_Measured",
@@ -656,7 +663,7 @@ if __name__ == "__main__":
       cutsArgs: List[Dict[str, Any]] = [
         {},  # no extra cut
         {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : f"_noUnusedShowers"},  # no unused showers
-        {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : f"_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
+        # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : f"_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
       ]
       for kwargs in cutsArgs:
         plotTopologyHist(inputData, normalize = False, **kwargs)
@@ -665,7 +672,7 @@ if __name__ == "__main__":
       cutsArgs = [
         {},  # no extra cut
         {"additionalFilter" : "(NmbUnusedShowers == 0)",                                      "pdfFileNameSuffix" : "_noUnusedShowers"},  # no unused showers
-        {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
+        # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
         # # the two cuts below are equivalent to the one above
         # {"additionalFilter" : "(EnergyUnusedShowers == 0)",                             "pdfFileNameSuffix" : "_noEnergyUnusedShowers"},
         # {"additionalFilter" : "(NmbUnusedShowers == 0) and (EnergyUnusedShowers == 0)", "pdfFileNameSuffix" : "_noShowers"}
@@ -679,7 +686,7 @@ if __name__ == "__main__":
           toposToPlot[case] = ["Total"] + toposToPlot[case][:maxNmbTopologies]
         overlayTopologies(inputData, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
         # overlayTopologies(inputData, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
-        overlayTopologies(inputData, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
+        # overlayTopologies(inputData, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
         # overlayTopologies(inputData, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
         # overlayTopologies(inputData, "MissingMassSquared",          axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
         overlayTopologies(inputData, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
