@@ -21,10 +21,11 @@ from uncertainties import UFloat, ufloat
 import ROOT
 
 import makePlots
-import plotFitResults
-from plotFitResults import ParInfo, BINNING_VAR_PLOT_INFO
 import plotEfficiencies
 from plotEfficiencies import EffInfo, BinInfo
+import plotFitResults
+from plotFitResults import ParInfo, BINNING_VAR_PLOT_INFO
+import plotTools
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -80,7 +81,7 @@ def overlayEfficiencies1D(
     graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
     # shiftFraction += 0.01
     graph.SetTitle(fitLabel)
-    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(effInfos) == 1 else True)
+    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(effInfos) == 1 else True)
     styleIndex += 1
     efficiencyMultiGraph.Add(graph)
   if graphTitle is None:
@@ -157,7 +158,7 @@ def overlayEfficiencies2D(
 if __name__ == "__main__":
   makePlots.printGitInfo()
   ROOT.gROOT.SetBatch(True)
-  makePlots.setupPlotStyle()
+  plotTools.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
@@ -225,8 +226,14 @@ if __name__ == "__main__":
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_Log",        "data sig fudge bkg LogNormal"),
     # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_SkewNormal", "data sig fudge bkg SkewNormal"),
     #
-    ("2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
-    ("2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
+    # ("2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
+    # ("2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
+    # ("2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
+    # ("2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
+    ("2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
+    ("2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
+    # ("2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
     # 2018 runs
     # ("2018_01-ver02/noShowers/BruFitOutput.data_041003_allFixed",    "Run 41003 (fixed)"),
     # ("2018_01-ver02/noShowers/BruFitOutput.data_042030_allFixed",    "Run 42030 (fixed)"),

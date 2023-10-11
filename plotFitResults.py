@@ -26,6 +26,7 @@ if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
 import makePlots
+import plotTools
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -225,7 +226,7 @@ def plotFitResult(
     # only remove filled frame
     paramBox.SetBorderSize(0)
     paramBox.SetFillStyle(0)
-  makePlots.drawZeroLine(dataFitPad)
+  plotTools.drawZeroLine(dataFitPad)
   pdfFileName = ("Overall" if binInfo.name == "" else "") + f"{canv.GetName()}.pdf"
   if pdfDirName:
     canv.SaveAs(f"{pdfDirName}/{pdfFileName}")
@@ -299,7 +300,7 @@ def plotParValue1D(
     graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]), shiftFraction)
     # shiftFraction += 0.01
     graph.SetTitle(dataSet)
-    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
+    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
     parValueMultiGraph.Add(graph)
   parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
@@ -326,7 +327,7 @@ def plotParValue1D(
   legend = canv.BuildLegend()
   legend.SetFillStyle(0)
   legend.SetBorderSize(0)
-  makePlots.drawZeroLine(parValueMultiGraph)
+  plotTools.drawZeroLine(parValueMultiGraph)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -415,7 +416,7 @@ def plotParValue2D(
     graph.Draw("P ERR SAME")
     graph.SetName(dataSet)
     graph.SetTitle("")
-    makePlots.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
+    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
   legend = canv.BuildLegend()
   legend.SetFillStyle(0)
@@ -466,7 +467,7 @@ if __name__ == "__main__":
       binVarNames = binVarNamesInDataSet
 
   # plot fit parameters as function of binning variable(s)
-  makePlots.setupPlotStyle()
+  plotTools.setupPlotStyle()
   if parNames and binVarNames:
     for parName in parNames:
       for binningVars in binVarNames:
