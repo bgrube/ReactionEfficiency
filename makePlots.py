@@ -650,13 +650,13 @@ if __name__ == "__main__":
   plotTools.setupPlotStyle()
 
   dataPeriods = [
-    # "2017_01-ver03",
+    "2017_01-ver03",
     "2018_01-ver02",
     "2018_08-ver02",
-    # "2019_11-ver01",
+    "2019_11-ver01",
   ]
   treeName = "pippippimpimpmiss"
-  pdfBaseDirName = "./plots_test"
+  pdfBaseDirName = "./plots"
   maxNmbTopologies = 10
 
   # open input files
@@ -672,39 +672,39 @@ if __name__ == "__main__":
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
-  # # overlay all periods for bggen MC and real data
-  # dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
-  # if len(inputData) > 1:
-  #   for dataType in ("MCbggen", "RD"):
-  #     dataSamplesToOverlay = {}
-  #     for index, dataPeriod in enumerate(inputData.keys()):
-  #       dataSamplesToOverlay[dataPeriod] = {
-  #         "RDataFrame"   : inputData[dataPeriod][dataType],
-  #         "normToThis"   : True if index == 0 else False,
-  #         # define plot style
-  #         "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
-  #         "SetLineWidth" : 2,
-  #       }
-  #     makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
-  # # overlay bggen MC and real data for each period
-  # for dataPeriod in inputData.keys():
-  #   dataSamplesToOverlay = {
-  #     "bggen MC (scaled)" : {
-  #       "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
-  #       # define plot style
-  #       "SetLineColor" : ROOT.kGray,
-  #       "SetFillColor" : ROOT.kGray,
-  #     },
-  #     "Real Data" : {
-  #       "RDataFrame" : inputData[dataPeriod]["RD"],
-  #       "normToThis" : True,
-  #     },
-  #   }
-  #   makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+  # overlay all periods for bggen MC and real data
+  dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
+  if len(inputData) > 1:
+    for dataType in ("MCbggen", "RD"):
+      dataSamplesToOverlay = {}
+      for index, dataPeriod in enumerate(inputData.keys()):
+        dataSamplesToOverlay[dataPeriod] = {
+          "RDataFrame"   : inputData[dataPeriod][dataType],
+          "normToThis"   : True if index == 0 else False,
+          # define plot style
+          "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
+          "SetLineWidth" : 2,
+        }
+      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
+  # overlay bggen MC and real data for each period
+  for dataPeriod in inputData.keys():
+    dataSamplesToOverlay = {
+      "bggen MC (scaled)" : {
+        "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
+        # define plot style
+        "SetLineColor" : ROOT.kGray,
+        "SetFillColor" : ROOT.kGray,
+      },
+      "Real Data" : {
+        "RDataFrame" : inputData[dataPeriod]["RD"],
+        "normToThis" : True,
+      },
+    }
+    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
 
-  # # make Monte Carlo plots for each period
-  # for dataPeriod in inputData.keys():
-  #   makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
+  # make Monte Carlo plots for each period
+  for dataPeriod in inputData.keys():
+    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
 
   # make general plots for each data type and period
   for dataType in ("MCbggen", "RD"):
