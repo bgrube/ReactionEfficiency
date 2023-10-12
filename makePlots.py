@@ -476,6 +476,7 @@ def makeKinematicPlotsOverlays(
     kwargs = {
       "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
       "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
+      "pdfDirName"        : pdfDirName,
     }
     overlayDataSamples1D(dataSamples, variable = "MissingMassSquared_Measured",
                           axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
