@@ -491,6 +491,7 @@ def performFit(
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
     print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
+    ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
     print(f"Running {nmbThreadsPerJob} threads in parallel")
@@ -534,13 +535,10 @@ if __name__ == "__main__":
   kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # 1D binnings
-    #TODO unify energy binning for periods
-    # [("BeamEnergy",          80,    2.9,   11.5)],  # [GeV]; Spring 2017
-    [("BeamEnergy",          80,    5.3,   11.5)],  # [GeV]; Spring and Fall 2018
-    # [("BeamEnergy",          80,    5.2,   11.2)],  # [GeV]; Spring 2020
-    [("MissingProtonP",     100,    0,      5)],  # [GeV/c]
-    [("MissingProtonTheta",  72,    0,     90)],  # [deg]
-    [("MissingProtonPhi",    72, -180,   +180)],  # [deg]
+    [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
+    [("MissingProtonP",     100,    0,      5)],    # [GeV/c]
+    [("MissingProtonTheta",  72,    0,     90)],    # [deg]
+    [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
     # 2D binnings
     [
       ("MissingProtonTheta", 9, 0, 90),  # [deg]
