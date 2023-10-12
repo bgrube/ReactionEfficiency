@@ -18,17 +18,17 @@ print = functools.partial(print, flush = True)
 
 if __name__ == "__main__":
 
-  # period = "2017_01-ver03"
-  # period = "2018_01-ver02"
-  period = "2018_08-ver02"
-  # period = "2019_11-ver01"
+  # dataPeriod = "2017_01-ver03"
+  # dataPeriod = "2018_01-ver02"
+  # dataPeriod = "2018_08-ver02"
+  dataPeriod = "2019_11-ver01"
 
-  bggenFileName = f"./data/MCbggen/{period}/pippippimpimpmiss_flatTree.MCbggen_{period}.root.brufit"
+  bggenFileName = f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"
   dataSamples: List[Dict[str, str]] = [{
-  #   "dataFileName" : bggenFileName,
-  #   "dataLabel" : f"bggen_{period}",
-    "dataFileName" : f"./data/RD/{period}/pippippimpimpmiss_flatTree.RD_{period}.root.brufit",
-    "dataLabel" : f"data_{period}",
+    # "dataFileName" : bggenFileName,
+    # "dataLabel" : f"bggen_{dataPeriod}",
+    "dataFileName" : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root.brufit",
+    "dataLabel" : f"data_{dataPeriod}",
   }]
 
   fits: List[List[Dict[str, str]]] = [[  # list of fits for each data sample
@@ -52,11 +52,11 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "shift scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
-    {
-      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigShift",
-      "pdfTypeSig" : "Histogram", "fixParsSig" : "smear scale",
-      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    },
+    # {
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigShift",
+    #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear scale",
+    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    # },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigScale",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift",
@@ -77,11 +77,11 @@ if __name__ == "__main__":
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "scale",
     #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
     # },
-    {
-      "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
-      "pdfTypeSig" : "Histogram",
-      "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
-    },
+    # {
+    #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_sigAllFudge",
+    #   "pdfTypeSig" : "Histogram",
+    #   "pdfTypeBkg" : "Histogram", "fixParsBkg" : "smear shift scale",
+    # },
     # {
     #   "fitDirectory" : f"BruFitOutput.{dataSample['dataLabel']}_bkgSmear",
     #   "pdfTypeSig" : "Histogram", "fixParsSig" : "smear shift scale",
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
   for dataSamples in fits:
     for study in dataSamples:
-      fitDirectory = f"./fits/{period}/noShowers/{study['fitDirectory']}"
+      fitDirectory = f"./fits/{dataPeriod}/noShowers/{study['fitDirectory']}"
       # prepare directories
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
