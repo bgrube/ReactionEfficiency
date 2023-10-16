@@ -18,18 +18,27 @@ print = functools.partial(print, flush = True)
 
 if __name__ == "__main__":
 
-  # dataPeriod = "2017_01-ver03"
-  # dataPeriod = "2018_01-ver02"
-  # dataPeriod = "2018_08-ver02"
-  dataPeriod = "2019_11-ver01"
+  dataPeriods = (
+    "2017_01-ver03",
+    "2018_01-ver02",
+    "2018_08-ver02",
+    "2019_11-ver01",
+  )
 
-  bggenFileName = f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"
-  dataSamples: List[Dict[str, str]] = [{
-    # "dataFileName" : bggenFileName,
-    # "dataLabel" : f"bggen_{dataPeriod}",
-    "dataFileName" : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root.brufit",
-    "dataLabel" : f"data_{dataPeriod}",
-  }]
+  dataSamples: List[Dict[str, str]] = []
+  for dataPeriod in dataPeriods:
+    dataSamples += [
+      { # bggen MC
+        **dict.fromkeys(["dataFileName", "bggenFileName"],
+                        f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # dataFileName and bggenFileName have identical value
+        "dataLabel" : f"bggen_{dataPeriod}",
+      },
+      { # real data
+        "dataFileName"  : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root.brufit",
+        "bggenFileName" : f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit",
+        "dataLabel"     : f"data_{dataPeriod}",
+      },
+    ]
 
   fits: List[List[Dict[str, str]]] = [[  # list of fits for each data sample
     # {
@@ -123,12 +132,11 @@ if __name__ == "__main__":
     #   "pdfTypeBkg" : "Histogram",
     # },
   ] for dataSample in dataSamples]
-  # add input files (same of all studies)
+  # add input files (same for all studies)
   for index, dataSample in enumerate(dataSamples):
     for study in fits[index]:
-      study.update({"dataFileName" : dataSample['dataFileName']})
-  # print(f"!!! {fits}")
-  # raise ValueError
+      study.update({"dataFileName"  : dataSample["dataFileName"]})
+      study.update({"bggenFileName" : dataSample["bggenFileName"]})
 
   # pdfTypeBkg = "DoubleGaussian",
   # pdfTypeBkg = "DoubleGaussian_SameMean",
@@ -138,6 +146,7 @@ if __name__ == "__main__":
 
   for dataSamples in fits:
     for study in dataSamples:
+      # print(f"!!! {study}")
       fitDirectory = f"./fits/{dataPeriod}/noShowers/{study['fitDirectory']}"
       # prepare directories
       shutil.rmtree(fitDirectory, ignore_errors = True)
@@ -148,7 +157,7 @@ if __name__ == "__main__":
       print(f"Starting fits ...")
       cmdLineOptions = [(f"--{option} {study[option]}" if option in study else "") for option in ("pdfTypeSig", "fixParsSig", "pdfTypeBkg", "fixParsBkg")]
       result = subprocess.run(
-        f"./fitMissingMassSquared.py \"{fitDirectory}\" {study['dataFileName']} {bggenFileName} {' '.join(cmdLineOptions)} &> \"{fitDirectory}/fitMissingMassSquared.log\"", shell = True)
+        f"./fitMissingMassSquared.py \"{fitDirectory}\" {study['dataFileName']} {study['bggenFileName']} {' '.join(cmdLineOptions)} &> \"{fitDirectory}/fitMissingMassSquared.log\"", shell = True)
       if result.returncode != 0:
         raise RuntimeError(f"Fitting script failed with exit code '{result.returncode}'")
       # postprocess fit results
