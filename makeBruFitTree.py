@@ -27,7 +27,7 @@ def makeBruFitTree(
     "AccidWeightFactor",  # weight for removal of RF accidentals
     # cut variables
     "NmbUnusedShowers",
-    "BestMissingMatchDistTOF",
+    # "BestMissingMatchDistTOF",
     # binning variables
     "BeamEnergy",
     "MissingProtonP",

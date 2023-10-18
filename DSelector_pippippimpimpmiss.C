@@ -151,10 +151,12 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonP_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonTheta_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonPhi_Measured");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("FourPiMass");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("FourPiMass_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<UChar_t>        ("NmbUnusedShowers");
 	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("EnergyUnusedShowers");
-	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistTOF");
-	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistBCAL");
+	// dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistTOF");
+	// dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistBCAL");
 	dFlatTreeInterface->Create_Branch_NoSplitTObject<myTObjString>("ThrownTopology");
 	//TODO write out only best match instead of all candidates?
 	// TTreeReader does not support UChar_t as index for variably-sized arrays; see https://sft.its.cern.ch/jira/browse/ROOT-8827
@@ -222,7 +224,7 @@ DSelector_pippippimpimpmiss::fillTreeKinematics(
 	const double   locTheta = locP3.Theta() * TMath::RadToDeg();
 	const double   locPhi   = locP3.Phi()   * TMath::RadToDeg();
 	if (arrayIndex < 0) {
-		// fill scalar varable
+		// fill scalar variable
 		dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "P"     + branchSuffix, locP);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "Theta" + branchSuffix, locTheta);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>(branchPrefix + "Phi"   + branchSuffix, locPhi);
@@ -378,17 +380,18 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		const TLorentzVector locPiPlus2P4       = dPiPlus2Wrapper->Get_P4();
 		const TLorentzVector locPiMinus1P4      = dPiMinus1Wrapper->Get_P4();
 		const TLorentzVector locPiMinus2P4      = dPiMinus2Wrapper->Get_P4();
+		const TLorentzVector locFourPiP4        = locPiPlus1P4 + locPiPlus2P4 + locPiMinus1P4 + locPiMinus2P4;
 		const TLorentzVector locMissingProtonP4 = dMissingProtonWrapper->Get_P4();
 
 		// Get Measured P4's:
 		// Step 0
-		const TLorentzVector locBeamP4_Measured     = dComboBeamWrapper->Get_P4_Measured();
-		const TLorentzVector locPiPlus1P4_Measured  = dPiPlus1Wrapper->Get_P4_Measured();
-		const TLorentzVector locPiPlus2P4_Measured  = dPiPlus2Wrapper->Get_P4_Measured();
-		const TLorentzVector locPiMinus1P4_Measured = dPiMinus1Wrapper->Get_P4_Measured();
-		const TLorentzVector locPiMinus2P4_Measured = dPiMinus2Wrapper->Get_P4_Measured();
-		const TLorentzVector locMissingProtonP4_Measured
-			= locBeamP4_Measured + dTargetP4 - (locPiPlus1P4_Measured + locPiPlus2P4_Measured + locPiMinus1P4_Measured + locPiMinus2P4_Measured);
+		const TLorentzVector locBeamP4_Measured          = dComboBeamWrapper->Get_P4_Measured();
+		const TLorentzVector locPiPlus1P4_Measured       = dPiPlus1Wrapper->Get_P4_Measured();
+		const TLorentzVector locPiPlus2P4_Measured       = dPiPlus2Wrapper->Get_P4_Measured();
+		const TLorentzVector locPiMinus1P4_Measured      = dPiMinus1Wrapper->Get_P4_Measured();
+		const TLorentzVector locPiMinus2P4_Measured      = dPiMinus2Wrapper->Get_P4_Measured();
+		const TLorentzVector locFourPiP4_Measured        = locPiPlus1P4_Measured + locPiPlus2P4_Measured + locPiMinus1P4_Measured + locPiMinus2P4_Measured;
+		const TLorentzVector locMissingProtonP4_Measured = locBeamP4_Measured + dTargetP4 - locFourPiP4_Measured;
 
 		/********************************************* GET COMBO RF TIMING INFO *****************************************/
 
@@ -418,6 +421,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		// measured values
 		const double locMissingMassSquared_Measured = locMissingProtonP4_Measured.M2();
 
+		const double locFourPiMass          = locFourPiP4.M();
+		const double locFourPiMass_Measured = locFourPiP4_Measured.M();
+
 		/******************************************** EXECUTE ANALYSIS ACTIONS *******************************************/
 
 		// Loop through the analysis actions, executing them in order for the active particle combo
@@ -437,8 +443,8 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		const Float_t locEnergyUnusedShowers = dComboWrapper->Get_Energy_UnusedShowers();
 
 		// get custom branches defined by ReactionEfficiency plugin
-		const Float_t locBestMissingMatchDistTOF  = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistTOF");
-		const Float_t locBestMissingMatchDistBCAL = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistBCAL");
+		// const Float_t locBestMissingMatchDistTOF  = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistTOF");
+		// const Float_t locBestMissingMatchDistBCAL = dComboWrapper->Get_Fundamental<Float_t>("BestMissingMatchDistBCAL");
 
 		//if you manually execute any actions, and it fails a cut, be sure to call:
 			//dComboWrapper->Set_IsComboCut(true);
@@ -478,10 +484,12 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		fillTreeKinematics(locMissingProtonP4, "MissingProton");
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared_Measured", locMissingMassSquared_Measured);
 		fillTreeKinematics(locMissingProtonP4_Measured, "MissingProton", "_Measured");
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPiMass",                  locFourPiMass);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPiMass_Measured",         locFourPiMass_Measured);
 		dFlatTreeInterface->Fill_Fundamental<UChar_t> ("NmbUnusedShowers",            locNmbUnusedShowers);
 		dFlatTreeInterface->Fill_Fundamental<Float_t> ("EnergyUnusedShowers",         locEnergyUnusedShowers);
-		dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistTOF",     locBestMissingMatchDistTOF);
-		dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistBCAL",    locBestMissingMatchDistBCAL);
+		// dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistTOF",     locBestMissingMatchDistTOF);
+		// dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistBCAL",    locBestMissingMatchDistBCAL);
 		dFlatTreeInterface->Fill_TObject<myTObjString>("ThrownTopology",              myTObjString(locThrownTopology));
 
 		/************************************ EXAMPLE: HISTOGRAM MISSING MASS SQUARED ************************************/
