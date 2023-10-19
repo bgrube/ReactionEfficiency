@@ -212,7 +212,7 @@ printTrack(const DKinematicData& track)
 
 
 void
-DSelector_pippippimpimpmiss::fillTreeKinematics(
+DSelector_pippippimpimpmiss::setTreeKinematics(
 	const TLorentzVector& P4,
 	const string&         branchPrefix,
 	const string&         branchSuffix,
@@ -238,7 +238,7 @@ DSelector_pippippimpimpmiss::fillTreeKinematics(
 
 
 void
-DSelector_pippippimpimpmiss::fillTreeDelta(
+DSelector_pippippimpimpmiss::setTreeDelta(
 	const TLorentzVector& missingProtonP4,
 	const TLorentzVector& otherTrackP4,
 	const int             arrayIndex,
@@ -476,14 +476,14 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		// RECOMMENDED: FILL ACCIDENTAL WEIGHT
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("AccidWeightFactor", locHistAccidWeightFactor);
 
-		// FILL ANY CUSTOM BRANCHES FIRST!!
+		// SET VALUES OF ANY CUSTOM BRANCHES FIRST!!
 		dFlatTreeInterface->Fill_Fundamental<UInt_t>  ("RunNumber",                   locRunNumber);
 		dFlatTreeInterface->Fill_Fundamental<Float_t> ("KinFitPVal",                  locKinFitPVal);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("BeamEnergy",                  locBeamEnergy);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared",          locMissingMassSquared);
-		fillTreeKinematics(locMissingProtonP4, "MissingProton");
+		setTreeKinematics(locMissingProtonP4, "MissingProton");
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared_Measured", locMissingMassSquared_Measured);
-		fillTreeKinematics(locMissingProtonP4_Measured, "MissingProton", "_Measured");
+		setTreeKinematics(locMissingProtonP4_Measured, "MissingProton", "_Measured");
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPiMass",                  locFourPiMass);
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPiMass_Measured",         locFourPiMass_Measured);
 		dFlatTreeInterface->Fill_Fundamental<UChar_t> ("NmbUnusedShowers",            locNmbUnusedShowers);
@@ -525,9 +525,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 				// 4-vector of unused track
 				const TLorentzVector locUnusedTrackP4 = dChargedHypoWrapper->Get_P4_Measured();
 				// fill tree variables for unused track
-				fillTreeKinematics(locUnusedTrackP4, "Unused", "", 0);
-				fillTreeDelta(locMissingProtonP4,          locUnusedTrackP4, 0, "Unused");
-				fillTreeDelta(locMissingProtonP4_Measured, locUnusedTrackP4, 0, "Unused", "_Measured");
+				setTreeKinematics(locUnusedTrackP4, "Unused", "", 0);
+				setTreeDelta(locMissingProtonP4,          locUnusedTrackP4, 0, "Unused");
+				setTreeDelta(locMissingProtonP4_Measured, locUnusedTrackP4, 0, "Unused", "_Measured");
 
 				locUsedSoFar_UnusedTrack.insert(locUsedThisCombo_UnusedTrack);
 			}
@@ -559,9 +559,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 					continue;
 				}
 				const TLorentzVector locMissingProtonP4_Truth = dThrownWrapper->Get_P4_Measured();
-				fillTreeKinematics(locMissingProtonP4_Truth, "Truth", "", locNmbTruthTracks);
-				fillTreeDelta(locMissingProtonP4,          locMissingProtonP4_Truth, locNmbTruthTracks, "Truth");
-				fillTreeDelta(locMissingProtonP4_Measured, locMissingProtonP4_Truth, locNmbTruthTracks, "Truth", "_Measured");
+				setTreeKinematics(locMissingProtonP4_Truth, "Truth", "", locNmbTruthTracks);
+				setTreeDelta(locMissingProtonP4,          locMissingProtonP4_Truth, locNmbTruthTracks, "Truth");
+				setTreeDelta(locMissingProtonP4_Measured, locMissingProtonP4_Truth, locNmbTruthTracks, "Truth", "_Measured");
 
 				++locNmbTruthTracks;
 			}

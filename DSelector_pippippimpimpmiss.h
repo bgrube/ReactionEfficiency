@@ -60,13 +60,13 @@ class DSelector_pippippimpimpmiss : public DSelector
 		TH2F* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband;
 
-		void fillTreeKinematics(
+		void setTreeKinematics(
 			const TLorentzVector& P4,
 			const string&         branchPrefix,
 			const string&         branchSuffix = "",
 			const int             arrayIndex = -1);
 
-		void fillTreeDelta(
+		void setTreeDelta(
 			const TLorentzVector& missingProtonP4,
 			const TLorentzVector& otherTrackP4,
 			const int             arrayIndex,
