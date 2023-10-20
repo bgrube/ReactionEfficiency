@@ -4,6 +4,8 @@
 from collections import defaultdict
 from collections.abc import Sequence
 import functools
+import math
+import numpy as np
 import os
 import subprocess
 from typing import (
@@ -73,7 +75,7 @@ def overlayDataSamples1D(
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Overlays 1D histograms generated from given trees or read from given files"""
-  print("Overlaying " + (f"histograms '{histName}'" if histName else f"distributions for '{variable}'") + " for data samples '{', '.join(dataSamples.keys())}'")
+  print("Overlaying " + (f"histograms '{histName}'" if histName else f"distributions for '{variable}'") + f" for data samples '{', '.join(dataSamples.keys())}'")
   pdfFileBaseName = histName if histName is not None else variable
   hStack = ROOT.THStack(pdfFileBaseName, ";" + setDefaultYAxisTitle(axisTitles))
   hists: List[ROOT.TH1D] = []  # keep histograms in memory
@@ -257,18 +259,17 @@ def plotResolution(
   additionalFilter:   Optional[str] = None,
 ) -> None:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
-  data = inputData.Filter(additionalFilter) if additionalFilter else inputData
+  data = inputData.Filter("(NmbTruthTracks == 1)" + (f" && ({additionalFilter})" if additionalFilter else ""))
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
-  nmbResBins = resBinning[0]
+  nmbResBins  = resBinning[0]
+  resBinWidth = (resBinning[2] - resBinning[1]) / nmbResBins
+  #TODO simplify code by making a 2D histogram
   for resBinIndex in range(nmbResBins):
-    resBinWidth = (resBinning[2] - resBinning[1]) / nmbResBins
-    resBinBoundaries = (resBinIndex * resBinWidth, (resBinIndex + 1) * resBinWidth)
+    resBinBoundaries = (resBinning[1] + resBinIndex * resBinWidth, resBinning[1] + (resBinIndex + 1) * resBinWidth)
     resBinFilter = f"(({resBinBoundaries[0]} < {resBinningVariable}) && ({resBinningVariable} < {resBinBoundaries[1]}))"
     resBinLabel = f"{resBinningVariable}_{resBinBoundaries[0]}_{resBinBoundaries[1]}"
-    print(f"!!! {resBinFilter}")
-    print(f"!!! {resBinLabel}")
-    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable,
+    hist: ROOT.TH1D = getHistND(data, (variable,), axisTitles = None, binning = binning, weightVariable = weightVariable,
                                 filterExpression = resBinFilter, histNameSuffix = resBinLabel, histTitle = resBinLabel)
     hists.append(hist)
     hStack.Add(hist.GetPtr())
@@ -279,6 +280,26 @@ def plotResolution(
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   plotTools.drawZeroLine(hStack)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  # draw resolution graph
+  xVals = np.array([resBinning[1] + (resBinIndex + 0.5) * resBinWidth for resBinIndex in range(nmbResBins)], dtype = "d")
+  xErrs = np.array([resBinWidth / 2                                   for _           in range(nmbResBins)], dtype = "d")
+  yVals = np.array([hists[resBinIndex].GetStdDev()                    for resBinIndex in range(nmbResBins)], dtype = "d")
+  yErrs = np.array([hists[resBinIndex].GetStdDevError()               for resBinIndex in range(nmbResBins)], dtype = "d")
+  resGraph = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_resolution_{resBinningVariable}_{pdfFileNameSuffix}")
+  plotTools.setCbFriendlyStyle(resGraph, 0, skipBlack = False)
+  resGraph.SetTitle(f";{axisTitles}")
+  resGraph.Print()
+  resGraph.Draw("APZ")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  hist = hists[3]
+  x = np.array([hist.GetBinCenter(i)  for i in range(1, hist.GetNbinsX() + 1)])
+  w = np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)])
+  mean = np.average(x, weights = w)
+  var  = np.average((x - mean)**2, weights = w)
+  print(f"!!! {x}")
+  print(f"!!! {w}")
+  print(f"!!! {mean}, {hist.GetMean()}, {var}, {math.sqrt(var)}")
 
 
 def overlayCases(
@@ -784,13 +805,9 @@ if __name__ == "__main__":
     }
     makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
 
-  kwargs = {
-    "additionalFilter" : "(NmbTruthTracks == 1)",
-    "pdfDirName"       : "./",
-  }
   plotResolution(inputData["2017_01-ver03"]["MCbggen"], variable = "TruthDeltaP", binning = (600, -4, +4),
-                 axisTitles = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",
-                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4), **kwargs)
+                 axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c});#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
+                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4), additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
 
   # make Monte Carlo plots for each period
   for dataPeriod in inputData.keys():
