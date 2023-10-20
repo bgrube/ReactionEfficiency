@@ -87,8 +87,8 @@ def overlayDataSamples1D(
       hist.SetTitle(dataLabel)
     elif "RDataFrame" in dataSample:
       assert variable is not None and axisTitles is not None and binning is not None, f"Need variable name (={variable}), axis titles (={axisTitles}), and binning (={binning})."
-      hist = getHistND(dataSample["RDataFrame"], (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
-                       histNameSuffix = dataLabel, histTitle = dataLabel).GetPtr()
+      hist = getHistND(dataSample["RDataFrame"], (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable,
+                       filterExpression = additionalFilter, histNameSuffix = dataLabel, histTitle = dataLabel).GetPtr()
     else:
       raise KeyError(f"Data sample must contain either 'TFile' or 'RDataFrame' key: {dataSample}")
     assert hist is not None, "Could not create histogram"
@@ -215,7 +215,7 @@ def plot1D(
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Plots 1D distribution for given variable, applying optional weighting and filtering"""
-  hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter)
+  hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, filterExpression = additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
@@ -236,10 +236,48 @@ def plot2D(
   additionalFilter:  Optional[str] = None,
 ) -> None:
   """Plots 2D distribution for given x and y variables, applying optional weighting and filtering"""
-  hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, additionalFilter)
+  hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, filterExpression = additionalFilter)
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def plotResolution(
+  inputData:          ROOT.RDataFrame,
+  variable:           Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
+  binning:            Tuple[int, float, float],     # tuple with binning definition for variable
+  axisTitles:         str,  # semicolon-separated list
+  resBinningVariable: str,  # variable to bin resolution in
+  resBinning:         Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
+  weightVariable:     Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix:  str = "Proton_4pi_",
+  pdfFileNameSuffix:  str = "",
+  pdfDirName:         str = "./",
+  additionalFilter:   Optional[str] = None,
+) -> None:
+  """Plots resolution of given variable in the in bins of `resBinningVariable`"""
+  data = inputData.Filter(additionalFilter) if additionalFilter else inputData
+  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
+  hists = []
+  nmbResBins = resBinning[0]
+  for resBinIndex in range(nmbResBins):
+    resBinWidth = (resBinning[2] - resBinning[1]) / nmbResBins
+    resBinBoundaries = (resBinIndex * resBinWidth, (resBinIndex + 1) * resBinWidth)
+    resBinFilter = f"(({resBinBoundaries[0]} < {resBinningVariable}) && ({resBinningVariable} < {resBinBoundaries[1]}))"
+    resBinLabel = f"{resBinningVariable}_{resBinBoundaries[0]}_{resBinBoundaries[1]}"
+    print(f"!!! {resBinFilter}")
+    print(f"!!! {resBinLabel}")
+    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable,
+                                filterExpression = resBinFilter, histNameSuffix = resBinLabel, histTitle = resBinLabel)
+    hists.append(hist)
+    hStack.Add(hist.GetPtr())
+  # draw distributions
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_cases{pdfFileNameSuffix}")
+  hStack.Draw("NOSTACK HIST")
+  # add legend
+  canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
+  plotTools.drawZeroLine(hStack)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -260,8 +298,8 @@ def overlayCases(
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
   for case, caseFilter in FILTER_CASES.items():
-    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, caseFilter,
-                                histNameSuffix = case, histTitle = case)
+    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable,
+                                filterExpression = caseFilter, histNameSuffix = case, histTitle = case)
     hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
       hist.SetFillColor(COLOR_CASES[case])
@@ -453,7 +491,7 @@ def overlayTopologies(
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot[case]):
       hist: ROOT.TH1D = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor",
-                                  (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"), histNameSuffix = f"{case}_{topo}", histTitle = topo)
+                                  filterExpression = (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"), histNameSuffix = f"{case}_{topo}", histTitle = topo)
       if topo == "Total":
         hist.SetLineColor(ROOT.kGray)
         hist.SetFillColor(ROOT.kGray)
@@ -510,20 +548,20 @@ def makeKinematicPlotsMc(
   """Plots kinematic distributions for given Monte Carlo data"""
   filterTopologies = {
     ""                                             : None,
-    # "__2#pi^{#plus}2#pi^{#minus}p"                 : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
+    "__sig"                                        : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
     # "__2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]" : '(ThrownTopology.GetString() == "2#gamma2#pi^{#plus}2#pi^{#minus}p[#pi^{0}]")',
     "__bkg"                                        : '(ThrownTopology.GetString() != "2#pi^{#plus}2#pi^{#minus}p")',
   }
   for suffix, filter in filterTopologies.items():
     kwargs = {
-      "additionalFilter"  : filter,
+      "additionalFilter"  : "(NmbTruthTracks == 1)" + ("" if filter is None else f" && {filter}"),
       "pdfFileNameSuffix" : suffix,
       "pdfDirName"        : pdfDirName,
     }
-    # overlayCases(dataSample, "TruthDeltaP",      axisTitles = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600, -6, 6),     **kwargs)
-    overlayCases(dataSample, "TruthDeltaPOverP", axisTitles = "(#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500, -2, 2),     **kwargs)
-    overlayCases(dataSample, "TruthDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200, -100, 100), **kwargs)
-    overlayCases(dataSample, "TruthDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, 180), **kwargs)
+    overlayCases(dataSample, "TruthDeltaP",      axisTitles = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",                 binning = (600,   -4,   +4), **kwargs)
+    overlayCases(dataSample, "TruthDeltaPOverP", axisTitles = "(#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (500,   -2,   +2), **kwargs)
+    overlayCases(dataSample, "TruthDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (200,  -60,  +60), **kwargs)
+    overlayCases(dataSample, "TruthDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (360, -180, +180), **kwargs)
 
   if isMcBggen:  # fill plots for bggen Monte Carlo
 
@@ -745,6 +783,14 @@ if __name__ == "__main__":
       },
     }
     makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+
+  kwargs = {
+    "additionalFilter" : "(NmbTruthTracks == 1)",
+    "pdfDirName"       : "./",
+  }
+  plotResolution(inputData["2017_01-ver03"]["MCbggen"], variable = "TruthDeltaP", binning = (600, -4, +4),
+                 axisTitles = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})",
+                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4), **kwargs)
 
   # make Monte Carlo plots for each period
   for dataPeriod in inputData.keys():
