@@ -75,8 +75,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	//dAnalysisActions.push_back(new DCutAction_EachPIDFOM(dComboWrapper, 0.1));
 
 	//MASSES
-	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiMinus}, 1000, 0, 2, "TwoPi"));
-	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiPlus, PiMinus, PiMinus}, 1000, 0, 2, "FourPi"));
+	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiMinus}, 200, 0, 3, "TwoPi"));
+	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiPlus, PiMinus, PiMinus}, 200, 0, 5, "FourPi"));
 	dAnalysisActions.push_back(new DHistogramAction_MissingMass       (dComboWrapper, false, 5000, -0.5,  4.5));
 	dAnalysisActions.push_back(new DHistogramAction_MissingMassSquared(dComboWrapper, false, 5000, -0.5,  4.5));
 	dAnalysisActions.push_back(new DHistogramAction_MissingP4(dComboWrapper, false, ""));
@@ -109,8 +109,11 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
-	dHist_BeamEnergy = new TH1F("BeamEnergy", ";Beam Energy (GeV)", 1000,  2, 12);
-
+	dHist_BeamEnergy              = new TH1F("BeamEnergy",              ";Beam Energy (GeV)",           1000,    2,   12);
+	dHist_SignalTruthFourPionMass = new TH1F("SignalTruthFourPionMass", ";Four-Pion Mass (GeV/c^{2})",   200,    0,    5);
+	dHist_SignalTruthProtonP      = new TH1F("SignalTruthProtonP",      ";Proton Momentum (GeV/c)",      250,    0,    5);
+	dHist_SignalTruthProtonTheta  = new TH1F("SignalTruthProtonTheta",  ";Proton Polar Angle (deg)",     200,    0,  100);
+	dHist_SignalTruthProtonPhi    = new TH1F("SignalTruthProtonPhi",    ";Proton Azimuthal Angle(deg))", 180, -180, +180);
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingMassSquaredVsBeamEnergy         = new TH2F("MissingMassSquaredVsBeamEnergy",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
@@ -585,20 +588,41 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 	Fill_NumCombosSurvivedHists();
 
 	/******************************************* LOOP OVER THROWN DATA (OPTIONAL) ***************************************/
-/*
-	//Thrown beam: just use directly
-	if(dThrownBeam != NULL)
-		double locEnergy = dThrownBeam->Get_P4().E();
+	// //Thrown beam: just use directly
+	// if(dThrownBeam != NULL)
+	// 	double locEnergy = dThrownBeam->Get_P4().E();
 
-	//Loop over throwns
-	for(UInt_t loc_i = 0; loc_i < Get_NumThrown(); ++loc_i)
-	{
-		//Set branch array indices corresponding to this particle
-		dThrownWrapper->Set_ArrayIndex(loc_i);
-
-		//Do stuff with the wrapper here ...
+	// plot truth distributions for signal process
+	if (locThrownTopology == "2#pi^{#plus}2#pi^{#minus}p") {
+		TLorentzVector         locProtonP4_Truth;
+		vector<TLorentzVector> locPionsP4_Truth;
+		// Loop over throwns
+		for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
+			//Set branch array indices corresponding to this particle
+			dThrownWrapper->Set_ArrayIndex(locTrackIndex);
+			switch (dThrownWrapper->Get_PID()) {
+				case Proton:
+					locProtonP4_Truth = dThrownWrapper->Get_P4_Measured();
+					break;
+				case PiPlus:
+				case PiMinus:
+					locPionsP4_Truth.push_back(dThrownWrapper->Get_P4_Measured());
+					break;
+				default:
+					break;
+			}
+		}
+		assert(locPionsP4_Truth.size() == 4);
+		TLorentzVector locFourPionP4_Truth;
+		for (const auto& locPionP4 : locPionsP4_Truth) {
+			locFourPionP4_Truth += locPionP4;
+		}
+		dHist_SignalTruthFourPionMass->Fill(locFourPionP4_Truth.M());
+		dHist_SignalTruthProtonP->Fill     (locProtonP4_Truth.P());
+		dHist_SignalTruthProtonTheta->Fill (locProtonP4_Truth.Theta() * TMath::RadToDeg());
+		dHist_SignalTruthProtonPhi->Fill   (locProtonP4_Truth.Phi()   * TMath::RadToDeg());
 	}
-*/
+
 	/****************************************** LOOP OVER OTHER ARRAYS (OPTIONAL) ***************************************/
 /*
 	//Loop over beam particles (note, only those appearing in combos are present)

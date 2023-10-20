@@ -56,6 +56,10 @@ class DSelector_pippippimpimpmiss : public DSelector
 		// DEFINE YOUR HISTOGRAMS HERE
 		// EXAMPLES:
 		TH1F* dHist_BeamEnergy;
+		TH1F* dHist_SignalTruthFourPionMass;
+		TH1F* dHist_SignalTruthProtonP;
+		TH1F* dHist_SignalTruthProtonTheta;
+		TH1F* dHist_SignalTruthProtonPhi;
 
 		TH2F* dHist_MissingMassSquaredVsBeamEnergy;
 		TH2F* dHist_MissingMassSquaredVsBeamEnergySideband;
