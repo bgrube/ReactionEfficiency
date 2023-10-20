@@ -82,7 +82,7 @@ def overlayDataSamples1D(
     hist: Optional[ROOT.TH1D] = None
     if "TFile" in dataSample:
       # read histogram from file
-      assert histName is not None, f"Name of histogram to read from file '{TFile.GetPath()}' required."
+      assert histName is not None, f"Name of histogram to read from file '{dataSample['TFile'].GetPath()}' required."
       hist = dataSample["TFile"].Get(histName)
       hist.SetTitle(dataLabel)
     elif "RDataFrame" in dataSample:
@@ -188,11 +188,11 @@ def getHistND(
 
 
 def setDefaultYAxisTitle(
-  axisTitles:    str,  # semicolon-separated list
+  axisTitles:    Optional[str],  # semicolon-separated list
   defaultYTitle: str = "Number of Combos (RF-subtracted)",
 ):
   """Sets default y-axis title if not provided by `axisTitles`"""
-  if (not axisTitles):
+  if (axisTitles is None):
     return ";" + defaultYTitle
   titles = axisTitles.split(";")
   if (len(titles) == 1):
@@ -683,7 +683,7 @@ if __name__ == "__main__":
 
   # plot generated MC truth for signal process
   # open input files with histograms
-  dataSamplesToOverlay = {}
+  dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
   for index, dataPeriod in enumerate(dataPeriods):
     inputFileName = f"./data/MCbggen/{dataPeriod}/{treeName}.MCbggen_{dataPeriod}.root"
     print(f"Reading generated MC histograms from file {inputFileName}")
@@ -717,7 +717,7 @@ if __name__ == "__main__":
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   # overlay all periods for bggen MC and real data
-  dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
+  dataSamplesToOverlay = {}
   if len(inputData) > 1:
     for dataType in ("MCbggen", "RD"):
       dataSamplesToOverlay = {}
