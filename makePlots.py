@@ -61,37 +61,49 @@ def printGitInfo() -> None:
 
 
 def overlayDataSamples1D(
-  dataSamples:       Dict[str, Dict[str, Any]],    # RDataFrame and style definitions for each data-set label
-  variable:          Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
-  axisTitles:        str,                          # semicolon-separated list
-  binning:           Tuple[int, float, float],     # tuple with binning definition
+  dataSamples:       Dict[str, Dict[str, Any]],  # TFile or RDataFrame and style definitions for each data-set label
+  histName:          Optional[str]                         = None,  # name of histogram to plot; required for TFile
+  variable:          Optional[Union[str, Tuple[str, str]]] = None,  # variable to plot; may be column name, or tuple with new column definition; required for RDataFrame
+  axisTitles:        Optional[str]                         = None,  # semicolon-separated list; required for RDataFrame
+  binning:           Optional[Tuple[int, float, float]]    = None,  # tuple with binning definition; required for RDataFrame
   weightVariable:    Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   pdfDirName:        str = "./",
   additionalFilter:  Optional[str] = None,
 ) -> None:
-  """Overlays 1D histograms from given data samples"""
-  print(f"Overlaying distributions for '{variable}' for data samples '{', '.join(dataSamples.keys())}'")
-  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
+  """Overlays 1D histograms generated from given trees or read from given files"""
+  print("Overlaying " + (f"histograms '{histName}'" if histName else f"distributions for '{variable}'") + " for data samples '{', '.join(dataSamples.keys())}'")
+  pdfFileBaseName = histName if histName is not None else variable
+  hStack = ROOT.THStack(pdfFileBaseName, ";" + setDefaultYAxisTitle(axisTitles))
   hists: List[ROOT.TH1D] = []  # keep histograms in memory
   normIntegral = None  # index of histogram to normalize to
   for dataLabel, dataSample in dataSamples.items():
-    data = dataSample["RDataFrame"]
-    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
-                                histNameSuffix = dataLabel, histTitle = dataLabel)
+    hist: Optional[ROOT.TH1D] = None
+    if "TFile" in dataSample:
+      # read histogram from file
+      assert histName is not None, f"Name of histogram to read from file '{TFile.GetPath()}' required."
+      hist = dataSample["TFile"].Get(histName)
+      hist.SetTitle(dataLabel)
+    elif "RDataFrame" in dataSample:
+      assert variable is not None and axisTitles is not None and binning is not None, f"Need variable name (={variable}), axis titles (={axisTitles}), and binning (={binning})."
+      hist = getHistND(dataSample["RDataFrame"], (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, additionalFilter,
+                       histNameSuffix = dataLabel, histTitle = dataLabel).GetPtr()
+    else:
+      raise KeyError(f"Data sample must contain either 'TFile' or 'RDataFrame' key: {dataSample}")
+    assert hist is not None, "Could not create histogram"
     plotTools.callMemberFunctionsWithArgs(hist, dataSample)
     if dataSample.get("normToThis", False):
       print(f"Normalizing all histograms to '{dataLabel}'")
       normIntegral = hist.Integral()
     hists.append(hist)
-    hStack.Add(hist.GetPtr())
+    hStack.Add(hist)
   # normalize histograms
   if normIntegral is not None:
     for hist in hists:
       hist.Scale(normIntegral / hist.Integral())
   # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_overlay_{'_'.join(dataSamples.keys())}{pdfFileNameSuffix}")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{pdfFileBaseName}_overlay_{'_'.join(dataSamples.keys())}{pdfFileNameSuffix}")
   hStack.Draw("NOSTACK HIST")
   # add legend
   # canv.BuildLegend()  # automatic placement with width 0.3 and height 0.21
@@ -180,6 +192,8 @@ def setDefaultYAxisTitle(
   defaultYTitle: str = "Number of Combos (RF-subtracted)",
 ):
   """Sets default y-axis title if not provided by `axisTitles`"""
+  if (not axisTitles):
+    return ";" + defaultYTitle
   titles = axisTitles.split(";")
   if (len(titles) == 1):
     return titles[0] + ";" + defaultYTitle
@@ -565,7 +579,6 @@ def makeKinematicPlotsData(
     plot1D(dataSample, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",       binning = (25, 0, 250),     **kwargs)
     plot1D(dataSample, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",      binning = (20, 0, 200),     **kwargs)
     plot1D(dataSample, "FourPiMass",               axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}} (GeV/#it{c}^{2})", binning = (200, 0, 5), **kwargs)
-    continue
 
     sideBandYTitle = "Number of Combos (RF-Sideband)"
     # sideBandArgs: Dict[str, Any] = {
@@ -668,7 +681,29 @@ if __name__ == "__main__":
   pdfBaseDirName = "./plots"
   maxNmbTopologies = 10
 
-  # open input files
+  # plot generated MC truth for signal process
+  # open input files with histograms
+  dataSamplesToOverlay = {}
+  for index, dataPeriod in enumerate(dataPeriods):
+    inputFileName = f"./data/MCbggen/{dataPeriod}/{treeName}.MCbggen_{dataPeriod}.root"
+    print(f"Reading generated MC histograms from file {inputFileName}")
+    dataSamplesToOverlay[dataPeriod] = {
+      "TFile"        : ROOT.TFile.Open(inputFileName, "READ"),
+      "normToThis"   : True if index == 0 else False,
+      # define plot style
+      "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
+      "SetLineWidth" : 2,
+    }
+  kwargs = {
+    "pdfFileNameSuffix" : "_SigMcTruth",
+    "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
+  }
+  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthFourPionMass", axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}} (GeV/#it{c}^{2})", **kwargs)
+  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonP",      axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
+  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonTheta",  axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
+  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonPhi",    axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
+
+  # open input files with trees
   inputData: Dict[str, Dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # Dict[<data period>][<data type>]
   for dataPeriod in dataPeriods:
     inputFileNames = {
