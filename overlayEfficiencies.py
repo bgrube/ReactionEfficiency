@@ -167,105 +167,57 @@ if __name__ == "__main__":
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")
   parser = argparse.ArgumentParser(description="Overlays efficiency graphs obtained from BruFit results in given directories using given labels.")
-  parser.add_argument("--fitResult", type = str, nargs = 2, metavar = ("DIR_PATH", "LABEL"), action = "append", help = "The path to the BruFit output directory of the fit that should be added to the overlay and the corresponding legend label; can be specified multiple times")
+  parser.add_argument("--fitResult",         type = str, nargs = 2, metavar = ("DIR_PATH", "LABEL"), action = "append", help = "The path to the BruFit output directory of the fit that should be added to the overlay and the corresponding legend label; can be specified multiple times")
+  parser.add_argument("--pdfFileNameSuffix", type = str, default = "", help = "PDF file-name suffix; (default: '%(default)s')")
   args = parser.parse_args()
 
-  # run = "_041003"
-  fitResults: Tuple[Tuple[str, str], ...] = (
-    # no extra cuts
-    # ("noCut/BruFitOutput.sig_allFixed",        "MC truth"),
-    # ("noCut/BruFitOutput.sig_allFudge",        "bggenSig sig fudge"),
-    # ("noCut/BruFitOutput.sig_bkg_allFixed",    "bggenSig sig+bkg fixed"),
-    # ("noCut/BruFitOutput.sig_bkg_bkgAllFudge", "bggenSig sig+bkg bkg fudge"),
-    # ("noCut/BruFitOutput.sig_bkg_allFudge",    "bggenSig sig+bkg all fudge"),
-    # ("noCut/BruFitOutput.bggen_allFixed",      "bggen all fixed"),
-    # ("noCut/BruFitOutput.bggen_bkgAllFudge",   "bggen sig fixed"),
-    # ("noCut/BruFitOutput.bggen_allFudge",      "bggen all free"),
-    # ("noCut/BruFitOutput.data_allFixed",       "Data all fixed"),
-    # ("noCut/BruFitOutput.data_bkgAllFudge",    "Data sig fixed"),
-    # ("noCut/BruFitOutput.data_allFudge",       "Data all free"),
-    #
-    # no unused showers
-    # ("noShowers/BruFitOutput.sig_allFixed",                "MC truth"),
-    # # ("noShowers/BruFitOutput.sig_allFudge",                "bggenSig sig fudge"),
-    # # ("noShowers/BruFitOutput.sig_bkg_allFixed",            "bggenSig sig+bkg fixed"),
-    # # ("noShowers/BruFitOutput.sig_bkg_bkgAllFudge",         "bggenSig sig+bkg bkg fudge"),
-    # # ("noShowers/BruFitOutput.sig_bkg_allFudge",            "bggenSig sig+bkg all fudge"),
-    # ("noShowers/BruFitOutput.bggen_allFixed",              "bggen fixed"),
-    # ("noShowers/BruFitOutput.bggen_bkgAllFudge",           "bggen bkg fugde"),
-    # ("noShowers/BruFitOutput.bggen_allFudge",              "bggen all fudge"),
-    #
-    # ("noShowers/BruFitOutput.sig_allFixed",                      "bggen MC"),
-    # (f"noShowers/BruFitOutput.data{run}_allFixed",               "data fixed"),
-    # (f"noShowers/BruFitOutput.data{run}_bkgSmear",               "data bkg smear"),
-    # # (f"noShowers/BruFitOutput.data{run}_bkgShift",               "data bkg shift"),
-    # (f"noShowers/BruFitOutput.data{run}_bkgScale",               "data bkg scale"),
-    # # (f"noShowers/BruFitOutput.data{run}_bkgFixSmear",            "data bkg fix smear"),
-    # (f"noShowers/BruFitOutput.data{run}_bkgFixShift",            "data bkg fix shift"),
-    # # (f"noShowers/BruFitOutput.data{run}_bkgFixScale",            "data bkg fix scale"),
-    # (f"noShowers/BruFitOutput.data{run}_bkgAllFudge",            "data bkg fudge"),
-    #
-    # (f"noShowers/BruFitOutput.data{run}_sigSmear",               "data sig smear"),
-    # # (f"noShowers/BruFitOutput.data{run}_sigShift",               "data sig shift"),
-    # # (f"noShowers/BruFitOutput.data{run}_sigScale",               "data sig scale"),
-    # (f"noShowers/BruFitOutput.data{run}_sigFixSmear",            "data sig fix smear"),
-    # # (f"noShowers/BruFitOutput.data{run}_sigFixShift",            "data sig fix shift"),
-    # (f"noShowers/BruFitOutput.data{run}_sigFixScale",            "data sig fix scale"),
-    # (f"noShowers/BruFitOutput.data{run}_sigShift_bkgShift",      "data sig+bkg shift"),
-    # (f"noShowers/BruFitOutput.data{run}_sigShift_bkgShiftScale", "data sig shift bkg shift+scale"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge",            "data sig fudge"),
-    #
-    # (f"noShowers/BruFitOutput.data{run}_allFudge",               "data all fudge"),
-    #
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgDoubleGaussian",            "data bkg Double-Gauss"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgDoubleGaussian_SameMean",   "data bkg Double-Gauss same mean"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgSkewedGaussian_ExpMod",     "data bkg ExpModGauss"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgSkewedGaussian_Log",        "data bkg LogNormal"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFixed_bkgSkewedGaussian_SkewNormal", "data bkg SkewNormal"),
-    #
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgDoubleGaussian",            "data sig fudge bkg Double-Gauss"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgDoubleGaussian_SameMean",   "data sig fudge bkg Double-Gauss same mean"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_ExpMod",     "data sig fudge bkg ExpModGauss"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_Log",        "data sig fudge bkg LogNormal"),
-    # (f"noShowers/BruFitOutput.data{run}_sigAllFudge_bkgSkewedGaussian_SkewNormal", "data sig fudge bkg SkewNormal"),
-    #
-    # ("2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
-    # ("2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
-    # ("2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
-    # ("2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
-    #
-    ("2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
-    ("2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
-    ("2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
-    ("2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
-    #
-    # ("2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
-    # ("2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
-    #
-    # ("2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
-    # ("2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
-    #
-    # ("2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
-    # ("2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
-    #
-    # ("2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
-    # ("2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
-  )
+  resultsToOverlay: Dict[str, Tuple[Tuple[str, str], ...]] = {  # dict key is PDF file-name suffix
+    "bggen" : (
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
+      ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
+    ),
+    "data" : (
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
+      ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
+    ),
+    "2017_01-ver03" : (
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
+    ),
+    "2018_01-ver02" : (
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
+    ),
+    "2018_08-ver02" : (
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
+    ),
+    "2019_11-ver01" : (
+      ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
+      ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
+    ),
+  }
+  if args.fitResult:
+    # read info from command-line arguments instead
+    resultsToOverlay = {args.pdfFileNameSuffix : tuple((fitResult[0], fitResult[1]) for fitResult in args.fitResult)}
+    print(f"!!! {resultsToOverlay}")
+
   skipBlack = True
   # skipBlack = False
-  if args.fitResult:
-    fitResultDirNames = tuple(fitResult[0] for fitResult in args.fitResult)
-    fitLabels         = tuple(fitResult[1] for fitResult in args.fitResult)
-  else:
-    # fitResultDirNames = tuple(f"./fits/2018_01-ver02/{fitResult[0]}" for fitResult in fitResults)
-    fitResultDirNames = tuple(f"./fits/{fitResult[0]}" for fitResult in fitResults)
+  pdfDirName = makePlots.makeDirPath("./overlays")
+  for pdfFileNameSuffix, fitResults in resultsToOverlay.items():
+    fitResultDirNames = tuple(fitResult[0] for fitResult in fitResults)
     fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
-  effInfos, binVarNames = getEfficiencies(fitResultDirNames, fitLabels)
-  print("Overlaying efficiencies")
-  if effInfos:
-    if binVarNames:
+    effInfos, binVarNames = getEfficiencies(fitResultDirNames, fitLabels)
+    print("Overlaying efficiencies")
+    if effInfos and binVarNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName = "overlays", skipBlack = skipBlack)
+          overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
         if len(binningVars) == 2:
-          overlayEfficiencies2D(effInfos, binningVars[:2], steppingVar = binningVars[1], pdfDirName = "overlays", skipBlack = skipBlack)
+          overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
+                                pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
