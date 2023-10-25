@@ -17,6 +17,7 @@ from typing import (
   Optional,
   Sequence,
   Tuple,
+  Union,
 )
 
 from uncertainties import UFloat, ufloat
@@ -281,6 +282,56 @@ def getParValueGraph1D(
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
+#TODO add sequence of beautifier functors as optional argument
+def plotGraphs1D(
+  graphOrGraphs:     Union[ROOT.TGraph, Sequence[Tuple[str, ROOT.TGraph]]],
+  binningVar:        str,
+  yAxisTitle:        str,
+  pdfDirName:        str,
+  pdfFileBaseName:   str,
+  pdfFileNameSuffix: str = "",
+  particle:          str = "Proton",
+  channel:           str = "4pi",
+  graphTitle:        Optional[str] = None,
+  graphMinimum:      float = 0.0,
+  graphMaximum:      Optional[float] = None,
+  skipBlack:         bool = True,
+):
+  """Overlays all given graphs"""
+  graphs: List[Tuple[str, ROOT.TGraph]] = []
+  if isinstance(graphOrGraphs, ROOT.TGraph):
+    graphs.append(("", graphOrGraphs))
+  elif isinstance(graphOrGraphs, Sequence):
+    graphs = list(graphOrGraphs)
+  else:
+    raise TypeError(f"`graphOrGraphs` must be an instance of either ROOT.TGraph or Sequence but is a {type(graphOrGraphs)}")
+  multiGraph = ROOT.TMultiGraph()
+  for styleIndex, (legendLabel, graph) in enumerate(graphs):
+    graph.SetTitle(legendLabel)
+    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
+    multiGraph.Add(graph)
+  if graphTitle is not None:
+    multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
+  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
+  multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
+  multiGraph.GetYaxis().SetTitle(yAxisTitle)
+  if graphMinimum is not None:
+    multiGraph.SetMinimum(graphMinimum)
+  if graphMaximum is not None:
+    multiGraph.SetMaximum(graphMaximum)
+  legendLabels = tuple(legendLabel.replace(' ', '_') for legendLabel, _ in graphs)  # reformat legend labels so that they can be used in PDF file name
+  if len(legendLabels) == 1 and legendLabels[0] == "":  # only 1 graph and no legend label
+    legendLabels = None
+  canv = ROOT.TCanvas(f"{particle}_{channel}_{pdfFileBaseName}_{binningVar}"
+                      + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
+  multiGraph.Draw("APZ")
+  if legendLabels is not None:
+    legend = canv.BuildLegend()
+    legend.SetFillStyle(0)
+    legend.SetBorderSize(0)
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
 def plotParValue1D(
   parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
@@ -292,43 +343,38 @@ def plotParValue1D(
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueMultiGraph = ROOT.TMultiGraph()
-  parValueGraphs = {}  # store graphs here to keep them in memory
-  shiftFraction = 0.0
-  styleIndex = 0
-  for dataSet in parInfos:
-    graph = parValueGraphs[dataSet] = getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet]), shiftFraction)
-    # shiftFraction += 0.01
-    graph.SetTitle(dataSet)
-    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
-    styleIndex += 1
-    parValueMultiGraph.Add(graph)
-  parValueMultiGraph.SetTitle(f"Fit parameter {parName}, {particle} ({channel})")
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  parValueMultiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  parValueMultiGraph.GetYaxis().SetTitle(parName)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_{parName}_{binningVar}{pdfFileNameSuffix}", "")
-  parValueMultiGraph.Draw("APZ")
-  hist = parValueMultiGraph.GetHistogram()
-  plotRange = hist.GetMaximum() - hist.GetMinimum()
-  minVal: float = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
-  maxVal: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
-  maxErr: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))
-  if 2 * maxErr / plotRange > 0.9:  # one error bar dominates plot range
-    plotRange = 2 * (maxVal - minVal)  # new plot range = 2 * value range
-    plotRangeCenter = (maxVal + minVal) / 2
-    minVal = plotRangeCenter - plotRange / 2
-    maxVal = plotRangeCenter + plotRange / 2
-    print(f"Adjusting plot range to [{minVal}, {maxVal}]")
-    parValueMultiGraph.SetMinimum(minVal)
-    parValueMultiGraph.SetMaximum(maxVal)
-    canv.Modified()
-    canv.Update()
-  legend = canv.BuildLegend()
-  legend.SetFillStyle(0)
-  legend.SetBorderSize(0)
-  plotTools.drawZeroLine(parValueMultiGraph)
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
+                                                   for dataSet in parInfos]
+  plotGraphs1D(
+    graphOrGraphs     = parValueGraphs,
+    binningVar        = binningVar,
+    yAxisTitle        = parName,
+    pdfDirName        = pdfDirName,
+    pdfFileBaseName   = parName,
+    pdfFileNameSuffix = pdfFileNameSuffix,
+    particle          = particle,
+    channel           = channel,
+    graphTitle        = f"Fit parameter {parName}, {particle} ({channel})",
+    skipBlack         = False,
+  )
+  #TODO needed?
+  # hist = parValueMultiGraph.GetHistogram()
+  # plotRange = hist.GetMaximum() - hist.GetMinimum()
+  # minVal: float = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
+  # maxVal: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
+  # maxErr: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))
+  # if 2 * maxErr / plotRange > 0.9:  # one error bar dominates plot range
+  #   plotRange = 2 * (maxVal - minVal)  # new plot range = 2 * value range
+  #   plotRangeCenter = (maxVal + minVal) / 2
+  #   minVal = plotRangeCenter - plotRange / 2
+  #   maxVal = plotRangeCenter + plotRange / 2
+  #   print(f"Adjusting plot range to [{minVal}, {maxVal}]")
+  #   parValueMultiGraph.SetMinimum(minVal)
+  #   parValueMultiGraph.SetMaximum(maxVal)
+  #   canv.Modified()
+  #   canv.Update()
+  #TODO pass to plotGraphs1D()
+  # plotTools.drawZeroLine(parValueMultiGraph)
 
 
 def getParValuesForGraph2D(
@@ -395,7 +441,7 @@ def plotParValue2D(
   if not parValueGraphs:  # nothing to plot
     return
   canv = ROOT.TCanvas()
-  # construct histogram that ensures same axes for all graphs
+  # construct dummy histogram that ensures same axes for all graphs
   assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
   assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
   hist = ROOT.TH3F(

@@ -15,7 +15,6 @@ from typing import (
   Optional,
   Sequence,
   Tuple,
-  Union,
 )
 
 from uncertainties import UFloat, ufloat
@@ -41,53 +40,6 @@ YIELD_PAR_NAMES: Dict[str, str] = {
   "Signal"     : "Yld_SigPdf",
   "Background" : "Yld_BkgPdf",
 }
-
-
-def plotGraphs1D(
-  graphOrGraphs:     Union[ROOT.TGraph, Sequence[Tuple[str, ROOT.TGraph]]],
-  binningVar:        str,
-  yAxisTitle:        str,
-  pdfDirName:        str,
-  pdfFileBaseName:   str,
-  pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
-  graphTitle:        Optional[str] = None,
-  graphMinimum:      float = 0.0,
-  graphMaximum:      Optional[float] = None,
-  skipBlack:         bool = True,
-):
-  """Overlays all given graphs"""
-  graphs: List[Tuple[str, ROOT.TGraph]] = []
-  if isinstance(graphOrGraphs, ROOT.TGraph):
-    graphs.append(("", graphOrGraphs))
-  elif isinstance(graphOrGraphs, Sequence):
-    graphs = list(graphOrGraphs)
-  else:
-    raise TypeError(f"`graphOrGraphs` must be an instance of either ROOT.TGraph or Sequence but is a {type(graphOrGraphs)}")
-  multiGraph = ROOT.TMultiGraph()
-  for styleIndex, (legendLabel, graph) in enumerate(graphs):
-    graph.SetTitle(legendLabel)
-    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
-    multiGraph.Add(graph)
-  if graphTitle is not None:
-    multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  multiGraph.GetYaxis().SetTitle(yAxisTitle)
-  if graphMinimum is not None:
-    multiGraph.SetMinimum(graphMinimum)
-  if graphMaximum is not None:
-    multiGraph.SetMaximum(graphMaximum)
-  legendLabels = tuple(legendLabel.replace(' ', '_') for legendLabel, _ in graphs)  # reformat legend labels so that they can be used in PDF file name
-  if len(legendLabels) == 1 and legendLabels[0] == "":  # only 1 graph and no legend label
-    legendLabels = None
-  canv = ROOT.TCanvas(f"{particle}_{channel}_{pdfFileBaseName}_{binningVar}"
-                      + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
-  multiGraph.Draw("APZ")
-  if legendLabels is not None:
-    canv.BuildLegend()
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def readDataIntegralFromFitFile(
@@ -191,7 +143,7 @@ def plotEfficiencies1D(
 ) -> None:
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
-  plotGraphs1D(
+  plotFitResults.plotGraphs1D(
     graphOrGraphs     = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies)),
     binningVar        = binningVar,
     yAxisTitle        = f"{particle} Track-Finding Efficiency",

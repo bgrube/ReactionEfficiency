@@ -14,6 +14,7 @@ from typing import (
   Mapping,
   Optional,
   Sequence,
+  Set,
   Tuple,
 )
 
@@ -75,10 +76,9 @@ def overlayEfficiencies1D(
 ):
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
-  graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = []
-  for (_, fitLabel), efficiencies in effInfos.items():
-    graphs1D.append((fitLabel, plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies))))
-  plotEfficiencies.plotGraphs1D(
+  graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
+                                                   for (_, fitLabel), efficiencies in effInfos.items()]
+  plotFitResults.plotGraphs1D(
     graphs1D,
     binningVar,
     yAxisTitle        = "Efficiency",
@@ -111,8 +111,8 @@ def overlayEfficiencies2D(
   steppingVarIndex = 0 if steppingVar == binningVars[0] else 1
   binningVarIndex  = 0 if steppingVarIndex == 1 else 1
   # read efficiency values assuming equidistant binning
-  steppingVarBinCenters = set()
-  steppingVarBinWidths  = set()
+  steppingVarBinCenters: Set[float] = set()
+  steppingVarBinWidths:  Set[float] = set()
   graphValues: Dict[Tuple[str, str], Tuple[Tuple[UFloat, UFloat, UFloat], ...]] = {}  # [(dir name , label)][value index][0 = x, 1 = y, 2 = eff]
   for key, efficiencies in effInfos.items():
     values: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies)
@@ -138,7 +138,7 @@ def overlayEfficiencies2D(
     steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
       f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    plotEfficiencies.plotGraphs1D(
+    plotFitResults.plotGraphs1D(
       graphs1D,
       binningVars[binningVarIndex],
       yAxisTitle        = "Efficiency",
