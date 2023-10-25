@@ -108,46 +108,6 @@ def overlayEfficiencies1D(
   graphTitle:        Optional[str] = None,
   skipBlack:         bool = True,
 ):
-  #TODO use overlayGraphs1D
-  """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
-  print(f"Overlaying efficiencies for binning variable '{binningVar}'")
-  efficiencyMultiGraph = ROOT.TMultiGraph()
-  efficiencyGraphs = {}  # store graphs here to keep them in memory
-  shiftFraction = 0.0
-  styleIndex = 0
-  for (fitResultDirName, fitLabel), efficiencies in effInfos.items():
-    graph = efficiencyGraphs[fitResultDirName] = plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies), shiftFraction)
-    # shiftFraction += 0.01
-    graph.SetTitle(fitLabel)
-    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(effInfos) == 1 else skipBlack)
-    styleIndex += 1
-    efficiencyMultiGraph.Add(graph)
-  if graphTitle is None:
-    efficiencyMultiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
-  else:
-    efficiencyMultiGraph.SetTitle(graphTitle)
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  efficiencyMultiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  efficiencyMultiGraph.GetYaxis().SetTitle("Efficiency")
-  efficiencyMultiGraph.SetMinimum(0)
-  efficiencyMultiGraph.SetMaximum(1)
-  fitLabels = tuple(key[1].replace(' ', '_') for key in effInfos.keys())
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(fitLabels)}{pdfFileNameSuffix}", "")
-  efficiencyMultiGraph.Draw("APZ")
-  canv.BuildLegend()
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
-
-
-def overlayEfficiencies1DNew(
-  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
-  binningVar:        str,
-  pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
-  graphTitle:        Optional[str] = None,
-  skipBlack:         bool = True,
-):
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = []
@@ -169,63 +129,6 @@ def overlayEfficiencies1DNew(
 
 
 def overlayEfficiencies2D(
-  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
-  binningVars:       Sequence[str],
-  steppingVar:       str,
-  pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
-  skipBlack:         bool = True,
-):
-  """Overlays efficiencies as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
-  print(f"Overlaying efficiencies for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
-  # filter efficiency infos that belong to given binning variables
-  effInfos2D: Dict[Tuple[str, str], List[EffInfo]] = {}
-  for key, efficiencies in effInfos.items():
-    effInfos2D[key] = [
-      efficiency for efficiency in efficiencies
-      if (len(efficiency.binInfo.varNames) == 2) and (binningVars[0] in efficiency.binInfo.varNames) and (binningVars[1] in efficiency.binInfo.varNames)
-    ]
-    assert effInfos2D[key], f"Could not find any efficiencies that match binning variables '{binningVars}'"
-  assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
-  assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
-  xAxisVar = binningVars[0] if steppingVar == binningVars[1] else binningVars[1]
-  firstKey = list(effInfos2D.keys())[0]
-  # assume that binning info is identical for data sets
-  steppingVarValues = set(effInfo.binInfo.centers[steppingVar] for effInfo in effInfos2D[firstKey])
-  steppingVarWidth = effInfos2D[firstKey][0].binInfo.widths[steppingVar]  # assume equidistant binning
-  for steppingVarValue in steppingVarValues:
-    # construct input for 1D plotting function
-    effInfos1D: Dict[Tuple[str, str], List[EffInfo]] = {}
-    for key, efficiencies in effInfos2D.items():
-      effInfos1D[key] = [
-        EffInfo(BinInfo(
-          name    = efficiency.binInfo.name,
-          centers = {xAxisVar : efficiency.binInfo.centers[xAxisVar]},
-          widths  = {xAxisVar : efficiency.binInfo.widths[xAxisVar]},
-          dirName = efficiency.binInfo.dirName,
-        ), efficiency.value) for efficiency in efficiencies if efficiency.binInfo.centers[steppingVar] == steppingVarValue
-      ]
-      assert effInfos1D[key], f"Could not find any efficiencies for bin center {steppingVar} == {steppingVarValue}"
-    # plot current bin of stepping variable
-    steppingRange = (f"{steppingVarValue - steppingVarWidth / 2.0}", f"{steppingVarValue + steppingVarWidth / 2.0}")
-    steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
-      f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
-      f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    overlayEfficiencies1D(
-      effInfos = effInfos1D,
-      binningVar = xAxisVar,
-      pdfDirName = pdfDirName,
-      pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
-      particle = particle,
-      channel = channel,
-      graphTitle = steppingVarLabel,
-      skipBlack = skipBlack,
-    )
-
-
-def overlayEfficiencies2DNew(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVars:       Sequence[str],
   steppingVar:       str,
@@ -298,26 +201,26 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   resultsToOverlay: Dict[str, Tuple[Tuple[str, str], ...]] = {  # dict key is PDF file-name suffix
-    # "bggen" : (
-    #   ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
-    #   ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
-    #   ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
-    #   ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
-    # ),
-    # "data" : (
-    #   ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
-    #   ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
-    #   ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
-    #   ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
-    # ),
-    # "2017_01-ver03" : (
-    #   ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
-    #   ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
-    # ),
-    # "2018_01-ver02" : (
-    #   ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
-    #   ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
-    # ),
+    "bggen" : (
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
+      ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
+    ),
+    "data" : (
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
+      ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
+    ),
+    "2017_01-ver03" : (
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
+      ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
+    ),
+    "2018_01-ver02" : (
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
+      ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
+    ),
     "2018_08-ver02" : (
       ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
       ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
@@ -342,10 +245,7 @@ if __name__ == "__main__":
     if effInfos and binVarNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          # overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
-          overlayEfficiencies1DNew(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+          overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
         if len(binningVars) == 2:
-          # overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
-          #                       pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
-          overlayEfficiencies2DNew(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
+          overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
                                 pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
