@@ -297,7 +297,7 @@ def plotGraphs1D(
   graphMaximum:      Optional[float] = None,
   skipBlack:         bool = True,
 ):
-  """Overlays all given graphs"""
+  """Generic function that plots the given graph(s)"""
   graphs: List[Tuple[str, ROOT.TGraph]] = []
   if isinstance(graphOrGraphs, ROOT.TGraph):
     graphs.append(("", graphOrGraphs))
