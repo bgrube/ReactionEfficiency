@@ -63,7 +63,7 @@ def getEfficiencies(
   return effInfos, binVarNames
 
 
-def overlayGraphs1D(
+def plotGraphs1D(
   graphs:            Sequence[Tuple[str, ROOT.TGraph]],
   binningVar:        str,
   yAxisTitle:        str,
@@ -136,6 +136,36 @@ def overlayEfficiencies1D(
   efficiencyMultiGraph.Draw("APZ")
   canv.BuildLegend()
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def overlayEfficiencies1DNew(
+  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
+  binningVar:        str,
+  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNameSuffix: str = "",
+  particle:          str = "Proton",
+  channel:           str = "4pi",
+  graphTitle:        Optional[str] = None,
+  skipBlack:         bool = True,
+):
+  """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
+  print(f"Overlaying efficiencies for binning variable '{binningVar}'")
+  graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = []
+  for (_, fitLabel), efficiencies in effInfos.items():
+    graphs1D.append((fitLabel, plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies))))
+  plotGraphs1D(
+    graphs1D,
+    binningVar,
+    yAxisTitle        = "Efficiency",
+    pdfDirName        = pdfDirName,
+    pdfFileNameSuffix = pdfFileNameSuffix,
+    particle          = particle,
+    channel           = channel,
+    graphTitle        = f"{particle} Track-Finding Efficiency ({channel})" if graphTitle is None else graphTitle,
+    graphMinimum      = 0.0,
+    graphMaximum      = 1.0,
+    skipBlack         = skipBlack,
+  )
 
 
 def overlayEfficiencies2D(
@@ -239,7 +269,7 @@ def overlayEfficiencies2DNew(
     steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
       f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    overlayGraphs1D(
+    plotGraphs1D(
       graphs1D,
       binningVars[binningVarIndex],
       yAxisTitle        = "Efficiency",
@@ -288,10 +318,10 @@ if __name__ == "__main__":
     #   ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
     #   ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
     # ),
-    # "2018_08-ver02" : (
-    #   ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
-    #   ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
-    # ),
+    "2018_08-ver02" : (
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
+      ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
+    ),
     "2019_11-ver01" : (
       ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
       ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
@@ -311,9 +341,9 @@ if __name__ == "__main__":
     print("Overlaying efficiencies")
     if effInfos and binVarNames:
       for binningVars in binVarNames:
-        # if len(binningVars) == 1:
-        #   overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
-        #   overlayEfficiencies1DNew(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+        if len(binningVars) == 1:
+          # overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+          overlayEfficiencies1DNew(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
         if len(binningVars) == 2:
           # overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
           #                       pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
