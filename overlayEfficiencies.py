@@ -64,7 +64,7 @@ def getEfficiencies(
 
 
 def overlayGraphs1D(
-  graphs:            Mapping[Tuple[str, str], ROOT.TGraph],  #TODO convert to Sequence[Sequence[str, ROOT.TGraph], ...]
+  graphs:            Sequence[Tuple[str, ROOT.TGraph]],
   binningVar:        str,
   yAxisTitle:        str,
   pdfDirName:        str,  # directory name the PDF file will be written to
@@ -78,16 +78,12 @@ def overlayGraphs1D(
 ):
   """Overlays all given graphs"""
   multiGraph = ROOT.TMultiGraph()
-  styleIndex = 0
-  for (_, fitLabel), graph in graphs.items():
-    graph.SetTitle(fitLabel)
+  for styleIndex, (legendLabel, graph) in enumerate(graphs):
+    graph.SetTitle(legendLabel)
     plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
-    styleIndex += 1
     multiGraph.Add(graph)
-  if graphTitle is None:
-    multiGraph.SetTitle(f"{particle} Track-Finding Efficiency ({channel})")
-  else:
-    multiGraph.SetTitle(graphTitle)
+  if graphTitle is not None:
+    multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
   multiGraph.GetYaxis().SetTitle(yAxisTitle)
@@ -95,8 +91,8 @@ def overlayGraphs1D(
     multiGraph.SetMinimum(graphMinimum)
   if graphMaximum is not None:
     multiGraph.SetMaximum(graphMaximum)
-  fitLabels = tuple(key[1].replace(' ', '_') for key in graphs.keys())
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(fitLabels)}{pdfFileNameSuffix}", "")
+  legendLabels = tuple(legendLabel.replace(' ', '_') for legendLabel, _ in graphs)  # reformat legend labels so that they can be used in PDF file name
+  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(legendLabels)}{pdfFileNameSuffix}", "")
   multiGraph.Draw("APZ")
   canv.BuildLegend()
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
@@ -230,14 +226,14 @@ def overlayEfficiencies2DNew(
   steppingVarBinWidth = list(steppingVarBinWidths)[0]
   for steppingVarBinCenter in sorted(steppingVarBinCenters):
     # construct 1D graphs for current bin of stepping variable
-    graphs1D: Dict[Tuple[str, str], ROOT.TGraphErrors] = {}
-    for key, values in graphValues.items():
+    graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = []
+    for (fitResultDirName, fitLabel), values in graphValues.items():
       xVals = np.array([value[binningVarIndex].nominal_value for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
       xErrs = np.array([value[binningVarIndex].std_dev       for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
       yVals = np.array([value[2].nominal_value               for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
       yErrs = np.array([value[2].std_dev                     for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
-      assert len(xVals) > 0, f"Could not find any efficiencies for {key} for bin center {steppingVar} == {steppingVarBinCenter}"
-      graphs1D[key] = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
+      assert len(xVals) > 0, f"Could not find any efficiencies for '{(fitResultDirName, fitLabel)}' for bin center {steppingVar} == {steppingVarBinCenter}"
+      graphs1D.append((fitLabel, ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)))
     # overlay 1D graphs for current bin of stepping variable
     steppingRange = (f"{steppingVarBinCenter - steppingVarBinWidth / 2.0}", f"{steppingVarBinCenter + steppingVarBinWidth / 2.0}")
     steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
@@ -317,8 +313,9 @@ if __name__ == "__main__":
       for binningVars in binVarNames:
         # if len(binningVars) == 1:
         #   overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+        #   overlayEfficiencies1DNew(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
         if len(binningVars) == 2:
-          overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
-                                pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+          # overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
+          #                       pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
           overlayEfficiencies2DNew(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
-                                pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}_new", skipBlack = skipBlack)
+                                pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
