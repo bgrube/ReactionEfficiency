@@ -15,6 +15,7 @@ from typing import (
   Optional,
   Sequence,
   Tuple,
+  Union,
 )
 
 from uncertainties import UFloat, ufloat
@@ -40,6 +41,53 @@ YIELD_PAR_NAMES: Dict[str, str] = {
   "Signal"     : "Yld_SigPdf",
   "Background" : "Yld_BkgPdf",
 }
+
+
+def plotGraphs1D(
+  graphOrGraphs:     Union[ROOT.TGraph, Sequence[Tuple[str, ROOT.TGraph]]],
+  binningVar:        str,
+  yAxisTitle:        str,
+  pdfDirName:        str,
+  pdfFileBaseName:   str,
+  pdfFileNameSuffix: str = "",
+  particle:          str = "Proton",
+  channel:           str = "4pi",
+  graphTitle:        Optional[str] = None,
+  graphMinimum:      float = 0.0,
+  graphMaximum:      Optional[float] = None,
+  skipBlack:         bool = True,
+):
+  """Overlays all given graphs"""
+  graphs: List[Tuple[str, ROOT.TGraph]] = []
+  if isinstance(graphOrGraphs, ROOT.TGraph):
+    graphs.append(("", graphOrGraphs))
+  elif isinstance(graphOrGraphs, Sequence):
+    graphs = list(graphOrGraphs)
+  else:
+    raise TypeError(f"`graphOrGraphs` must be an instance of either ROOT.TGraph or Sequence but is a {type(graphOrGraphs)}")
+  multiGraph = ROOT.TMultiGraph()
+  for styleIndex, (legendLabel, graph) in enumerate(graphs):
+    graph.SetTitle(legendLabel)
+    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
+    multiGraph.Add(graph)
+  if graphTitle is not None:
+    multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
+  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
+  multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
+  multiGraph.GetYaxis().SetTitle(yAxisTitle)
+  if graphMinimum is not None:
+    multiGraph.SetMinimum(graphMinimum)
+  if graphMaximum is not None:
+    multiGraph.SetMaximum(graphMaximum)
+  legendLabels = tuple(legendLabel.replace(' ', '_') for legendLabel, _ in graphs)  # reformat legend labels so that they can be used in PDF file name
+  if len(legendLabels) == 1 and legendLabels[0] == "":  # only 1 graph and no legend label
+    legendLabels = None
+  canv = ROOT.TCanvas(f"{particle}_{channel}_{pdfFileBaseName}_{binningVar}"
+                      + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
+  multiGraph.Draw("APZ")
+  if legendLabels is not None:
+    canv.BuildLegend()
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def readDataIntegralFromFitFile(
@@ -140,30 +188,22 @@ def plotEfficiencies1D(
   pdfFileNameSuffix: str   = "",
   particle:          str   = "Proton",
   channel:           str   = "4pi",
-  markerSize:        float = 0.75,
 ) -> None:
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
-  efficiencyGraph = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies))
-  efficiencyGraph.SetTitle("")
-  efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
-  efficiencyGraph.SetMarkerSize(markerSize)
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  efficiencyGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  efficiencyGraph.GetYaxis().SetTitle(f"{particle} Track-Finding Efficiency")
-  efficiencyGraph.SetMinimum(0)
-  efficiencyGraph.SetMaximum(1)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}{pdfFileNameSuffix}", "")
-  efficiencyGraph.Draw("APZ")
-  # #TODO? # indicate value from fit of overall distributions
-  # line = ROOT.TLine()
-  # line.SetLineStyle(ROOT.kDashed)
-  # line.DrawLine(efficienciesKinBinsGraph.GetXaxis().GetXmin(), overallEff.nominal_value, efficienciesKinBinsGraph.GetXaxis().GetXmax(), overallEff.nominal_value)
-  # # indicate weighted average of efficiencies in kinematic bins
-  # meanEff = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
-  # line.SetLineColor(ROOT.kRed + 1)
-  # line.DrawLine(efficiencyGraph.GetXaxis().GetXmin(), meanEff, efficiencyGraph.GetXaxis().GetXmax(), meanEff)
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  plotGraphs1D(
+    graphOrGraphs     = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies)),
+    binningVar        = binningVar,
+    yAxisTitle        = f"{particle} Track-Finding Efficiency",
+    pdfDirName        = pdfDirName,
+    pdfFileBaseName   = "mm2_eff",
+    pdfFileNameSuffix = pdfFileNameSuffix,
+    particle          = particle,
+    channel           = channel,
+    graphMinimum      = 0.0,
+    graphMaximum      = 1.0,
+    skipBlack         = False,
+  )
 
 
 def getEffValuesForGraph2D(
@@ -257,6 +297,6 @@ if __name__ == "__main__":
       if binVarNames:
         for binningVars in binVarNames:
           if len(binningVars) == 1:
-            plotEfficiencies1D(effInfos, binningVars[0],  args.outputDirName, "_integral" if readIntegrals else "")
+            plotEfficiencies1D(effInfos, binningVars[0],  args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
           elif len(binningVars) == 2:
-            plotEfficiencies2D(effInfos, binningVars[:2], args.outputDirName, "_integral" if readIntegrals else "")
+            plotEfficiencies2D(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")

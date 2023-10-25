@@ -23,7 +23,7 @@ import ROOT
 
 import makePlots
 import plotEfficiencies
-from plotEfficiencies import EffInfo, BinInfo
+from plotEfficiencies import EffInfo
 import plotFitResults
 from plotFitResults import ParInfo, BINNING_VAR_PLOT_INFO
 import plotTools
@@ -63,41 +63,6 @@ def getEfficiencies(
   return effInfos, binVarNames
 
 
-def plotGraphs1D(
-  graphs:            Sequence[Tuple[str, ROOT.TGraph]],
-  binningVar:        str,
-  yAxisTitle:        str,
-  pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
-  graphTitle:        Optional[str] = None,
-  graphMinimum:      float = 0.0,
-  graphMaximum:      Optional[float] = None,
-  skipBlack:         bool = True,
-):
-  """Overlays all given graphs"""
-  multiGraph = ROOT.TMultiGraph()
-  for styleIndex, (legendLabel, graph) in enumerate(graphs):
-    graph.SetTitle(legendLabel)
-    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
-    multiGraph.Add(graph)
-  if graphTitle is not None:
-    multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  multiGraph.GetYaxis().SetTitle(yAxisTitle)
-  if graphMinimum is not None:
-    multiGraph.SetMinimum(graphMinimum)
-  if graphMaximum is not None:
-    multiGraph.SetMaximum(graphMaximum)
-  legendLabels = tuple(legendLabel.replace(' ', '_') for legendLabel, _ in graphs)  # reformat legend labels so that they can be used in PDF file name
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVar}_{'_'.join(legendLabels)}{pdfFileNameSuffix}", "")
-  multiGraph.Draw("APZ")
-  canv.BuildLegend()
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
-
-
 def overlayEfficiencies1D(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
@@ -113,11 +78,12 @@ def overlayEfficiencies1D(
   graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = []
   for (_, fitLabel), efficiencies in effInfos.items():
     graphs1D.append((fitLabel, plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies))))
-  plotGraphs1D(
+  plotEfficiencies.plotGraphs1D(
     graphs1D,
     binningVar,
     yAxisTitle        = "Efficiency",
     pdfDirName        = pdfDirName,
+    pdfFileBaseName   = "mm2_eff",
     pdfFileNameSuffix = pdfFileNameSuffix,
     particle          = particle,
     channel           = channel,
@@ -172,11 +138,12 @@ def overlayEfficiencies2D(
     steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
       f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    plotGraphs1D(
+    plotEfficiencies.plotGraphs1D(
       graphs1D,
       binningVars[binningVarIndex],
       yAxisTitle        = "Efficiency",
       pdfDirName        = pdfDirName,
+      pdfFileBaseName   = "mm2_eff",
       pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
       particle          = particle,
       channel           = channel,
