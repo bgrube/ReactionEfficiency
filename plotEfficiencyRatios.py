@@ -21,6 +21,7 @@ import makePlots
 import overlayEfficiencies
 import plotEfficiencies
 from plotEfficiencies import EffInfo, BinInfo
+import plotFitResults
 from plotFitResults import BINNING_VAR_PLOT_INFO
 import plotTools
 
@@ -46,6 +47,7 @@ def plotEfficiencyRatio1D(
   effValues: List[List[Tuple[UFloat, UFloat]]] = [[], []]
   for resultIndex, key in enumerate(effInfos.keys()):
     effValues[resultIndex] = (plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfos[key]))
+  #TODO create two TGraphs and move code into function that calculates ratio of these graphs
   ratios: List[Tuple[UFloat, UFloat]] = []
   for effIndex in range(len(effValues[0])):
     binVal  = effValues[0][effIndex][0]
@@ -66,28 +68,28 @@ def plotEfficiencyRatio1D(
   xErrs = np.array([ratio[0].std_dev       for ratio in ratios], dtype = "d")
   yVals = np.array([ratio[1].nominal_value for ratio in ratios], dtype = "d")
   yErrs = np.array([ratio[1].std_dev       for ratio in ratios], dtype = "d")
-  graph = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
-  plotTools.setCbFriendlyStyle(graph, 0, skipBlack = False)
-  if graphTitle is None:
-    graph.SetTitle(f"{particle} Efficiency Ratio ({channel})")
-  else:
-    graph.SetTitle(graphTitle)
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  graph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
-  graph.GetYaxis().SetTitle("Efficiency Ratio")
-  graph.SetMinimum(0)
-  graph.SetMaximum(1.3)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_effratio_{binningVar}_{ratioLabel}{pdfFileNameSuffix}", "")
-  graph.Draw("APZ")
+  plotFitResults.plotGraphs1D(
+    graphOrGraphs     = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs),
+    binningVar        = binningVar,
+    yAxisTitle        = "Efficiency Ratio",
+    pdfDirName        = pdfDirName,
+    pdfFileBaseName   = "mm2_effratio",
+    pdfFileNameSuffix = f"_{ratioLabel}{pdfFileNameSuffix}",
+    particle          = particle,
+    channel           = channel,
+    graphTitle        = f"{particle} Efficiency Ratio ({channel})" if graphTitle is None else graphTitle,
+    graphMinimum      = 0.0,
+    graphMaximum      = 1.3,
+    skipBlack         = False,
+  )
   # draw line at 1
   #TODO implement line drawing routines in plotTools
-  xAxis = graph.GetXaxis()
-  yAxis = graph.GetYaxis()
-  oneLine = ROOT.TLine()
-  oneLine.SetLineStyle(ROOT.kDashed)
-  oneLine.SetLineColor(ROOT.kBlack)
-  oneLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 1, xAxis.GetBinUpEdge(xAxis.GetLast()), 1)
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  # xAxis = graph.GetXaxis()
+  # yAxis = graph.GetYaxis()
+  # oneLine = ROOT.TLine()
+  # oneLine.SetLineStyle(ROOT.kDashed)
+  # oneLine.SetLineColor(ROOT.kBlack)
+  # oneLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 1, xAxis.GetBinUpEdge(xAxis.GetLast()), 1)
 
 
 #TODO slice 2D graph instead
