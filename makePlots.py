@@ -192,7 +192,7 @@ def getHistND(
 def setDefaultYAxisTitle(
   axisTitles:    Optional[str],  # semicolon-separated list
   defaultYTitle: str = "Number of Combos (RF-subtracted)",
-) -> None:
+) -> str:
   """Sets default y-axis title if not provided by `axisTitles`"""
   if (axisTitles is None):
     return ";" + defaultYTitle
@@ -269,7 +269,7 @@ def plotResolution(
     resBinBoundaries = (resBinning[1] + resBinIndex * resBinWidth, resBinning[1] + (resBinIndex + 1) * resBinWidth)
     resBinFilter = f"(({resBinBoundaries[0]} < {resBinningVariable}) && ({resBinningVariable} < {resBinBoundaries[1]}))"
     resBinLabel = f"{resBinningVariable}_{resBinBoundaries[0]}_{resBinBoundaries[1]}"
-    hist: ROOT.TH1D = getHistND(data, (variable,), axisTitles = None, binning = binning, weightVariable = weightVariable,
+    hist: ROOT.TH1D = getHistND(data, (variable,), axisTitles = "", binning = binning, weightVariable = weightVariable,
                                 filterExpression = resBinFilter, histNameSuffix = resBinLabel, histTitle = resBinLabel)
     hists.append(hist)
     hStack.Add(hist.GetPtr())
