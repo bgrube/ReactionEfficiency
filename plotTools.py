@@ -188,11 +188,11 @@ def calcRatioOfGraphs(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
 def getGraph1DFromValues(
   graphValues:     Sequence[Tuple[UFloat, UFloat]],
   shiftByFraction: float = 0,
-) -> ROOT.TGraphErrors:
+) -> Optional[ROOT.TGraphErrors]:
   """Creates ROOT.TGraphErrors from given values"""
   if not graphValues:
     print("No data to plot")
-    return
+    return None
   xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
   xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
   yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
@@ -223,3 +223,37 @@ def getGraph2DFromValues(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -
   meanVal = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
   print(f"    weighted mean = {meanVal}")
   return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, xErrs, yErrs, zErrs)
+
+
+SteppingVar = Enum("SteppingVar", ("x", "y"))
+
+def slice2DGraph(
+  graph2D:     ROOT.TGraph2DErrors,
+  steppingVar: SteppingVar,
+) -> Dict[Tuple[float, float], ROOT.TGraphErrors]:
+  """Slices a 2D graph into 1D graphs assuming equidistant binning in stepping variable; returns dictionary with bin range of stepping variable and corresponding 1D graph"""
+  # read values from 2D graph assuming equidistant binning
+  values: Dict[str, Tuple[float, ...]] = {
+    "x"    : tuple(graph2D.GetX()),
+    "xErr" : tuple(graph2D.GetEX()),
+    "y"    : tuple(graph2D.GetY()),
+    "yErr" : tuple(graph2D.GetEY()),
+    "z"    : tuple(graph2D.GetZ()),
+    "zErr" : tuple(graph2D.GetEZ()),
+  }
+  steppingVarBinCenters:    Set[float] = set(values[steppingVar.name])
+  steppingVarHalfBinWidths: Set[float] = set((round(value, 10) for value in values[steppingVar.name + "Err"]))
+  assert len(steppingVarHalfBinWidths) == 1, f"Binning for stepping variable is not equidistant; found half bin widths {steppingVarHalfBinWidths}"
+  steppingVarHalfBinWidth = next(iter(steppingVarHalfBinWidths))
+  plottingVar = SteppingVar.x if steppingVar == SteppingVar.y else SteppingVar.y
+  # construct 1D graph for each bin of stepping variable
+  graphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = {}
+  for steppingVarBinCenter in sorted(steppingVarBinCenters):
+    xVals = np.array([value for i, value in enumerate(values[plottingVar.name])         if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
+    xErrs = np.array([value for i, value in enumerate(values[plottingVar.name + "Err"]) if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
+    yVals = np.array([value for i, value in enumerate(values["z"])                      if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
+    yErrs = np.array([value for i, value in enumerate(values["zErr"])                   if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
+    assert len(xVals) > 0, f"Could not find any values in graph '{graph2D.GetName()}' for bin center {steppingVar} == {steppingVarBinCenter}"
+    steppingVarBinRange = (round(steppingVarBinCenter - steppingVarHalfBinWidth, 6), round(steppingVarBinCenter + steppingVarHalfBinWidth, 6))
+    graphs1D[steppingVarBinRange] = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
+  return graphs1D
