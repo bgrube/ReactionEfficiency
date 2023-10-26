@@ -31,10 +31,9 @@ print = functools.partial(print, flush = True)
 
 #TODO overlay ratios
 def plotEfficiencyRatio1D(
-  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
+  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVar:        str,
-  ratioLabel:        str,
-  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfDirName:        str,
   pdfFileNameSuffix: str = "",
   particle:          str = "Proton",
   channel:           str = "4pi",
@@ -42,24 +41,27 @@ def plotEfficiencyRatio1D(
 ) -> None:
   """Plots efficiency ratios as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Plotting efficiency ratio for binning variable '{binningVar}'")
-  assert len(effInfos) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfos}"
-  graphs: List[ROOT.TGraphErrors] = []
-  for effInfo in effInfos.values():
-    graphs.append(plotFitResults.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
+  ratioGraphs: List[Tuple[str, ROOT.TGraphErrors]] = []
+  for ratioLabel, effInfosForLabel in effInfos.items():
+    assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
+    graphs: List[ROOT.TGraphErrors] = []
+    for effInfo in effInfosForLabel.values():
+      graphs.append(plotFitResults.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
+    ratioGraphs.append((ratioLabel, plotTools.calcRatioOfGraphs(graphs)))
   plotFitResults.plotGraphs1D(
-    graphOrGraphs     = plotTools.calcRatioOfGraphs(graphs),
-    # graphOrGraphs     = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs),
+    graphOrGraphs     = ratioGraphs,
     binningVar        = binningVar,
     yAxisTitle        = "Efficiency Ratio",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = "mm2_effratio",
-    pdfFileNameSuffix = f"_{ratioLabel}{pdfFileNameSuffix}",
+    pdfFileNameSuffix = pdfFileNameSuffix,
     particle          = particle,
     channel           = channel,
     graphTitle        = f"{particle} Efficiency Ratio ({channel})" if graphTitle is None else graphTitle,
     graphMinimum      = 0.0,
     graphMaximum      = 1.3,
-    skipBlack         = False,
+    skipBlack         = True if len(effInfos) > 1 else False,
+    drawLegend        = True if len(effInfos) > 1 else False,
   )
   # draw line at 1
   #TODO implement line drawing routines in plotTools
@@ -76,8 +78,7 @@ def plotEfficiencyRatio2D(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVars:       Sequence[str],
   steppingVar:       str,
-  ratioLabel:        str,
-  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfDirName:        str,
   pdfFileNameSuffix: str = "",
   particle:          str = "Proton",
   channel:           str = "4pi",
@@ -121,7 +122,6 @@ def plotEfficiencyRatio2D(
     plotEfficiencyRatio1D(
       effInfos          = effInfos1D,
       binningVar        = xAxisVar,
-      ratioLabel        = ratioLabel,
       pdfDirName        = pdfDirName,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
       particle          = particle,
@@ -157,13 +157,19 @@ if __name__ == "__main__":
 
   pdfDirName = makePlots.makeDirPath("./ratios")
   graphTitle = "bggen MC / Real Data"
+  effInfos:    Dict[str, Dict[Tuple[str, str], List[EffInfo]]] = {}
+  binVarNames: Dict[str, Optional[List[Tuple[str, ...]]]]      = {}
   for ratioLabel, fitResults in ratiosToPlot.items():
-    effInfos, binVarNames = overlayEfficiencies.getEfficiencies(fitResultDirNames = tuple(fitResult for fitResult in fitResults))
-    print("Plotting efficiency ratios")
-    if effInfos and binVarNames:
-      for binningVars in binVarNames:
+    effInfos[ratioLabel], binVarNames[ratioLabel] = overlayEfficiencies.getEfficiencies(fitResultDirNames = tuple(fitResult for fitResult in fitResults))
+  print("Plotting efficiency ratios")
+  if effInfos and binVarNames:
+    firstBinVarNames = next(iter(binVarNames.values()))  # get first entry
+    for ratioLabel, binVarNamesForLabel in binVarNames.items():
+      assert binVarNamesForLabel == firstBinVarNames, f"Data samples have different binnings: '{ratioLabel}' = {binVarNamesForLabel} vs. '{next(iter(binVarNames.keys()))}' = {firstBinVarNames}"
+    if firstBinVarNames is not None:
+      for binningVars in firstBinVarNames:
         if len(binningVars) == 1:
-          plotEfficiencyRatio1D(effInfos, binningVars[0], ratioLabel, pdfDirName, graphTitle = graphTitle)
-        if len(binningVars) == 2:
-          plotEfficiencyRatio2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
-                                ratioLabel = ratioLabel, pdfDirName = pdfDirName, graphTitle = graphTitle)
+          plotEfficiencyRatio1D(effInfos, binningVars[0], pdfDirName, graphTitle = graphTitle)
+        # if len(binningVars) == 2:
+        #   plotEfficiencyRatio2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
+        #                         ratioLabel = ratioLabel, pdfDirName = pdfDirName, graphTitle = graphTitle)
