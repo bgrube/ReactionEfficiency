@@ -95,7 +95,7 @@ def overlayEfficiencies1D(
   )
 
 
-def overlayEfficiencies2D(
+def overlayEfficiencies2DSlices(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVars:       Sequence[str],
   steppingVar:       str,
@@ -199,5 +199,5 @@ if __name__ == "__main__":
         if len(binningVars) == 1:
           overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
         if len(binningVars) == 2:
-          overlayEfficiencies2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
+          overlayEfficiencies2DSlices(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
                                 pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)

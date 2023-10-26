@@ -29,7 +29,7 @@ import plotTools
 print = functools.partial(print, flush = True)
 
 
-def plotEfficiencyRatio1D(
+def overlayEfficiencyRatios1D(
   effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVar:        str,
   pdfDirName:        str,
@@ -73,7 +73,7 @@ def plotEfficiencyRatio1D(
 
 
 #TODO slice 2D graph instead
-def plotEfficiencyRatio2D(
+def overlayEfficiencyRatios2DSlices(
   effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVars:       Sequence[str],
   steppingVar:       str,
@@ -120,7 +120,7 @@ def plotEfficiencyRatio2D(
     steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
       f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    plotEfficiencyRatio1D(
+    overlayEfficiencyRatios1D(
       effInfos          = {ratioLabel : effInfos1D},
       binningVar        = xAxisVar,
       pdfDirName        = pdfDirName,
@@ -170,6 +170,6 @@ if __name__ == "__main__":
     if firstBinVarNames is not None:
       for binningVars in firstBinVarNames:
         if len(binningVars) == 1:
-          plotEfficiencyRatio1D(effInfos, binningVars[0], pdfDirName, graphTitle = graphTitle)
+          overlayEfficiencyRatios1D(effInfos, binningVars[0], pdfDirName, graphTitle = graphTitle)
         if len(binningVars) == 2:
-          plotEfficiencyRatio2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1], pdfDirName = pdfDirName, graphTitle = graphTitle)
+          overlayEfficiencyRatios2DSlices(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1], pdfDirName = pdfDirName, graphTitle = graphTitle)
