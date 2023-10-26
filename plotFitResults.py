@@ -259,7 +259,7 @@ def getParValuesForGraph1D(
   return graphValues
 
 
-def getParValueGraph1D(
+def getGraph1DFromValues(
   graphValues:     Sequence[Tuple[UFloat, UFloat]],
   shiftByFraction: float = 0,
 ) -> ROOT.TGraphErrors:
@@ -343,7 +343,7 @@ def plotParValue1D(
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, getParValueGraph1D(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
+  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
                                                    for dataSet in parInfos]
   plotGraphs1D(
     graphOrGraphs     = parValueGraphs,

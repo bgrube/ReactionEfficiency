@@ -76,7 +76,7 @@ def overlayEfficiencies1D(
 ):
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
-  graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotFitResults.getParValueGraph1D(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
+  graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotFitResults.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
                                                    for (_, fitLabel), efficiencies in effInfos.items()]
   plotFitResults.plotGraphs1D(
     graphs1D,

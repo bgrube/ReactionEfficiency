@@ -144,7 +144,7 @@ def plotEfficiencies1D(
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   plotFitResults.plotGraphs1D(
-    graphOrGraphs     = plotFitResults.getParValueGraph1D(getEffValuesForGraph1D(binningVar, efficiencies)),
+    graphOrGraphs     = plotFitResults.getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
     binningVar        = binningVar,
     yAxisTitle        = f"{particle} Track-Finding Efficiency",
     pdfDirName        = pdfDirName,
