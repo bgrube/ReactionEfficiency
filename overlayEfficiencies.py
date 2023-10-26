@@ -73,7 +73,7 @@ def overlayEfficiencies1D(
   channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
   skipBlack:         bool = True,
-):
+) -> None:
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotFitResults.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
@@ -103,7 +103,7 @@ def overlayEfficiencies2D(
   particle:          str = "Proton",
   channel:           str = "4pi",
   skipBlack:         bool = True,
-):
+) -> None:
   """Overlays efficiencies as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Overlaying efficiencies for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"

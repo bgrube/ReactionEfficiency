@@ -192,7 +192,7 @@ def getHistND(
 def setDefaultYAxisTitle(
   axisTitles:    Optional[str],  # semicolon-separated list
   defaultYTitle: str = "Number of Combos (RF-subtracted)",
-):
+) -> None:
   """Sets default y-axis title if not provided by `axisTitles`"""
   if (axisTitles is None):
     return ";" + defaultYTitle
