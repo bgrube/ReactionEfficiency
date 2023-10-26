@@ -29,7 +29,6 @@ import plotTools
 print = functools.partial(print, flush = True)
 
 
-#TODO overlay ratios
 def plotEfficiencyRatio1D(
   effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVar:        str,
@@ -75,7 +74,7 @@ def plotEfficiencyRatio1D(
 
 #TODO slice 2D graph instead
 def plotEfficiencyRatio2D(
-  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
+  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,
@@ -86,9 +85,11 @@ def plotEfficiencyRatio2D(
 ) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
+  ratioLabel, effInfosForLabel = next(iter(effInfos.items()))
+  assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
   # filter efficiency infos that belong to given binning variables
   effInfos2D: Dict[Tuple[str, str], List[EffInfo]] = {}
-  for key, efficiencies in effInfos.items():
+  for key, efficiencies in effInfosForLabel.items():
     effInfos2D[key] = [
       efficiency for efficiency in efficiencies
       if (len(efficiency.binInfo.varNames) == 2) and (binningVars[0] in efficiency.binInfo.varNames) and (binningVars[1] in efficiency.binInfo.varNames)
@@ -120,7 +121,7 @@ def plotEfficiencyRatio2D(
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
       f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
     plotEfficiencyRatio1D(
-      effInfos          = effInfos1D,
+      effInfos          = {ratioLabel : effInfos1D},
       binningVar        = xAxisVar,
       pdfDirName        = pdfDirName,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
@@ -170,6 +171,5 @@ if __name__ == "__main__":
       for binningVars in firstBinVarNames:
         if len(binningVars) == 1:
           plotEfficiencyRatio1D(effInfos, binningVars[0], pdfDirName, graphTitle = graphTitle)
-        # if len(binningVars) == 2:
-        #   plotEfficiencyRatio2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
-        #                         ratioLabel = ratioLabel, pdfDirName = pdfDirName, graphTitle = graphTitle)
+        if len(binningVars) == 2:
+          plotEfficiencyRatio2D(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1], pdfDirName = pdfDirName, graphTitle = graphTitle)
