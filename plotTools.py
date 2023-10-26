@@ -98,7 +98,6 @@ def setCbFriendlyStyle(
 
 def setupPlotStyle(rootLogonPath: str = "./rootlogon.C") -> None:
   """Defines ROOT plot style"""
-  #TODO remove dependency from external file or add file to repo
   ROOT.gROOT.LoadMacro(rootLogonPath)
   ROOT.gROOT.ForceStyle()
   ROOT.gStyle.SetCanvasDefW(600)
@@ -155,8 +154,8 @@ def callMemberFunctionsWithArgs(
     function(argument)
 
 
-def calcRatioOfGraphs(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
-  """Creates graph with ratio graphs[0] / graphs[1] for points with identical x positions"""
+def calcRatioOfGraphs1D(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
+  """Creates 1D graph with ratio graphs[0] / graphs[1] for points with identical x positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
   xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
   xErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
@@ -172,7 +171,7 @@ def calcRatioOfGraphs(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
     # find matching data point with same x position in second graph
     yVal1 = None
     for j in range(graphs[1].GetN()):
-      if xVals[1][j] == xVals[0][i] and xErrs[1][j] == xErrs[0][i]:
+      if xVals[1][j] == xVals[0][i] and xErrs[1][j] == xErrs[0][i]:  #TODO check whether there are rounding issues
         yVal1 = ufloat(yVals[1][j], yErrs[1][j])
         break
     if yVal1 is None:
@@ -181,6 +180,39 @@ def calcRatioOfGraphs(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
     ratio = yVal0 / yVal1
     ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, ratio.nominal_value)
     ratioGraph.SetPointError(countPoints, xVal0.std_dev,       ratio.std_dev)
+    countPoints += 1
+  return ratioGraph
+
+
+def calcRatioOfGraphs2D(graphs: Sequence[ROOT.TGraph2DErrors]) -> ROOT.TGraph2DErrors:
+  """Creates 2D graph with ratio graphs[0] / graphs[1] for points with identical (x, y) positions"""
+  assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
+  xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
+  xErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
+  yVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetY()),  tuple(graphs[1].GetY()) )
+  yErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEY()), tuple(graphs[1].GetEY()))
+  zVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetZ()),  tuple(graphs[1].GetZ()) )
+  zErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEZ()), tuple(graphs[1].GetEZ()))
+  ratioGraph = ROOT.TGraph2DErrors()
+  ratioGraph.SetName(f"{graphs[0].GetName()}_{graphs[1].GetName()}")
+  countPoints = 0  # counts points that match in both graphs
+  # loop over data points in first graph
+  for i in range(graphs[0].GetN()):
+    xVal0 = ufloat(xVals[0][i], xErrs[0][i])
+    yVal0 = ufloat(yVals[0][i], yErrs[0][i])
+    zVal0 = ufloat(zVals[0][i], zErrs[0][i])
+    # find matching data point with same (x, y) position in second graph
+    zVal1 = None
+    for j in range(graphs[1].GetN()):
+      if (xVals[1][j] == xVals[0][i] and xErrs[1][j] == xErrs[0][i]) and (yVals[1][j] == yVals[0][i] and yErrs[1][j] == yErrs[0][i]):  #TODO check whether there are rounding issues
+        zVal1 = ufloat(zVals[1][j], zErrs[1][j])
+        break
+    if zVal1 is None:
+      continue
+    # calculate ratio of y values and add point to ratio graph
+    ratio = zVal0 / zVal1
+    ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, yVal0.nominal_value, ratio.nominal_value)
+    ratioGraph.SetPointError(countPoints, xVal0.std_dev,       yVal0.std_dev,       ratio.std_dev)
     countPoints += 1
   return ratioGraph
 
@@ -225,11 +257,11 @@ def getGraph2DFromValues(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -
   return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, xErrs, yErrs, zErrs)
 
 
-SteppingVar = Enum("SteppingVar", ("x", "y"))
+Graph2DVar = Enum("Graph2DVar", ("x", "y"))
 
 def slice2DGraph(
   graph2D:     ROOT.TGraph2DErrors,
-  steppingVar: SteppingVar,
+  steppingVar: Graph2DVar,
 ) -> Dict[Tuple[float, float], ROOT.TGraphErrors]:
   """Slices a 2D graph into 1D graphs assuming equidistant binning in stepping variable; returns dictionary with bin range of stepping variable and corresponding 1D graph"""
   # read values from 2D graph assuming equidistant binning
@@ -245,7 +277,7 @@ def slice2DGraph(
   steppingVarHalfBinWidths: Set[float] = set((round(value, 10) for value in values[steppingVar.name + "Err"]))
   assert len(steppingVarHalfBinWidths) == 1, f"Binning for stepping variable is not equidistant; found half bin widths {steppingVarHalfBinWidths}"
   steppingVarHalfBinWidth = next(iter(steppingVarHalfBinWidths))
-  plottingVar = SteppingVar.x if steppingVar == SteppingVar.y else SteppingVar.y
+  plottingVar = Graph2DVar.x if steppingVar == Graph2DVar.y else Graph2DVar.y
   # construct 1D graph for each bin of stepping variable
   graphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = {}
   for steppingVarBinCenter in sorted(steppingVarBinCenters):

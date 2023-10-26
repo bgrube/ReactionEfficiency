@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+from collections import defaultdict
 import functools
 import os
 from typing import (
@@ -46,7 +47,7 @@ def overlayEfficiencyRatios1D(
     graphs: List[ROOT.TGraphErrors] = []
     for effInfo in effInfosForLabel.values():
       graphs.append(plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
-    ratioGraphs.append((ratioLabel, plotTools.calcRatioOfGraphs(graphs)))
+    ratioGraphs.append((ratioLabel, plotTools.calcRatioOfGraphs1D(graphs)))
   plotFitResults.plotGraphs1D(
     graphOrGraphs     = ratioGraphs,
     binningVar        = binningVar,
@@ -59,8 +60,8 @@ def overlayEfficiencyRatios1D(
     graphTitle        = f"{particle} Efficiency Ratio ({channel})" if graphTitle is None else graphTitle,
     graphMinimum      = 0.0,
     graphMaximum      = 1.3,
-    skipBlack         = True if len(effInfos) > 1 else False,
-    drawLegend        = True if len(effInfos) > 1 else False,
+    skipBlack         = True if len(ratioGraphs) > 1 else False,
+    drawLegend        = True if len(ratioGraphs) > 1 else False,
   )
   # draw line at 1
   #TODO implement line drawing routines in plotTools
@@ -72,7 +73,6 @@ def overlayEfficiencyRatios1D(
   # oneLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 1, xAxis.GetBinUpEdge(xAxis.GetLast()), 1)
 
 
-#TODO slice 2D graph instead
 def overlayEfficiencyRatios2DSlices(
   effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVars:       Sequence[str],
@@ -85,49 +85,39 @@ def overlayEfficiencyRatios2DSlices(
 ) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
-  ratioLabel, effInfosForLabel = next(iter(effInfos.items()))
-  assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
-  # filter efficiency infos that belong to given binning variables
-  effInfos2D: Dict[Tuple[str, str], List[EffInfo]] = {}
-  for key, efficiencies in effInfosForLabel.items():
-    effInfos2D[key] = [
-      efficiency for efficiency in efficiencies
-      if (len(efficiency.binInfo.varNames) == 2) and (binningVars[0] in efficiency.binInfo.varNames) and (binningVars[1] in efficiency.binInfo.varNames)
-    ]
-    assert effInfos2D[key], f"Could not find any efficiencies that match binning variables '{binningVars}'"
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
   assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
-  xAxisVar = binningVars[0] if steppingVar == binningVars[1] else binningVars[1]
-  firstKey = list(effInfos2D.keys())[0]
-  # assume that binning info is identical for data sets
-  steppingVarValues = set(effInfo.binInfo.centers[steppingVar] for effInfo in effInfos2D[firstKey])
-  steppingVarWidth = effInfos2D[firstKey][0].binInfo.widths[steppingVar]  # assume equidistant binning
-  for steppingVarValue in steppingVarValues:
-    # construct input for 1D plotting function
-    effInfos1D: Dict[Tuple[str, str], List[EffInfo]] = {}
-    for key, efficiencies in effInfos2D.items():
-      effInfos1D[key] = [
-        EffInfo(BinInfo(
-          name    = efficiency.binInfo.name,
-          centers = {xAxisVar : efficiency.binInfo.centers[xAxisVar]},
-          widths  = {xAxisVar : efficiency.binInfo.widths[xAxisVar]},
-          dirName = efficiency.binInfo.dirName,
-        ), efficiency.value) for efficiency in efficiencies if efficiency.binInfo.centers[steppingVar] == steppingVarValue
-      ]
-      assert effInfos1D[key], f"Could not find any efficiencies for bin center {steppingVar} == {steppingVarValue}"
-    # plot current bin of stepping variable
-    steppingRange = (f"{steppingVarValue - steppingVarWidth / 2.0}", f"{steppingVarValue + steppingVarWidth / 2.0}")
-    steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
+  binningVarIndex  = 0 if steppingVar == binningVars[1] else 1
+  graphsToOverlay: Dict[Tuple[float, float], List[Tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
+  for ratioLabel, effInfosForLabel in effInfos.items():
+    assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
+    # get efficiencies as 2D graphs
+    efficiencyGraphs2D: Tuple[ROOT.TGraph2DErrors, ...] = tuple(plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies))
+                                                                for efficiencies in effInfosForLabel.values())
+    # calculate 2D graph for efficiency ratios and slice it to 1D graphs
+    ratioGraphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(plotTools.calcRatioOfGraphs2D(efficiencyGraphs2D),
+      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y)
+    for steppingVarBinRange, graph in ratioGraphs1D.items():
+      graphsToOverlay[steppingVarBinRange].append((ratioLabel, graph))
+  for steppingVarBinRange, graphs in graphsToOverlay.items():
+    # overlay 1D graphs for current bin of stepping variable
+    steppingVarLabel = f"{steppingVarBinRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
-      f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    overlayEfficiencyRatios1D(
-      effInfos          = {ratioLabel : effInfos1D},
-      binningVar        = xAxisVar,
+      f"< {steppingVarBinRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
+    plotFitResults.plotGraphs1D(
+      graphs,
+      binningVars[binningVarIndex],
+      yAxisTitle        = "Efficiency Ratio",
       pdfDirName        = pdfDirName,
-      pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
+      pdfFileBaseName   = "mm2_effratio",
+      pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
       particle          = particle,
       channel           = channel,
       graphTitle        = f"{graphTitle}, {steppingVarLabel}",
+      graphMinimum      = 0.0,
+      graphMaximum      = 1.3,
+      skipBlack         = True if len(graphs) > 1 else False,
+      drawLegend        = True if len(graphs) > 1 else False,
     )
 
 

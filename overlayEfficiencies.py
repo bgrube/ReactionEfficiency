@@ -115,7 +115,7 @@ def overlayEfficiencies2DSlices(
   for (_, fitLabel), efficiencies in effInfos.items():
     graphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
       plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies)),
-      plotTools.SteppingVar.y if steppingVar == binningVars[0] else plotTools.SteppingVar.x)
+      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y)
     for steppingVarBinRange, graph in graphs1D.items():
       graphsToOverlay[steppingVarBinRange].append((fitLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
