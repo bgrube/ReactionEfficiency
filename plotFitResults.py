@@ -296,7 +296,8 @@ def plotGraphs1D(
   graphMinimum:      float = 0.0,
   graphMaximum:      Optional[float] = None,
   skipBlack:         bool = True,
-):
+  drawLegend:        Optional[bool] = None,
+) -> None:
   """Generic function that plots the given graph(s)"""
   graphs: List[Tuple[str, ROOT.TGraph]] = []
   if isinstance(graphOrGraphs, ROOT.TGraph):
@@ -325,7 +326,7 @@ def plotGraphs1D(
   canv = ROOT.TCanvas(f"{particle}_{channel}_{pdfFileBaseName}_{binningVar}"
                       + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
   multiGraph.Draw("APZ")
-  if legendLabels is not None:
+  if drawLegend == True or (drawLegend is None and legendLabels is not None):
     legend = canv.BuildLegend()
     legend.SetFillStyle(0)
     legend.SetBorderSize(0)
