@@ -2,7 +2,6 @@
 
 
 import functools
-import numpy as np
 import os
 from typing import (
   Dict,
@@ -30,7 +29,7 @@ import plotTools
 print = functools.partial(print, flush = True)
 
 
-#TODO simplify by just creating ratio graph and using existing plot function
+#TODO overlay ratios
 def plotEfficiencyRatio1D(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
@@ -40,36 +39,16 @@ def plotEfficiencyRatio1D(
   particle:          str = "Proton",
   channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
-):
+) -> None:
   """Plots efficiency ratios as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Plotting efficiency ratio for binning variable '{binningVar}'")
-  assert len(effInfos) == 2, f"Expect exactly 2 data samples to calculate ratio: f{effInfos}"
-  effValues: List[List[Tuple[UFloat, UFloat]]] = [[], []]
-  for resultIndex, key in enumerate(effInfos.keys()):
-    effValues[resultIndex] = (plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfos[key]))
-  #TODO create two TGraphs and move code into function that calculates ratio of these graphs
-  ratios: List[Tuple[UFloat, UFloat]] = []
-  for effIndex in range(len(effValues[0])):
-    binVal  = effValues[0][effIndex][0]
-    effVal1 = effValues[0][effIndex][1]
-    # it is not guaranteed that the two data sets contain efficiencies for all bins
-    # find corresponding bin value in other data set
-    effVal2 = None
-    for effValue in effValues[1]:
-      if effValue[0].nominal_value == binVal.nominal_value and effValue[0].std_dev == binVal.std_dev:
-        effVal2 = effValue[1]
-        break
-    if effVal2 is None:
-      continue
-    # calculate ratio
-    ratios.append((binVal, effVal1 / effVal2))
-  # create graph
-  xVals = np.array([ratio[0].nominal_value for ratio in ratios], dtype = "d")
-  xErrs = np.array([ratio[0].std_dev       for ratio in ratios], dtype = "d")
-  yVals = np.array([ratio[1].nominal_value for ratio in ratios], dtype = "d")
-  yErrs = np.array([ratio[1].std_dev       for ratio in ratios], dtype = "d")
+  assert len(effInfos) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfos}"
+  graphs: List[ROOT.TGraphErrors] = []
+  for effInfo in effInfos.values():
+    graphs.append(plotFitResults.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
   plotFitResults.plotGraphs1D(
-    graphOrGraphs     = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs),
+    graphOrGraphs     = plotTools.calcRatioOfGraphs(graphs),
+    # graphOrGraphs     = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs),
     binningVar        = binningVar,
     yAxisTitle        = "Efficiency Ratio",
     pdfDirName        = pdfDirName,
@@ -103,7 +82,7 @@ def plotEfficiencyRatio2D(
   particle:          str = "Proton",
   channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
-):
+) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   # filter efficiency infos that belong to given binning variables
