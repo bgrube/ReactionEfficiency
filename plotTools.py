@@ -3,8 +3,11 @@ import functools
 from typing import (
   Any,
   Dict,
+  Sequence,
   Tuple,
 )
+
+from uncertainties import UFloat, ufloat
 
 import ROOT
 
@@ -145,3 +148,33 @@ def callMemberFunctionsWithArgs(
       continue
     # print(f"Calling member function '{functionName}({argument})' of {instance}")
     function(argument)
+
+
+def calcRatioOfGraphs(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
+  """Creates graph with ratio graphs[0] / graphs[1] for points with identical x positions"""
+  assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
+  xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
+  xErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
+  yVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetY()),  tuple(graphs[1].GetY()) )
+  yErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEY()), tuple(graphs[1].GetEY()))
+  ratioGraph = ROOT.TGraphErrors()
+  ratioGraph.SetName(f"{graphs[0].GetName()}_{graphs[1].GetName()}")
+  countPoints = 0  # counts points that match in both graphs
+  # loop over data points in first graph
+  for i in range(graphs[0].GetN()):
+    xVal0 = ufloat(xVals[0][i], xErrs[0][i])
+    yVal0 = ufloat(yVals[0][i], yErrs[0][i])
+    # find matching data point with same x position in second graph
+    yVal1 = None
+    for j in range(graphs[1].GetN()):
+      if xVals[1][j] == xVals[0][i] and xErrs[1][j] == xErrs[0][i]:
+        yVal1 = ufloat(yVals[1][j], yErrs[1][j])
+        break
+    if yVal1 is None:
+      continue
+    # calculate ratio of y values and add point to ratio graph
+    ratio = yVal0 / yVal1
+    ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, ratio.nominal_value)
+    ratioGraph.SetPointError(countPoints, xVal0.std_dev,       ratio.std_dev)
+    countPoints += 1
+  return ratioGraph
