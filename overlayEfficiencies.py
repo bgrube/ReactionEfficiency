@@ -2,6 +2,7 @@
 
 
 import argparse
+from collections import defaultdict
 from dataclasses import dataclass  # builtin in Python 3.7+
 import functools
 import numpy as np
@@ -108,43 +109,27 @@ def overlayEfficiencies2D(
   print(f"Overlaying efficiencies for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
   assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
-  steppingVarIndex = 0 if steppingVar == binningVars[0] else 1
-  binningVarIndex  = 0 if steppingVarIndex == 1 else 1
-  # read efficiency values assuming equidistant binning
-  steppingVarBinCenters: Set[float] = set()
-  steppingVarBinWidths:  Set[float] = set()
-  graphValues: Dict[Tuple[str, str], Tuple[Tuple[UFloat, UFloat, UFloat], ...]] = {}  # [(dir name , label)][value index][0 = x, 1 = y, 2 = eff]
-  for key, efficiencies in effInfos.items():
-    values: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies)
-    if not values:  # nothing to plot
-      continue
-    steppingVarBinCenters.update((value[steppingVarIndex].nominal_value for value in values))
-    steppingVarBinWidths.update ((value[steppingVarIndex].std_dev * 2   for value in values))
-    graphValues[key] = values
-  assert len(steppingVarBinWidths) == 1; f"Binning for stepping variable is not equidistant; found bin widths {steppingVarBinWidths}"
-  steppingVarBinWidth = list(steppingVarBinWidths)[0]
-  for steppingVarBinCenter in sorted(steppingVarBinCenters):
-    # construct 1D graphs for current bin of stepping variable
-    graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = []
-    for (fitResultDirName, fitLabel), values in graphValues.items():
-      xVals = np.array([value[binningVarIndex].nominal_value for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
-      xErrs = np.array([value[binningVarIndex].std_dev       for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
-      yVals = np.array([value[2].nominal_value               for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
-      yErrs = np.array([value[2].std_dev                     for value in values if value[steppingVarIndex].nominal_value == steppingVarBinCenter], dtype = "d")
-      assert len(xVals) > 0, f"Could not find any efficiencies for '{(fitResultDirName, fitLabel)}' for bin center {steppingVar} == {steppingVarBinCenter}"
-      graphs1D.append((fitLabel, ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)))
+  binningVarIndex  = 0 if steppingVar == binningVars[1] else 1
+  # read efficiency values and slice them into 1D graphs
+  graphsToOverlay: Dict[Tuple[float, float], List[Tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
+  for (_, fitLabel), efficiencies in effInfos.items():
+    graphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
+      plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies)),
+      plotTools.SteppingVar.y if steppingVar == binningVars[0] else plotTools.SteppingVar.x)
+    for steppingVarBinRange, graph in graphs1D.items():
+      graphsToOverlay[steppingVarBinRange].append((fitLabel, graph))
+  for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
-    steppingRange = (f"{steppingVarBinCenter - steppingVarBinWidth / 2.0}", f"{steppingVarBinCenter + steppingVarBinWidth / 2.0}")
-    steppingVarLabel = f"{steppingRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
+    steppingVarLabel = f"{steppingVarBinRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
-      f"< {steppingRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
+      f"< {steppingVarBinRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
     plotFitResults.plotGraphs1D(
-      graphs1D,
+      graphs,
       binningVars[binningVarIndex],
       yAxisTitle        = "Efficiency",
       pdfDirName        = pdfDirName,
       pdfFileBaseName   = "mm2_eff",
-      pdfFileNameSuffix = f"_{steppingVar}_{steppingRange[0]}_{steppingRange[1]}{pdfFileNameSuffix}",
+      pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
       particle          = particle,
       channel           = channel,
       graphTitle        = steppingVarLabel,
