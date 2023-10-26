@@ -1,9 +1,14 @@
 import ctypes
+from enum import Enum
 import functools
+import numpy as np
 from typing import (
   Any,
   Dict,
+  List,
+  Optional,
   Sequence,
+  Set,
   Tuple,
 )
 
@@ -178,3 +183,43 @@ def calcRatioOfGraphs(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
     ratioGraph.SetPointError(countPoints, xVal0.std_dev,       ratio.std_dev)
     countPoints += 1
   return ratioGraph
+
+
+def getGraph1DFromValues(
+  graphValues:     Sequence[Tuple[UFloat, UFloat]],
+  shiftByFraction: float = 0,
+) -> ROOT.TGraphErrors:
+  """Creates ROOT.TGraphErrors from given values"""
+  if not graphValues:
+    print("No data to plot")
+    return
+  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
+  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
+  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
+  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
+  # shift x values by fraction of total x range
+  if shiftByFraction != 0:
+    xRange = max(xVals) - min(xVals)
+    shift  = xRange * shiftByFraction
+    xVals = xVals + shift
+  # report weighted average
+  meanVal = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
+  print(f"    weighted mean = {meanVal}")
+  return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
+
+
+def getGraph2DFromValues(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
+  """Creates ROOT.TGraph2DErrors from given values"""
+  if not graphValues:
+    print("No data to plot")
+    return None
+  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
+  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
+  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
+  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
+  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
+  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
+  # report weighted average
+  meanVal = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
+  print(f"    weighted mean = {meanVal}")
+  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, xErrs, yErrs, zErrs)

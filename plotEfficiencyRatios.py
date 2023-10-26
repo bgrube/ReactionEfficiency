@@ -45,7 +45,7 @@ def plotEfficiencyRatio1D(
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
     graphs: List[ROOT.TGraphErrors] = []
     for effInfo in effInfosForLabel.values():
-      graphs.append(plotFitResults.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
+      graphs.append(plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
     ratioGraphs.append((ratioLabel, plotTools.calcRatioOfGraphs(graphs)))
   plotFitResults.plotGraphs1D(
     graphOrGraphs     = ratioGraphs,

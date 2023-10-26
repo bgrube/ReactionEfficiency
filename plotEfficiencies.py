@@ -144,7 +144,7 @@ def plotEfficiencies1D(
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   plotFitResults.plotGraphs1D(
-    graphOrGraphs     = plotFitResults.getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
+    graphOrGraphs     = plotTools.getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
     binningVar        = binningVar,
     yAxisTitle        = f"{particle} Track-Finding Efficiency",
     pdfDirName        = pdfDirName,
@@ -186,7 +186,7 @@ def plotEfficiencies2D(
 ) -> None:
   """Plots efficiency as a function of given binning variables for 2-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
-  efficiencyGraph = plotFitResults.getParValueGraph2D(getEffValuesForGraph2D(binningVars, efficiencies))
+  efficiencyGraph = plotTools.getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
   if efficiencyGraph is None:  # nothing to plot
     return
   efficiencyGraph.SetMinimum(0)

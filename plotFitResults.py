@@ -259,29 +259,6 @@ def getParValuesForGraph1D(
   return graphValues
 
 
-def getGraph1DFromValues(
-  graphValues:     Sequence[Tuple[UFloat, UFloat]],
-  shiftByFraction: float = 0,
-) -> ROOT.TGraphErrors:
-  """Creates ROOT.TGraphErrors from given values"""
-  if not graphValues:
-    print("No data to plot")
-    return
-  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
-  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
-  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
-  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
-  # shift x values by fraction of total x range
-  if shiftByFraction != 0:
-    xRange = max(xVals) - min(xVals)
-    shift  = xRange * shiftByFraction
-    xVals = xVals + shift
-  # report weighted average
-  meanVal = np.average(yVals, weights = [1 / (yErr**2) for yErr in yErrs])
-  print(f"    weighted mean = {meanVal}")
-  return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
-
-
 #TODO add sequence of beautifier functors as optional argument
 def plotGraphs1D(
   graphOrGraphs:     Union[ROOT.TGraph, Sequence[Tuple[str, ROOT.TGraph]]],
@@ -344,7 +321,7 @@ def plotParValue1D(
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
+  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, plotTools.getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
                                                    for dataSet in parInfos]
   plotGraphs1D(
     graphOrGraphs     = parValueGraphs,
@@ -396,23 +373,6 @@ def getParValuesForGraph2D(
   return graphValues
 
 
-def getParValueGraph2D(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
-  """Creates ROOT.TGraph2DErrors from given parameter values"""
-  if not graphValues:
-    print("No data to plot")
-    return None
-  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
-  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
-  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
-  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
-  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
-  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
-  # report weighted average
-  meanVal = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
-  print(f"    weighted mean = {meanVal}")
-  return ROOT.TGraph2DErrors(len(xVals), xVals, yVals, zVals, xErrs, yErrs, zErrs)
-
-
 def plotParValue2D(
   parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
@@ -430,7 +390,7 @@ def plotParValue2D(
   xMin = yMin = zMin = +math.inf
   xMax = yMax = zMax = -math.inf
   for dataSet in parInfos:
-    graph = getParValueGraph2D(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
+    graph = plotTools.getGraph2DFromValues(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
     if graph is not None:
       parValueGraphs[dataSet] = graph
       xMin = min(xMin, graph.GetXminE())
