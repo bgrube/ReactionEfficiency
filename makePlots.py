@@ -241,8 +241,8 @@ def plot2D(
 
 def getResolutionGraph(
   inputData:          ROOT.RDataFrame,
-  variable:           Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
-  binning:            Tuple[int, float, float],     # tuple with binning definition for variable
+  resVariable:        Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
+  resVariableBinning: Tuple[int, float, float],     # tuple with binning definition for resVvariable
   resBinningVariable: str,  # variable to bin resolution in
   resBinning:         Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
   weightVariable:     Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
@@ -251,10 +251,10 @@ def getResolutionGraph(
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
   data = inputData.Filter("(NmbTruthTracks == 1)")
   # !Note! resolution variables are arrays with length NmbTruthTracks, need to define dummy column for first element
-  hist: ROOT.TH2D = getHistND(data, (("_", f"{variable}[0]"), resBinningVariable), axisTitles = "", binning = (*binning, *resBinning),
+  hist: ROOT.TH2D = getHistND(data, (("_", f"{resVariable}[0]"), resBinningVariable), axisTitles = "", binning = (*resVariableBinning, *resBinning),
                               weightVariable = weightVariable, filterExpression = additionalFilter)
   # draw distributions
-  canv = ROOT.TCanvas(f"resolution_{variable}_{resBinningVariable}")
+  canv = ROOT.TCanvas(f"resolution_{resVariable}_{resBinningVariable}")
   hist.Draw("COLZ")
   canv.SaveAs(f"./{canv.GetName()}.pdf")
   # construct resolution graph
@@ -270,11 +270,10 @@ def getResolutionGraph(
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
-#TODO improve naming
 def plotResolution(
   inputData:           ROOT.RDataFrame,
-  variable:            Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
-  binning:             Tuple[int, float, float],     # tuple with binning definition for variable
+  resVariable:         Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
+  resVariableBinning:  Tuple[int, float, float],     # tuple with binning definition for resVariable
   resBinningVariable:  str,  # variable to bin resolution in
   resBinning:          Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
   resBinningAxisTitle: str,
@@ -287,25 +286,19 @@ def plotResolution(
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
   resGraph = getResolutionGraph(
     inputData          = inputData,
-    variable           = variable,
-    binning            = binning,
+    resVariable        = resVariable,
+    resVariableBinning = resVariableBinning,
     resBinningVariable = resBinningVariable,
     resBinning         = resBinning,
     weightVariable     = weightVariable,
     additionalFilter   = additionalFilter,
   )
-  # canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_resolution_{resBinningVariable}{pdfFileNameSuffix}")
-  # plotTools.setCbFriendlyStyle(resGraph, 0, skipBlack = False)
-  # resGraph.SetTitle(f";{axisTitles}")
-  # resGraph.Print()
-  # resGraph.Draw("APZ")
-  # canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
   plotFitResults.plotGraphs1D(
     graphOrGraphs     = resGraph,
     binningVar        = resBinningVariable,
     yAxisTitle        = resBinningAxisTitle,
     pdfDirName        = pdfDirName,
-    pdfFileBaseName   = f"{variable}_resolution",
+    pdfFileBaseName   = f"{resVariable}_resolution",
     pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
     graphMinimum      = None,
@@ -787,11 +780,11 @@ if __name__ == "__main__":
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
-  plotResolution(inputData["2017_01-ver03"]["MCbggen"], variable = "TruthDeltaP", binning = (600, -4, +4),
+  plotResolution(inputData["2017_01-ver03"]["MCbggen"], resVariable = "TruthDeltaP", resVariableBinning = (600, -4, +4),
                  resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4),
                  resBinningAxisTitle = "#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
                  additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
-  # raise ValueError
+  raise ValueError
 
   # overlay all periods for bggen MC and real data
   dataSamplesToOverlay = {}
