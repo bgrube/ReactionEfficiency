@@ -34,9 +34,8 @@ def overlayEfficiencyRatios1D(
   effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVar:        str,
   pdfDirName:        str,
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
 ) -> None:
   """Plots efficiency ratios as a function of `binningVar` for all given fits with 1D binning"""
@@ -54,10 +53,9 @@ def overlayEfficiencyRatios1D(
     yAxisTitle        = "Efficiency Ratio",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = "mm2_effratio",
+    pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    particle          = particle,
-    channel           = channel,
-    graphTitle        = f"{particle} Efficiency Ratio ({channel})" if graphTitle is None else graphTitle,
+    graphTitle        = f"Efficiency Ratio" if graphTitle is None else graphTitle,
     graphMinimum      = 0.0,
     graphMaximum      = 1.3,
     skipBlack         = True if len(ratioGraphs) > 1 else False,
@@ -72,15 +70,13 @@ def overlayEfficiencyRatios1D(
   # oneLine.SetLineColor(ROOT.kBlack)
   # oneLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 1, xAxis.GetBinUpEdge(xAxis.GetLast()), 1)
 
-
 def overlayEfficiencyRatios2DSlices(
   effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
 ) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
@@ -110,9 +106,8 @@ def overlayEfficiencyRatios2DSlices(
       yAxisTitle        = "Efficiency Ratio",
       pdfDirName        = pdfDirName,
       pdfFileBaseName   = "mm2_effratio",
+      pdfFileNamePrefix = pdfFileNamePrefix,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
-      particle          = particle,
-      channel           = channel,
       graphTitle        = f"{graphTitle}, {steppingVarLabel}",
       graphMinimum      = 0.0,
       graphMaximum      = 1.3,

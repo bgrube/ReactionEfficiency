@@ -3,7 +3,7 @@
 
 import argparse
 from collections import defaultdict
-from dataclasses import dataclass  # builtin in Python 3.7+
+from dataclasses import dataclass
 import functools
 import numpy as np
 import os
@@ -69,9 +69,8 @@ def overlayEfficiencies1D(
   effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
   pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
   skipBlack:         bool = True,
 ) -> None:
@@ -85,10 +84,9 @@ def overlayEfficiencies1D(
     yAxisTitle        = "Efficiency",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = "mm2_eff",
+    pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    particle          = particle,
-    channel           = channel,
-    graphTitle        = f"{particle} Track-Finding Efficiency ({channel})" if graphTitle is None else graphTitle,
+    graphTitle        = f"Track-Finding Efficiency" if graphTitle is None else graphTitle,
     graphMinimum      = 0.0,
     graphMaximum      = 1.0,
     skipBlack         = skipBlack,
@@ -100,9 +98,8 @@ def overlayEfficiencies2DSlices(
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
   skipBlack:         bool = True,
 ) -> None:
   """Overlays efficiencies as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
@@ -129,9 +126,8 @@ def overlayEfficiencies2DSlices(
       yAxisTitle        = "Efficiency",
       pdfDirName        = pdfDirName,
       pdfFileBaseName   = "mm2_eff",
+      pdfFileNamePrefix = pdfFileNamePrefix,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
-      particle          = particle,
-      channel           = channel,
       graphTitle        = steppingVarLabel,
       graphMinimum      = 0.0,
       graphMaximum      = 1.0,

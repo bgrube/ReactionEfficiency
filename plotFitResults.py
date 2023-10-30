@@ -3,7 +3,7 @@
 
 import argparse
 import collections
-from dataclasses import dataclass  # builtin in Python 3.7+
+from dataclasses import dataclass
 import functools
 import itertools
 import math
@@ -266,9 +266,8 @@ def plotGraphs1D(
   yAxisTitle:        str,
   pdfDirName:        str,
   pdfFileBaseName:   str,
+  pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
-  particle:          str = "Proton",
-  channel:           str = "4pi",
   graphTitle:        Optional[str] = None,
   graphMinimum:      float = 0.0,
   graphMaximum:      Optional[float] = None,
@@ -300,7 +299,7 @@ def plotGraphs1D(
   legendLabels = tuple(legendLabel.replace(' ', '_') for legendLabel, _ in graphs)  # reformat legend labels so that they can be used in PDF file name
   if len(legendLabels) == 1 and legendLabels[0] == "":  # only 1 graph and no legend label
     legendLabels = None
-  canv = ROOT.TCanvas(f"{particle}_{channel}_{pdfFileBaseName}_{binningVar}"
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{pdfFileBaseName}_{binningVar}"
                       + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
   multiGraph.Draw("APZ")
   if drawLegend == True or (drawLegend is None and legendLabels is not None):
@@ -315,9 +314,8 @@ def plotParValue1D(
   parName:           str,  # name of parameter to plot
   binningVar:        str,  # name of binning variable to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str   = "",
-  particle:          str   = "Proton",
-  channel:           str   = "4pi",
+  pdfFileNamePrefix: str = "Proton_4pi_",
+  pdfFileNameSuffix: str = "",
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
@@ -329,10 +327,9 @@ def plotParValue1D(
     yAxisTitle        = parName,
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = parName,
+    pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    particle          = particle,
-    channel           = channel,
-    graphTitle        = f"Fit parameter {parName}, {particle} ({channel})",
+    graphTitle        = f"Fit parameter {parName})",
     skipBlack         = False,
   )
   #TODO needed?
@@ -378,9 +375,8 @@ def plotParValue2D(
   parName:           str,  # name of parameter to plot
   binningVars:       Sequence[str],  # names of binning variables to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str   = "",
-  particle:          str   = "Proton",
-  channel:           str   = "4pi",
+  pdfFileNamePrefix: str = "Proton_4pi_",
+  pdfFileNameSuffix: str = "",
 ) -> None:
   """Overlays values of given parameter for given datasets for 2-dimensional binning with given binning variables"""
   savedFrameFillColor = ROOT.gStyle.GetFrameFillColor()
@@ -406,7 +402,7 @@ def plotParValue2D(
   assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
   assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
   hist = ROOT.TH3F(
-    f"{particle}_{channel}_{parName}_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}",
+    f"{pdfFileNamePrefix}{parName}_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}",
     (f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
      f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})"
      f";{parName}"),

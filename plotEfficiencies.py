@@ -2,7 +2,7 @@
 
 
 import argparse
-from dataclasses import dataclass  # builtin in Python 3.7+
+from dataclasses import dataclass
 import functools
 import math
 import numpy as np
@@ -137,21 +137,19 @@ def plotEfficiencies1D(
   efficiencies:      Sequence[EffInfo],
   binningVar:        str,  # name of binning variable to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNameSuffix: str   = "",
-  particle:          str   = "Proton",
-  channel:           str   = "4pi",
+  pdfFileNamePrefix: str = "Proton_4pi_",
+  pdfFileNameSuffix: str = "",
 ) -> None:
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   plotFitResults.plotGraphs1D(
     graphOrGraphs     = plotTools.getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
     binningVar        = binningVar,
-    yAxisTitle        = f"{particle} Track-Finding Efficiency",
+    yAxisTitle        = f"Track-Finding Efficiency",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = "mm2_eff",
+    pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    particle          = particle,
-    channel           = channel,
     graphMinimum      = 0.0,
     graphMaximum      = 1.0,
     skipBlack         = False,
@@ -179,9 +177,8 @@ def plotEfficiencies2D(
   efficiencies:      Sequence[EffInfo],
   binningVars:       Sequence[str],  # names of binning variables to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNamePrefix: str   = "Proton_4pi_",
   pdfFileNameSuffix: str   = "",
-  particle:          str   = "Proton",
-  channel:           str   = "4pi",
   markerSize:        float = 0.75,
 ) -> None:
   """Plots efficiency as a function of given binning variables for 2-dimensional binning"""
@@ -191,7 +188,7 @@ def plotEfficiencies2D(
     return
   efficiencyGraph.SetMinimum(0)
   efficiencyGraph.SetMaximum(1)
-  canv = ROOT.TCanvas(f"{particle}_{channel}_mm2_eff_{binningVars[0]}_{binningVars[1]}_{pdfFileNameSuffix}", "")
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
   efficiencyGraph.Draw("TRI2 P0 ERR")
   efficiencyGraph.SetTitle("")
   efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
@@ -201,7 +198,7 @@ def plotEfficiencies2D(
   axisTitles = (
     f"{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})",
     f"{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
-    f"{particle} Track-Finding Efficiency",
+    f"Track-Finding Efficiency",
   )
   titleOffsets = (2.0, 2.0, 1.5)
   for index, axis in enumerate((efficiencyGraph.GetXaxis(), efficiencyGraph.GetYaxis(), efficiencyGraph.GetZaxis())):
