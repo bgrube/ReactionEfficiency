@@ -72,8 +72,7 @@ if __name__ == "__main__":
     "2018_08-ver02",
     "2019_11-ver01",
   ]
-  # for dataType in ("MCbggen", "RD"):
-  for dataType in ("MCbggen",):
+  for dataType in ("MCbggen", "RD"):
     for dataPeriod in dataPeriods:
       dataDir = f"./data/{dataType}/{dataPeriod}"
       inFileNamePattern = f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"
