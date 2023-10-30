@@ -241,12 +241,14 @@ def plot2D(
 
 def getResolutionGraph(
   inputData:          ROOT.RDataFrame,
-  resVariable:        Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
+  resVariable:        str,                          # variable to estimate resolution for
   resVariableBinning: Tuple[int, float, float],     # tuple with binning definition for resVvariable
-  resBinningVariable: str,  # variable to bin resolution in
-  resBinning:         Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
+  resBinningVariable: Union[str, Tuple[str, str]],  # variable to bin resolution in; may be column name, or tuple with new column definition
+  resBinning:         Tuple[int, float, float],     # tuple with binning definition for resBinningVariable
   weightVariable:     Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   additionalFilter:   Optional[str] = None,
+  histTitle:          Optional[str] = None,
+  histPdfFileName:    Optional[str] = None,
 ) -> ROOT.TGraphErrors:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
   data = inputData.Filter("(NmbTruthTracks == 1)")
@@ -254,9 +256,13 @@ def getResolutionGraph(
   hist: ROOT.TH2D = getHistND(data, (("_", f"{resVariable}[0]"), resBinningVariable), axisTitles = "", binning = (*resVariableBinning, *resBinning),
                               weightVariable = weightVariable, filterExpression = additionalFilter)
   # draw distributions
-  canv = ROOT.TCanvas(f"resolution_{resVariable}_{resBinningVariable}")
-  hist.Draw("COLZ")
-  canv.SaveAs(f"./{canv.GetName()}.pdf")
+  if histPdfFileName is not None:
+    canv = ROOT.TCanvas(histPdfFileName)
+    canv.SetLogz()
+    if histTitle is not None:
+      hist.SetTitle(histTitle)
+    hist.Draw("COLZ")
+    canv.SaveAs(histPdfFileName)
   # construct resolution graph
   resBinningAxis = hist.GetYaxis()
   xVals = np.array([resBinningAxis.GetBinCenter(resBinIndex)       for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = "d")
@@ -270,39 +276,45 @@ def getResolutionGraph(
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
-def plotResolution(
-  inputData:           ROOT.RDataFrame,
-  resVariable:         Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
-  resVariableBinning:  Tuple[int, float, float],     # tuple with binning definition for resVariable
-  resBinningVariable:  str,  # variable to bin resolution in
-  resBinning:          Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
-  resBinningAxisTitle: str,
-  weightVariable:      Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix:   str = "Proton_4pi_",
-  pdfFileNameSuffix:   str = "",
-  pdfDirName:          str = "./",
-  additionalFilter:    Optional[str] = None,
+def overlayResolutions(
+  inputData:            Sequence[Tuple[str, ROOT.RDataFrame]],
+  resVariable:          str,                          # variable to estimate resolution for
+  resVariableBinning:   Tuple[int, float, float],     # tuple with binning definition for resVariable
+  resBinningVariable:   Union[str, Tuple[str, str]],  # variable to bin resolution in; may be column name, or tuple with new column definition
+  resBinning:           Tuple[int, float, float],     # tuple with binning definition for resBinningVariable
+  weightVariable:       Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix:    str = "Proton_4pi_",
+  pdfFileNameSuffix:    str = "",
+  pdfDirName:           str = "./",
+  resVariableAxisTitle: Optional[str] = None,
+  additionalFilter:     Optional[str] = None,
 ) -> None:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
-  resGraph = getResolutionGraph(
-    inputData          = inputData,
-    resVariable        = resVariable,
-    resVariableBinning = resVariableBinning,
-    resBinningVariable = resBinningVariable,
-    resBinning         = resBinning,
-    weightVariable     = weightVariable,
-    additionalFilter   = additionalFilter,
-  )
+  resBinningVariableName, resBinningVariableLabel, resBinningVariableUnit = plotFitResults.getAxisInfoForBinningVar(resBinningVariable)
+  resGraphs: List[Tuple[str, ROOT.TGraphErrors]] = []
+  for label, data in inputData:
+    resGraphs.append((label,
+      getResolutionGraph(
+        inputData          = data,
+        resVariable        = resVariable,
+        resVariableBinning = resVariableBinning,
+        resBinningVariable = resBinningVariable,
+        resBinning         = resBinning,
+        weightVariable     = weightVariable,
+        additionalFilter   = additionalFilter,
+        histTitle          = f";{'' if resVariableAxisTitle is None else resVariableAxisTitle};{resBinningVariableLabel} ({resBinningVariableUnit})",
+        histPdfFileName    = f"{pdfDirName}/{pdfFileNamePrefix}{resVariable}_resolution2D_{resBinningVariable}_{label}{pdfFileNameSuffix}.pdf",
+      )))
   plotFitResults.plotGraphs1D(
-    graphOrGraphs     = resGraph,
-    binningVar        = resBinningVariable,
-    yAxisTitle        = resBinningAxisTitle,
+    graphOrGraphs     = resGraphs,
+    binningVar        = resBinningVariableName,
+    yAxisTitle        = f"#it{{#sigma}}_{{{resBinningVariableLabel}}} ({resBinningVariableUnit})",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = f"{resVariable}_resolution",
     pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
     graphMinimum      = None,
-    skipBlack         = False,
+    skipBlack         = True if len(resGraphs) > 1 else False,
   )
 
 
@@ -780,11 +792,20 @@ if __name__ == "__main__":
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
-  plotResolution(inputData["2017_01-ver03"]["MCbggen"], resVariable = "TruthDeltaP", resVariableBinning = (600, -4, +4),
-                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4),
-                 resBinningAxisTitle = "#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
-                 additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
-  raise ValueError
+  # overlay resolutions of kinematic variables
+  resVariables: Tuple[Tuple[str, Tuple[int, float, float]], ...] = (
+    ("TruthDeltaP", (600, -4, +4)),
+  )
+  kwargs = {
+    "additionalFilter" : '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
+  }
+  for resVariable, resVariableBinning in resVariables:
+    dataToOverlay: List[Tuple[str, ROOT.RDataFrame]] = []
+    for dataPeriod, data in inputData.items():
+      dataToOverlay.append((dataPeriod, data["MCbggen"]))
+    overlayResolutions(dataToOverlay, resVariable, resVariableBinning, resBinningVariable = "MissingProtonP", resBinning = (100, 0, 5),
+                       resVariableAxisTitle = "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})", **kwargs)
+  # raise ValueError
 
   # overlay all periods for bggen MC and real data
   dataSamplesToOverlay = {}
