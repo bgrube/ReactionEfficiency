@@ -39,6 +39,18 @@ BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
   "MissingProtonPhi"   : {"label" : "#it{#phi}_{miss}^{kin. fit}",   "unit" : "deg"},
 }
 
+def getAxisInfoForBinningVar(binningVar: Union[str, Tuple[str, str]]) -> Tuple[str, str, str]:
+  varName = None
+  if isinstance(binningVar, str):
+    varName = binningVar
+  elif isinstance(binningVar, Sequence):
+    varName = binningVar[0]
+  assert varName is not None and varName in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{varName}'"
+  varLabel = BINNING_VAR_PLOT_INFO[varName]['label']
+  varUnit  = BINNING_VAR_PLOT_INFO[varName]['unit']
+  return (varName, varLabel, varUnit)
+
+
 REMOVE_PARAM_BOX = False
 
 
