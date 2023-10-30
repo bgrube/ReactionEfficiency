@@ -16,7 +16,6 @@ from typing import (
 
 import ROOT
 
-import makePlots
 import plotTools
 
 
@@ -502,7 +501,7 @@ def performFit(
 
 
 if __name__ == "__main__":
-  makePlots.printGitInfo()
+  plotTools.printGitInfo()
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
   plotTools.setupPlotStyle()
