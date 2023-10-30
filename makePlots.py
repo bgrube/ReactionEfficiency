@@ -144,7 +144,7 @@ def getHistND(
   inputData:        ROOT.RDataFrame,
   variables:        Tuple[Union[str, Tuple[str, str]], ...],  # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
   axisTitles:       str,    # semicolon-separated list
-  binning:          Tuple,  # tuple with binning definitions
+  binning:          Union[Tuple[int, float, float], Tuple[int, float, float, int, float, float]],  # tuple with 1D or 2D binning definitions
   weightVariable:   Optional[Union[str, Tuple[str, str]]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
   filterExpression: Optional[str] = None,
   histNameSuffix:   str = "",
@@ -245,9 +245,43 @@ def plot2D(
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
+def getResolutionGraph(
+  inputData:          ROOT.RDataFrame,
+  variable:           Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
+  binning:            Tuple[int, float, float],     # tuple with binning definition for variable
+  resBinningVariable: str,  # variable to bin resolution in
+  resBinning:         Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
+  weightVariable:     Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  additionalFilter:   Optional[str] = None,
+) -> ROOT.TGraphErrors:
+  """Plots resolution of given variable in the in bins of `resBinningVariable`"""
+  data = inputData.Filter("(NmbTruthTracks == 1)")
+  # !Note! resolution variables are arrays with length NmbTruthTracks, need to define dummy column for first element
+  hist: ROOT.TH2D = getHistND(data, (("_", f"{variable}[0]"), resBinningVariable), axisTitles = "", binning = (*binning, *resBinning),
+                              weightVariable = weightVariable, filterExpression = additionalFilter)
+  # draw distributions
+  canv = ROOT.TCanvas(f"resolution_{variable}_{resBinningVariable}")
+  hist.Draw("COLZ")
+  canv.SaveAs(f"./{canv.GetName()}.pdf")
+  # construct resolution graph
+  resBinningAxis = hist.GetYaxis()
+  xVals = np.array([resBinningAxis.GetBinCenter(resBinIndex)       for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = "d")
+  xErrs = np.array([resBinningAxis.GetBinWidth (resBinIndex) / 2.0 for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = "d")
+  yVals = np.array([], dtype = "d")
+  yErrs = np.array([], dtype = "d")
+  for resBinIndex in range(1, resBinningAxis.GetNbins() + 1):
+    proj = hist.ProjectionX("_px", resBinIndex, resBinIndex, "E")
+    proj.Print()
+    yVals = np.append(yVals, (proj.GetStdDev(),))
+    yErrs = np.append(yErrs, (proj.GetStdDevError(),))
+  return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
+
+
+#TODO just create graph and use function in plotTools to draw it
+#TODO improve naming
 def plotResolution(
   inputData:          ROOT.RDataFrame,
-  variable:           Union[str, Tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
+  variable:           Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
   binning:            Tuple[int, float, float],     # tuple with binning definition for variable
   axisTitles:         str,  # semicolon-separated list
   resBinningVariable: str,  # variable to bin resolution in
@@ -259,47 +293,21 @@ def plotResolution(
   additionalFilter:   Optional[str] = None,
 ) -> None:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
-  data = inputData.Filter("(NmbTruthTracks == 1)" + (f" && ({additionalFilter})" if additionalFilter else ""))
-  hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
-  hists = []
-  nmbResBins  = resBinning[0]
-  resBinWidth = (resBinning[2] - resBinning[1]) / nmbResBins
-  #TODO simplify code by making a 2D histogram
-  for resBinIndex in range(nmbResBins):
-    resBinBoundaries = (resBinning[1] + resBinIndex * resBinWidth, resBinning[1] + (resBinIndex + 1) * resBinWidth)
-    resBinFilter = f"(({resBinBoundaries[0]} < {resBinningVariable}) && ({resBinningVariable} < {resBinBoundaries[1]}))"
-    resBinLabel = f"{resBinningVariable}_{resBinBoundaries[0]}_{resBinBoundaries[1]}"
-    hist: ROOT.TH1D = getHistND(data, (variable,), axisTitles = "", binning = binning, weightVariable = weightVariable,
-                                filterExpression = resBinFilter, histNameSuffix = resBinLabel, histTitle = resBinLabel)
-    hists.append(hist)
-    hStack.Add(hist.GetPtr())
-  # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_cases{pdfFileNameSuffix}")
-  hStack.Draw("NOSTACK HIST")
-  # add legend
-  canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  plotTools.drawZeroLine(hStack)
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
-  # draw resolution graph
-  xVals = np.array([resBinning[1] + (resBinIndex + 0.5) * resBinWidth for resBinIndex in range(nmbResBins)], dtype = "d")
-  xErrs = np.array([resBinWidth / 2                                   for _           in range(nmbResBins)], dtype = "d")
-  yVals = np.array([hists[resBinIndex].GetStdDev()                    for resBinIndex in range(nmbResBins)], dtype = "d")
-  yErrs = np.array([hists[resBinIndex].GetStdDevError()               for resBinIndex in range(nmbResBins)], dtype = "d")
-  resGraph = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_resolution_{resBinningVariable}_{pdfFileNameSuffix}")
+  resGraph = getResolutionGraph(
+    inputData          = inputData,
+    variable           = variable,
+    binning            = binning,
+    resBinningVariable = resBinningVariable,
+    resBinning         = resBinning,
+    weightVariable     = weightVariable,
+    additionalFilter   = additionalFilter,
+  )
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_resolution_{resBinningVariable}{pdfFileNameSuffix}")
   plotTools.setCbFriendlyStyle(resGraph, 0, skipBlack = False)
   resGraph.SetTitle(f";{axisTitles}")
   resGraph.Print()
   resGraph.Draw("APZ")
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
-  hist = hists[3]
-  x = np.array([hist.GetBinCenter(i)  for i in range(1, hist.GetNbinsX() + 1)])
-  w = np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)])
-  mean = np.average(x, weights = w)
-  var  = np.average((x - mean)**2, weights = w)
-  print(f"!!! {x}")
-  print(f"!!! {w}")
-  print(f"!!! {mean}, {hist.GetMean()}, {var}, {math.sqrt(var)}")
 
 
 def overlayCases(
@@ -775,6 +783,11 @@ if __name__ == "__main__":
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
+  plotResolution(inputData["2017_01-ver03"]["MCbggen"], variable = "TruthDeltaP", binning = (600, -4, +4),
+                 axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c});#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
+                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4), additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
+  # raise ValueError
+
   # overlay all periods for bggen MC and real data
   dataSamplesToOverlay = {}
   if len(inputData) > 1:
@@ -804,10 +817,6 @@ if __name__ == "__main__":
       },
     }
     makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
-
-  plotResolution(inputData["2017_01-ver03"]["MCbggen"], variable = "TruthDeltaP", binning = (600, -4, +4),
-                 axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c});#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
-                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4), additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
 
   # make Monte Carlo plots for each period
   for dataPeriod in inputData.keys():
