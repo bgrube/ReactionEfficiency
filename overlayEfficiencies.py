@@ -26,7 +26,7 @@ import ROOT
 import plotEfficiencies
 from plotEfficiencies import EffInfo
 import plotFitResults
-from plotFitResults import ParInfo, BINNING_VAR_PLOT_INFO
+from plotFitResults import BINNING_VAR_PLOT_INFO, ParInfo
 import plotTools
 
 
@@ -135,7 +135,7 @@ def overlayEfficiencies2DSlices(
 
 
 if __name__ == "__main__":
-  makePlots.printGitInfo()
+  plotTools.printGitInfo()
   ROOT.gROOT.SetBatch(True)
   plotTools.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
