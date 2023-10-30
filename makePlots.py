@@ -542,22 +542,35 @@ def makeKinematicPlotsOverlays(
   pdfDirName:  str = "./",
 ) -> None:
   """Overlays kinematic distributions of given data samples"""
-  overlayDataSamples1D(dataSamples, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
-  kwargs = {
-    "additionalFilter"  : "(NmbUnusedShowers == 0)",
-    "pdfFileNameSuffix" : "_noUnusedShowers",
-    "pdfDirName"        : pdfDirName,
-  }
-  overlayDataSamples1D(dataSamples, variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (250,    0,  5), **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "FourPiMass",         axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}} (GeV/#it{c}^{2})", binning = (200, 0, 5), **kwargs)
+  # overlayDataSamples1D(dataSamples, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
+  kwargss = (
+    {
+      "additionalFilter"  : "(NmbUnusedShowers == 0)",
+      "pdfFileNameSuffix" : "_noUnusedShowers",
+      "pdfDirName"        : pdfDirName,
+    },
+    {
+      "additionalFilter"  : "(NmbUnusedShowers == 0) && ((5.5 < BeamEnergy) && (BeamEnergy < 11.0))",
+      "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_5.5_11.0",
+      "pdfDirName"        : pdfDirName,
+    },
+    {
+      "additionalFilter"  : "(NmbUnusedShowers == 0) && ((7.5 < BeamEnergy) && (BeamEnergy < 9.0))",
+      "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_7.5_9.0",
+      "pdfDirName"        : pdfDirName,
+    },
+  )
+  for kwargs in kwargss:
+    overlayDataSamples1D(dataSamples, variable = "BeamEnergy",         axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "KinFitPVal",         axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (250,    0,   5), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "FourPiMass",         axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}} (GeV/#it{c}^{2})", binning = (200, 0, 5), **kwargs)
   # unused track
-  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargs)
-  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (200, -100, +100), **kwargs)
+  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargss[0])
+  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargss[0])
+  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (200, -100, +100), **kwargss[0])
   # missing mass squared
   for case, caseFilter in FILTER_CASES.items():
     kwargs = {
