@@ -269,7 +269,7 @@ def plotGraphs1D(
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   graphTitle:        Optional[str] = None,
-  graphMinimum:      float = 0.0,
+  graphMinimum:      Optional[float] = 0.0,
   graphMaximum:      Optional[float] = None,
   skipBlack:         bool = True,
   drawLegend:        Optional[bool] = None,
