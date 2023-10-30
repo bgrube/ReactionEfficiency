@@ -23,7 +23,6 @@ from uncertainties import UFloat, ufloat
 
 import ROOT
 
-import makePlots
 import plotEfficiencies
 from plotEfficiencies import EffInfo
 import plotFitResults
@@ -184,7 +183,7 @@ if __name__ == "__main__":
 
   skipBlack = True
   # skipBlack = False
-  pdfDirName = makePlots.makeDirPath("./overlays")
+  pdfDirName = plotTools.makeDirPath("./overlays")
   for pdfFileNameSuffix, fitResults in resultsToOverlay.items():
     fitResultDirNames = tuple(fitResult[0] for fitResult in fitResults)
     fitLabels         = tuple(fitResult[1] for fitResult in fitResults)

@@ -2,6 +2,8 @@ import ctypes
 from enum import Enum
 import functools
 import numpy as np
+import os
+import subprocess
 from typing import (
   Any,
   Dict,
@@ -35,6 +37,27 @@ COLORS_CB_FRIENDLY: Tuple[str, ...] = (
   "#E69F00",  # orange
   "#F0E442",  # yellow
 )
+
+
+def printGitInfo() -> None:
+  """Prints directory of this file and git hash in this directory"""
+  repoDir = os.path.dirname(os.path.abspath(__file__))
+  gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
+  print(f"Running code in '{repoDir}', git version '{gitInfo}'")
+
+
+def makeDirPath(dirPath: str) -> str:
+  """Create path to directory and return directory path as given"""
+  try:
+    os.makedirs(dirPath, exist_ok = False)
+  except FileExistsError:
+    pass  # directory already exists; do nothing
+  except Exception:
+    raise  # something went wrong
+  else:
+    print(f"Created directory '{dirPath}'")
+  return dirPath
+
 
 def getRootColor(hexColor: str) -> int:
   """Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created"""

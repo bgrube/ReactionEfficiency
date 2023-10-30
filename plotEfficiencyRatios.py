@@ -17,7 +17,6 @@ from uncertainties import UFloat, ufloat
 
 import ROOT
 
-import makePlots
 import overlayEfficiencies
 import plotEfficiencies
 from plotEfficiencies import EffInfo, BinInfo
@@ -117,7 +116,7 @@ def overlayEfficiencyRatios2DSlices(
 
 
 if __name__ == "__main__":
-  makePlots.printGitInfo()
+  plotTools.printGitInfo()
   ROOT.gROOT.SetBatch(True)
   plotTools.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
@@ -141,7 +140,7 @@ if __name__ == "__main__":
     ),
   }
 
-  pdfDirName = makePlots.makeDirPath("./ratios")
+  pdfDirName = plotTools.makeDirPath("./ratios")
   graphTitle = "bggen MC / Real Data"
   effInfos:    Dict[str, Dict[Tuple[str, str], List[EffInfo]]] = {}
   binVarNames: Dict[str, Optional[List[Tuple[str, ...]]]]      = {}

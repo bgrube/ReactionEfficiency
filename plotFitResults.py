@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import functools
 import itertools
 import math
-import numpy as np
 import os
 import sys
 from typing import (
@@ -26,7 +25,6 @@ import ROOT
 if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
-import makePlots
 import plotTools
 
 
@@ -429,7 +427,7 @@ def plotParValue2D(
 
 
 if __name__ == "__main__":
-  makePlots.printGitInfo()
+  plotTools.printGitInfo()
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 

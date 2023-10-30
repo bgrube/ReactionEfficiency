@@ -21,7 +21,6 @@ from uncertainties import UFloat, ufloat
 
 import ROOT
 
-import makePlots
 import plotFitResults
 from plotFitResults import (
   BinInfo,
@@ -209,7 +208,7 @@ def plotEfficiencies2D(
 
 
 if __name__ == "__main__":
-  makePlots.printGitInfo()
+  plotTools.printGitInfo()
   ROOT.gROOT.SetBatch(True)
   plotTools.setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")

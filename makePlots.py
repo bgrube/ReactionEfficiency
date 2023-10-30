@@ -20,6 +20,7 @@ from typing import (
 
 import ROOT
 
+import plotFitResults
 import plotTools
 
 
@@ -53,13 +54,6 @@ COLOR_CASES = {
   "Found"   : ROOT.kGreen + 2,
   "Missing" : ROOT.kRed + 1,
 }
-
-
-def printGitInfo() -> None:
-  """Prints directory of this file and git hash in this directory"""
-  repoDir = os.path.dirname(os.path.abspath(__file__))
-  gitInfo = subprocess.check_output(["git", "describe", "--always"], cwd = repoDir).strip().decode()
-  print(f"Running code in '{repoDir}', git version '{gitInfo}'")
 
 
 def overlayDataSamples1D(
@@ -271,26 +265,24 @@ def getResolutionGraph(
   yErrs = np.array([], dtype = "d")
   for resBinIndex in range(1, resBinningAxis.GetNbins() + 1):
     proj = hist.ProjectionX("_px", resBinIndex, resBinIndex, "E")
-    proj.Print()
     yVals = np.append(yVals, (proj.GetStdDev(),))
     yErrs = np.append(yErrs, (proj.GetStdDevError(),))
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
-#TODO just create graph and use function in plotTools to draw it
 #TODO improve naming
 def plotResolution(
-  inputData:          ROOT.RDataFrame,
-  variable:           Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
-  binning:            Tuple[int, float, float],     # tuple with binning definition for variable
-  axisTitles:         str,  # semicolon-separated list
-  resBinningVariable: str,  # variable to bin resolution in
-  resBinning:         Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
-  weightVariable:     Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix:  str = "Proton_4pi_",
-  pdfFileNameSuffix:  str = "",
-  pdfDirName:         str = "./",
-  additionalFilter:   Optional[str] = None,
+  inputData:           ROOT.RDataFrame,
+  variable:            Union[str, Tuple[str, str]],  # variable to estimate resolution for; may be column name, or tuple with new column definition
+  binning:             Tuple[int, float, float],     # tuple with binning definition for variable
+  resBinningVariable:  str,  # variable to bin resolution in
+  resBinning:          Tuple[int, float, float],  # tuple with binning definition for resBinningVariable
+  resBinningAxisTitle: str,
+  weightVariable:      Optional[Union[str, Tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix:   str = "Proton_4pi_",
+  pdfFileNameSuffix:   str = "",
+  pdfDirName:          str = "./",
+  additionalFilter:    Optional[str] = None,
 ) -> None:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
   resGraph = getResolutionGraph(
@@ -302,12 +294,23 @@ def plotResolution(
     weightVariable     = weightVariable,
     additionalFilter   = additionalFilter,
   )
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_resolution_{resBinningVariable}{pdfFileNameSuffix}")
-  plotTools.setCbFriendlyStyle(resGraph, 0, skipBlack = False)
-  resGraph.SetTitle(f";{axisTitles}")
-  resGraph.Print()
-  resGraph.Draw("APZ")
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  # canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{variable}_resolution_{resBinningVariable}{pdfFileNameSuffix}")
+  # plotTools.setCbFriendlyStyle(resGraph, 0, skipBlack = False)
+  # resGraph.SetTitle(f";{axisTitles}")
+  # resGraph.Print()
+  # resGraph.Draw("APZ")
+  # canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  plotFitResults.plotGraphs1D(
+    graphOrGraphs     = resGraph,
+    binningVar        = resBinningVariable,
+    yAxisTitle        = resBinningAxisTitle,
+    pdfDirName        = pdfDirName,
+    pdfFileBaseName   = f"{variable}_resolution",
+    pdfFileNamePrefix = pdfFileNamePrefix,
+    pdfFileNameSuffix = pdfFileNameSuffix,
+    graphMinimum      = None,
+    skipBlack         = False,
+  )
 
 
 def overlayCases(
@@ -731,21 +734,9 @@ def makeKinematicPlotsData(
     # plot2D(unusedTrackData, xVariable = ("UnusedPhi_",   "UnusedPhi[0]"),   yVariable = "MissingProtonPhi",   axisTitles = "#it{#phi}_{miss}^{unused} (deg);#it{#phi}_{miss}^{kin. fit} (deg)",         binning = (360, -180, 180, 360, -180, 180), **kwargs)
 
 
-def makeDirPath(dirPath: str) -> str:
-  """Create path to directory and return directory path as given"""
-  try:
-    os.makedirs(dirPath, exist_ok = False)
-  except FileExistsError:
-    pass  # directory already exists; do nothing
-  except Exception:
-    raise  # something went wrong
-  else:
-    print(f"Created directory '{dirPath}'")
-  return dirPath
-
-
 if __name__ == "__main__":
   #TODO add command-line interface
+  plotTools.printGitInfo()
   ROOT.gROOT.SetBatch(True)
   #TODO cannot change multithreading after data frame was instantiated
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
@@ -776,7 +767,7 @@ if __name__ == "__main__":
     }
   kwargs = {
     "pdfFileNameSuffix" : "_SigMcTruth",
-    "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
+    "pdfDirName"        : plotTools.makeDirPath(f"{pdfBaseDirName}/MCbggen"),
   }
   overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthFourPionMass", axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}} (GeV/#it{c}^{2})", **kwargs)
   overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonP",      axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
@@ -797,8 +788,9 @@ if __name__ == "__main__":
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   plotResolution(inputData["2017_01-ver03"]["MCbggen"], variable = "TruthDeltaP", binning = (600, -4, +4),
-                 axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c});#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
-                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4), additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
+                 resBinningVariable = "MissingProtonP", resBinning = (4, 0, 4),
+                 resBinningAxisTitle = "#it{#sigma}_{#it{p}_{miss}^{kin. fit}} (GeV/#it{c})",
+                 additionalFilter = '(ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")')
   # raise ValueError
 
   # overlay all periods for bggen MC and real data
@@ -814,7 +806,7 @@ if __name__ == "__main__":
           "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
           "SetLineWidth" : 2,
         }
-      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
+      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/{dataType}"))
   # overlay bggen MC and real data for each period
   for dataPeriod in inputData.keys():
     dataSamplesToOverlay = {
@@ -829,13 +821,13 @@ if __name__ == "__main__":
         "normToThis" : True,
       },
     }
-    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
 
   # make Monte Carlo plots for each period
   for dataPeriod in inputData.keys():
-    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
+    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
 
   # make general plots for each data type and period
   for dataType in ("MCbggen", "RD"):
     for dataPeriod in inputData.keys():
-      makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
+      makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
