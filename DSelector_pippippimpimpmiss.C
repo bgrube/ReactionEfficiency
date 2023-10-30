@@ -109,11 +109,22 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	/******************************** EXAMPLE USER INITIALIZATION: STAND-ALONE HISTOGRAMS *******************************/
 
 	//EXAMPLE MANUAL HISTOGRAMS:
-	dHist_BeamEnergy              = new TH1F("BeamEnergy",              ";Beam Energy (GeV)",           1000,    2,   12);
-	dHist_SignalTruthFourPionMass = new TH1F("SignalTruthFourPionMass", ";Four-Pion Mass (GeV/c^{2})",   200,    0,    5);
-	dHist_SignalTruthProtonP      = new TH1F("SignalTruthProtonP",      ";Proton Momentum (GeV/c)",      250,    0,    5);
-	dHist_SignalTruthProtonTheta  = new TH1F("SignalTruthProtonTheta",  ";Proton Polar Angle (deg)",     200,    0,  100);
-	dHist_SignalTruthProtonPhi    = new TH1F("SignalTruthProtonPhi",    ";Proton Azimuthal Angle(deg))", 180, -180, +180);
+	dHist_BeamEnergy                               = new TH1F("BeamEnergy",                               ";Beam Energy (GeV)",           1000,    2,   12);
+	dHist_SignalTruthBeamEnergy                    = new TH1F("SignalTruthBeamEnergy",                    ";Beam Energy (GeV)",           1000,    2,   12);
+	dHist_SignalTruthFourPionMass                  = new TH1F("SignalTruthFourPionMass",                  ";Four-Pion Mass (GeV/c^{2})",   200,    0,    5);
+	dHist_SignalTruthProtonP                       = new TH1F("SignalTruthProtonP",                       ";Proton Momentum (GeV/c)",      250,    0,    5);
+	dHist_SignalTruthProtonTheta                   = new TH1F("SignalTruthProtonTheta",                   ";Proton Polar Angle (deg)",     200,    0,  100);
+	dHist_SignalTruthProtonPhi                     = new TH1F("SignalTruthProtonPhi",                     ";Proton Azimuthal Angle(deg))", 180, -180, +180);
+	dHist_SignalTruthBeamEnergy_BeamEnergyRange1   = new TH1F("SignalTruthBeamEnergy_BeamEnergyRange1",   ";Beam Energy (GeV)",           1000,    2,   12);
+	dHist_SignalTruthFourPionMass_BeamEnergyRange1 = new TH1F("SignalTruthFourPionMass_BeamEnergyRange1", ";Four-Pion Mass (GeV/c^{2})",   200,    0,    5);
+	dHist_SignalTruthProtonP_BeamEnergyRange1      = new TH1F("SignalTruthProtonP_BeamEnergyRange1",      ";Proton Momentum (GeV/c)",      250,    0,    5);
+	dHist_SignalTruthProtonTheta_BeamEnergyRange1  = new TH1F("SignalTruthProtonTheta_BeamEnergyRange1",  ";Proton Polar Angle (deg)",     200,    0,  100);
+	dHist_SignalTruthProtonPhi_BeamEnergyRange1    = new TH1F("SignalTruthProtonPhi_BeamEnergyRange1",    ";Proton Azimuthal Angle(deg))", 180, -180, +180);
+	dHist_SignalTruthBeamEnergy_BeamEnergyRange2   = new TH1F("SignalTruthBeamEnergy_BeamEnergyRange2",   ";Beam Energy (GeV)",           1000,    2,   12);
+	dHist_SignalTruthFourPionMass_BeamEnergyRange2 = new TH1F("SignalTruthFourPionMass_BeamEnergyRange2", ";Four-Pion Mass (GeV/c^{2})",   200,    0,    5);
+	dHist_SignalTruthProtonP_BeamEnergyRange2      = new TH1F("SignalTruthProtonP_BeamEnergyRange2",      ";Proton Momentum (GeV/c)",      250,    0,    5);
+	dHist_SignalTruthProtonTheta_BeamEnergyRange2  = new TH1F("SignalTruthProtonTheta_BeamEnergyRange2",  ";Proton Polar Angle (deg)",     200,    0,  100);
+	dHist_SignalTruthProtonPhi_BeamEnergyRange2    = new TH1F("SignalTruthProtonPhi_BeamEnergyRange2",    ";Proton Azimuthal Angle(deg))", 180, -180, +180);
 	gDirectory->mkdir("MissingMassSquared", "MissingMassSquared");
 	gDirectory->cd("MissingMassSquared");
 	dHist_MissingMassSquaredVsBeamEnergy         = new TH2F("MissingMassSquaredVsBeamEnergy",         ";Beam Energy (GeV); Missing Mass Squared (GeV/c^{2})^{2}", 500, 2, 12, 5000, -0.5, 4.5);
@@ -588,39 +599,55 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 	Fill_NumCombosSurvivedHists();
 
 	/******************************************* LOOP OVER THROWN DATA (OPTIONAL) ***************************************/
-	// //Thrown beam: just use directly
-	// if(dThrownBeam != NULL)
-	// 	double locEnergy = dThrownBeam->Get_P4().E();
+	//Thrown beam: just use directly
+	if(dThrownBeam != NULL) {
+		const double locBeamEnergy_Truth = dThrownBeam->Get_P4().E();
 
-	// plot truth distributions for signal process
-	if (locThrownTopology == "2#pi^{#plus}2#pi^{#minus}p") {
-		TLorentzVector         locProtonP4_Truth;
-		vector<TLorentzVector> locPionsP4_Truth;
-		// Loop over throwns
-		for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
-			//Set branch array indices corresponding to this particle
-			dThrownWrapper->Set_ArrayIndex(locTrackIndex);
-			switch (dThrownWrapper->Get_PID()) {
-				case Proton:
-					locProtonP4_Truth = dThrownWrapper->Get_P4_Measured();
-					break;
-				case PiPlus:
-				case PiMinus:
-					locPionsP4_Truth.push_back(dThrownWrapper->Get_P4_Measured());
-					break;
-				default:
-					break;
+		// plot truth distributions for signal process
+		if (locThrownTopology == "2#pi^{#plus}2#pi^{#minus}p") {
+			TLorentzVector         locProtonP4_Truth;
+			vector<TLorentzVector> locPionsP4_Truth;
+			// Loop over throwns
+			for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
+				//Set branch array indices corresponding to this particle
+				dThrownWrapper->Set_ArrayIndex(locTrackIndex);
+				switch (dThrownWrapper->Get_PID()) {
+					case Proton:
+						locProtonP4_Truth = dThrownWrapper->Get_P4_Measured();
+						break;
+					case PiPlus:
+					case PiMinus:
+						locPionsP4_Truth.push_back(dThrownWrapper->Get_P4_Measured());
+						break;
+					default:
+						break;
+				}
+			}
+			assert(locPionsP4_Truth.size() == 4);
+			TLorentzVector locFourPionP4_Truth;
+			for (const auto& locPionP4 : locPionsP4_Truth) {
+				locFourPionP4_Truth += locPionP4;
+			}
+			dHist_SignalTruthBeamEnergy->Fill  (locBeamEnergy_Truth);
+			dHist_SignalTruthFourPionMass->Fill(locFourPionP4_Truth.M());
+			dHist_SignalTruthProtonP->Fill     (locProtonP4_Truth.P());
+			dHist_SignalTruthProtonTheta->Fill (locProtonP4_Truth.Theta() * TMath::RadToDeg());
+			dHist_SignalTruthProtonPhi->Fill   (locProtonP4_Truth.Phi()   * TMath::RadToDeg());
+			if ((5.5 < locBeamEnergy_Truth) and (locBeamEnergy_Truth < 11.0)) {
+				dHist_SignalTruthBeamEnergy_BeamEnergyRange1->Fill  (locBeamEnergy_Truth);
+				dHist_SignalTruthFourPionMass_BeamEnergyRange1->Fill(locFourPionP4_Truth.M());
+				dHist_SignalTruthProtonP_BeamEnergyRange1->Fill     (locProtonP4_Truth.P());
+				dHist_SignalTruthProtonTheta_BeamEnergyRange1->Fill (locProtonP4_Truth.Theta() * TMath::RadToDeg());
+				dHist_SignalTruthProtonPhi_BeamEnergyRange1->Fill   (locProtonP4_Truth.Phi()   * TMath::RadToDeg());
+			}
+			if ((7.5 < locBeamEnergy_Truth) and (locBeamEnergy_Truth < 9.0)) {
+				dHist_SignalTruthBeamEnergy_BeamEnergyRange2->Fill  (locBeamEnergy_Truth);
+				dHist_SignalTruthFourPionMass_BeamEnergyRange2->Fill(locFourPionP4_Truth.M());
+				dHist_SignalTruthProtonP_BeamEnergyRange2->Fill     (locProtonP4_Truth.P());
+				dHist_SignalTruthProtonTheta_BeamEnergyRange2->Fill (locProtonP4_Truth.Theta() * TMath::RadToDeg());
+				dHist_SignalTruthProtonPhi_BeamEnergyRange2->Fill   (locProtonP4_Truth.Phi()   * TMath::RadToDeg());
 			}
 		}
-		assert(locPionsP4_Truth.size() == 4);
-		TLorentzVector locFourPionP4_Truth;
-		for (const auto& locPionP4 : locPionsP4_Truth) {
-			locFourPionP4_Truth += locPionP4;
-		}
-		dHist_SignalTruthFourPionMass->Fill(locFourPionP4_Truth.M());
-		dHist_SignalTruthProtonP->Fill     (locProtonP4_Truth.P());
-		dHist_SignalTruthProtonTheta->Fill (locProtonP4_Truth.Theta() * TMath::RadToDeg());
-		dHist_SignalTruthProtonPhi->Fill   (locProtonP4_Truth.Phi()   * TMath::RadToDeg());
 	}
 
 	/****************************************** LOOP OVER OTHER ARRAYS (OPTIONAL) ***************************************/
