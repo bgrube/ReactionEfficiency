@@ -33,6 +33,8 @@ def runSelector(
   # create TChain with input data
   chain = ROOT.TChain(treeName)
   chain.Add(fileNamePattern)
+  #TODO when compiled inside Python environment, ACLiC also links some libraries from Python packages
+  # this makes PROOF crash
   selector = selectorFileName.rstrip("+") + "+"  # ensure that selector is always compiled
                                                  # don't use "++", otherwise each proof job compiles the script and speed is much reduced
   print(f"processing tree '{treeName}' in file(s) '{fileNamePattern}' using selector '{selector}'")
@@ -50,6 +52,7 @@ if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
 
+  runPROOF = True
   deleteFlatTreeFiles = False
   writeBruFitFilesForAllInputFiles = False
 
@@ -69,7 +72,8 @@ if __name__ == "__main__":
     "2018_08-ver02",
     "2019_11-ver01",
   ]
-  for dataType in ("MCbggen", "RD"):
+  # for dataType in ("MCbggen", "RD"):
+  for dataType in ("MCbggen",):
     for dataPeriod in dataPeriods:
       dataDir = f"./data/{dataType}/{dataPeriod}"
       inFileNamePattern = f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"
@@ -83,7 +87,7 @@ if __name__ == "__main__":
         runNumber = inFileName.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeName}_<run number>.root`
         if not runNumber.isnumeric():
           runNumber = None
-        runSelector(inFileName, f"{treeName}_Tree", selectorFileName)
+        runSelector(inFileName, f"{treeName}_Tree", selectorFileName, runPROOF = runPROOF)
         # rename output files
         histFileName = f"{dataDir}/{channel}.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
         print(f"Moving histogram file to '{histFileName}'")
