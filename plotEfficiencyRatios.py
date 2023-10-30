@@ -19,7 +19,7 @@ import ROOT
 
 import overlayEfficiencies
 import plotEfficiencies
-from plotEfficiencies import EffInfo, BinInfo
+from plotEfficiencies import BinInfo, EffInfo
 import plotFitResults
 from plotFitResults import BINNING_VAR_PLOT_INFO
 import plotTools
@@ -30,7 +30,7 @@ print = functools.partial(print, flush = True)
 
 
 def overlayEfficiencyRatios1D(
-  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
+  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVar:        str,
   pdfDirName:        str,
   pdfFileNamePrefix: str = "Proton_4pi_",
@@ -70,7 +70,7 @@ def overlayEfficiencyRatios1D(
   # oneLine.DrawLine(xAxis.GetBinLowEdge(xAxis.GetFirst()), 1, xAxis.GetBinUpEdge(xAxis.GetLast()), 1)
 
 def overlayEfficiencyRatios2DSlices(
-  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],
+  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,
