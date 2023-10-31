@@ -824,8 +824,8 @@ if __name__ == "__main__":
   for diffVariableInfo in diffVariableInfos:
     args                  = diffVariableInfo[:3]
     diffVariableAxisTitle = diffVariableInfo[3]
-    dataToOverlay: List[Tuple[str, ROOT.RDataFrame]] = []
     for dataType in ("MCbggen", "RD"):
+      dataToOverlay: List[Tuple[str, ROOT.RDataFrame]] = []
       for dataPeriod, data in inputData.items():
         dataToOverlay.append((dataPeriod, data[dataType]))
       kwargs = {
