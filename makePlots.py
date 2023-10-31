@@ -67,11 +67,12 @@ def overlayDataSamples1D(
   pdfFileNameSuffix: str = "",
   pdfDirName:        str = "./",
   additionalFilter:  Optional[str] = None,
+  histTitle:         Optional[str] = None,
 ) -> None:
   """Overlays 1D histograms generated from given trees or read from given files"""
   print("Overlaying " + (f"histograms '{histName}'" if histName else f"distributions for '{variable}'") + f" for data samples '{', '.join(dataSamples.keys())}'")
   pdfFileBaseName = histName if histName is not None else variable
-  hStack = ROOT.THStack(pdfFileBaseName, ";" + setDefaultYAxisTitle(axisTitles))
+  hStack = ROOT.THStack(pdfFileBaseName, ("" if histTitle is None else histTitle) + f";{setDefaultYAxisTitle(axisTitles)}")
   hists: List[ROOT.TH1D] = []  # keep histograms in memory
   normIntegral = None  # index of histogram to normalize to
   for dataLabel, dataSample in dataSamples.items():
@@ -758,7 +759,6 @@ if __name__ == "__main__":
   pdfBaseDirName = "./plots"
   maxNmbTopologies = 10
 
-  # plot generated MC truth for signal process
   # open input files with histograms
   dataSamplesToOverlay: Dict[str, Dict[str, Any]] = {}
   for index, dataPeriod in enumerate(dataPeriods):
@@ -771,14 +771,32 @@ if __name__ == "__main__":
       "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
       "SetLineWidth" : 2,
     }
-  kwargs = {
-    "pdfFileNameSuffix" : "_SigMcTruth",
-    "pdfDirName"        : plotTools.makeDirPath(f"{pdfBaseDirName}/MCbggen"),
-  }
-  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthFourPionMass", axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}} (GeV/#it{c}^{2})", **kwargs)
-  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonP",      axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
-  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonTheta",  axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
-  overlayDataSamples1D(dataSamplesToOverlay, histName = "SignalTruthProtonPhi",    axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
+  # plot generated MC truth for signal process
+  histInfos = (
+    {
+      "histNameSuffix" : "",
+      "histTitle"      : "",
+    },
+    {
+      "histNameSuffix" : "_BeamEnergyRange1",
+      "histTitle"      : "5.5 < #it{E}_{beam} < 11.0 GeV",
+    },
+    {
+      "histNameSuffix" : "_BeamEnergyRange2",
+      "histTitle"      : "7.5 < #it{E}_{beam} < 9.0 GeV",
+    },
+  )
+  for histInfo in histInfos:
+    kwargs = {
+      "pdfFileNameSuffix" : "_SigMcTruth",
+      "pdfDirName"        : plotTools.makeDirPath(f"{pdfBaseDirName}/MCbggen"),
+      "histTitle"         : histInfo["histTitle"],
+    }
+    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{histInfo  ['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
+    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{histInfo     ['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
+    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{histInfo ['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
+    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{histInfo   ['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
+    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthFourPionMass{histInfo['histNameSuffix']}", axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}^{truth} (GeV/#it{c}^{2})", **kwargs)
 
   # open input files with trees
   inputData: Dict[str, Dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # Dict[<data period>][<data type>]
@@ -838,7 +856,6 @@ if __name__ == "__main__":
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), **kwargs)
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), **kwargs)
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), **kwargs)
-  # raise ValueError
 
   # overlay all periods for bggen MC and real data
   dataSamplesToOverlay = {}
