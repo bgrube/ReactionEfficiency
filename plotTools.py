@@ -136,6 +136,15 @@ def setupPlotStyle(rootLogonPath: str = "./rootlogon.C") -> None:
   ROOT.gStyle.SetTitleOffset(1.35, "Y")
 
 
+def getRangeOfGraph(graph: ROOT.TGraph) -> Tuple[float, float, float, float]:
+  xMin = ctypes.c_double()
+  xMax = ctypes.c_double()
+  yMin = ctypes.c_double()
+  yMax = ctypes.c_double()
+  graph.ComputeRange(xMin, yMin, xMax, yMax)
+  return (xMin.value, yMin.value, xMax.value, yMax.value)
+
+
 def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
   """Draws zero line when necessary"""
   objType = obj.IsA().GetName()
@@ -177,7 +186,10 @@ def callMemberFunctionsWithArgs(
     function(argument)
 
 
-def calcRatioOfGraphs1D(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphErrors:
+def calcRatioOfGraphs1D(
+  graphs:     Sequence[ROOT.TGraphErrors],
+  ratioRange: Tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
+) -> ROOT.TGraphErrors:
   """Creates 1D graph with ratio graphs[0] / graphs[1] for points with identical x positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
   xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
@@ -201,13 +213,20 @@ def calcRatioOfGraphs1D(graphs: Sequence[ROOT.TGraphErrors]) -> ROOT.TGraphError
       continue
     # calculate ratio of y values and add point to ratio graph
     ratio = yVal0 / yVal1
+    if ratioRange[0] is not None and ratio.nominal_value < ratioRange[0]:
+      continue
+    if ratioRange[1] is not None and ratio.nominal_value > ratioRange[1]:
+      continue
     ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, ratio.nominal_value)
     ratioGraph.SetPointError(countPoints, xVal0.std_dev,       ratio.std_dev)
     countPoints += 1
   return ratioGraph
 
 
-def calcRatioOfGraphs2D(graphs: Sequence[ROOT.TGraph2DErrors]) -> ROOT.TGraph2DErrors:
+def calcRatioOfGraphs2D(
+  graphs:     Sequence[ROOT.TGraph2DErrors],
+  ratioRange: Tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
+) -> ROOT.TGraph2DErrors:
   """Creates 2D graph with ratio graphs[0] / graphs[1] for points with identical (x, y) positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
   xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
@@ -234,6 +253,10 @@ def calcRatioOfGraphs2D(graphs: Sequence[ROOT.TGraph2DErrors]) -> ROOT.TGraph2DE
       continue
     # calculate ratio of y values and add point to ratio graph
     ratio = zVal0 / zVal1
+    if ratioRange[0] is not None and ratio.nominal_value < ratioRange[0]:
+      continue
+    if ratioRange[1] is not None and ratio.nominal_value > ratioRange[1]:
+      continue
     ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, yVal0.nominal_value, ratio.nominal_value)
     ratioGraph.SetPointError(countPoints, xVal0.std_dev,       yVal0.std_dev,       ratio.std_dev)
     countPoints += 1
