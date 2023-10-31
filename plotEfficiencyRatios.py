@@ -55,8 +55,8 @@ def overlayEfficiencyRatios1D(
     pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
     graphTitle        = f"Efficiency Ratio" if graphTitle is None else graphTitle,
-    graphMinimum      = 0.0,
-    graphMaximum      = 1.3,
+    graphMinimum      = 0.5,
+    graphMaximum      = 1.5,
     skipBlack         = True if len(ratioGraphs) > 1 else False,
     drawLegend        = True if len(ratioGraphs) > 1 else False,
   )
@@ -77,6 +77,7 @@ def overlayEfficiencyRatios2DSlices(
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   graphTitle:        Optional[str] = None,
+  fitGraphs:         bool = False,
 ) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
@@ -90,9 +91,15 @@ def overlayEfficiencyRatios2DSlices(
     efficiencyGraphs2D: Tuple[ROOT.TGraph2DErrors, ...] = tuple(plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies))
                                                                 for efficiencies in effInfosForLabel.values())
     # calculate 2D graph for efficiency ratios and slice it to 1D graphs
-    ratioGraphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(plotTools.calcRatioOfGraphs2D(efficiencyGraphs2D),
-      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y)
+    ratioGraphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
+      plotTools.calcRatioOfGraphs2D(efficiencyGraphs2D, ratioRange = (None, 1.5)),
+      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y
+    )
     for steppingVarBinRange, graph in ratioGraphs1D.items():
+      if fitGraphs:
+        _, _, xMax, _ = plotTools.getRangeOfGraph(graph)
+        epsilon = 1e-3 * graph.GetErrorX(0)  # used to ensure that right bin is chosen
+        graph.Fit("pol0", "SEX0EM", "", 0.8 + epsilon, max(0.8 + epsilon, xMax - epsilon))
       graphsToOverlay[steppingVarBinRange].append((ratioLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
@@ -108,8 +115,8 @@ def overlayEfficiencyRatios2DSlices(
       pdfFileNamePrefix = pdfFileNamePrefix,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
       graphTitle        = f"{graphTitle}, {steppingVarLabel}",
-      graphMinimum      = 0.0,
-      graphMaximum      = 1.3,
+      graphMinimum      = 0.5,
+      graphMaximum      = 1.5,
       skipBlack         = True if len(graphs) > 1 else False,
       drawLegend        = True if len(graphs) > 1 else False,
     )
