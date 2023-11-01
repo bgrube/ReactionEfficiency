@@ -10,6 +10,7 @@ import math
 import os
 import sys
 from typing import (
+  Any,
   Dict,
   List,
   Mapping,
@@ -25,6 +26,7 @@ import ROOT
 if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
+import plotBeautifiers
 import plotTools
 
 
@@ -283,6 +285,7 @@ def plotGraphs1D(
   graphMaximum:      Optional[float] = None,
   skipBlack:         bool = True,
   drawLegend:        Optional[bool] = None,
+  beautifiers:       Sequence[Any] = [],  #TODO improve type hint by making a base class for beautifiers
 ) -> None:
   """Generic function that plots the given graph(s)"""
   graphs: List[Tuple[str, ROOT.TGraph]] = []
@@ -299,6 +302,8 @@ def plotGraphs1D(
     multiGraph.Add(graph)
   if graphTitle is not None:
     multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
+  #TODO use getAxisInfoForBinningVar everywhere
+  #TODO make this function more generic by moving this into a beautifier
   assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
   multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
   multiGraph.GetYaxis().SetTitle(yAxisTitle)
@@ -312,10 +317,18 @@ def plotGraphs1D(
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{pdfFileBaseName}_{binningVar}"
                       + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
   multiGraph.Draw("APZ")
+  for beautifier in beautifiers:
+    beautifier.draw(multiGraph)
   if drawLegend == True or (drawLegend is None and legendLabels is not None):
-    legend = canv.BuildLegend()
+    legend = ROOT.TLegend(0.3, 0.21, 0.3, 0.21)
+    for graph in multiGraph.GetListOfGraphs():
+      label = graph.GetTitle()
+      if not label:
+        label = graph.GetName()
+      legend.AddEntry(graph, label, "LPF")
     legend.SetFillStyle(0)
     legend.SetBorderSize(0)
+    legend.Draw()
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
