@@ -26,8 +26,15 @@ import ROOT
 if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
-import plotBeautifiers
-import plotTools
+# import plotBeautifiers
+from plotTools import (
+  drawZeroLine,
+  getGraph1DFromValues,
+  getGraph2DFromValues,
+  printGitInfo,
+  setCbFriendlyStyle,
+  setupPlotStyle,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -239,7 +246,7 @@ def plotFitResult(
     # only remove filled frame
     paramBox.SetBorderSize(0)
     paramBox.SetFillStyle(0)
-  plotTools.drawZeroLine(dataFitPad)
+  drawZeroLine(dataFitPad)
   pdfFileName = ("Overall" if binInfo.name == "" else "") + f"{canv.GetName()}.pdf"
   if pdfDirName:
     canv.SaveAs(f"{pdfDirName}/{pdfFileName}")
@@ -298,7 +305,7 @@ def plotGraphs1D(
   multiGraph = ROOT.TMultiGraph()
   for styleIndex, (legendLabel, graph) in enumerate(graphs):
     graph.SetTitle(legendLabel)
-    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
+    setCbFriendlyStyle(graph, styleIndex, skipBlack = False if len(graphs) == 1 else skipBlack)
     multiGraph.Add(graph)
   if graphTitle is not None:
     multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
@@ -342,7 +349,7 @@ def plotParValue1D(
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, plotTools.getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
+  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
                                                    for dataSet in parInfos]
   plotGraphs1D(
     graphOrGraphs     = parValueGraphs,
@@ -372,7 +379,7 @@ def plotParValue1D(
   #   canv.Modified()
   #   canv.Update()
   #TODO pass to plotGraphs1D()
-  # plotTools.drawZeroLine(parValueMultiGraph)
+  # drawZeroLine(parValueMultiGraph)
 
 
 def getParValuesForGraph2D(
@@ -409,7 +416,7 @@ def plotParValue2D(
   xMin = yMin = zMin = +math.inf
   xMax = yMax = zMax = -math.inf
   for dataSet in parInfos:
-    graph = plotTools.getGraph2DFromValues(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
+    graph = getGraph2DFromValues(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
     if graph is not None:
       parValueGraphs[dataSet] = graph
       xMin = min(xMin, graph.GetXminE())
@@ -442,7 +449,7 @@ def plotParValue2D(
     graph.Draw("P ERR SAME")
     graph.SetName(dataSet)
     graph.SetTitle("")
-    plotTools.setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
+    setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
   legend = canv.BuildLegend()
   legend.SetFillStyle(0)
@@ -452,7 +459,7 @@ def plotParValue2D(
 
 
 if __name__ == "__main__":
-  plotTools.printGitInfo()
+  printGitInfo()
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
@@ -493,7 +500,7 @@ if __name__ == "__main__":
       binVarNames = binVarNamesInDataSet
 
   # plot fit parameters as function of binning variable(s)
-  plotTools.setupPlotStyle()
+  setupPlotStyle()
   if parNames and binVarNames:
     for parName in parNames:
       for binningVars in binVarNames:
