@@ -18,11 +18,26 @@ from uncertainties import UFloat, ufloat
 import ROOT
 
 import overlayEfficiencies
-import plotEfficiencies
-from plotEfficiencies import BinInfo, EffInfo
-import plotFitResults
-from plotFitResults import BINNING_VAR_PLOT_INFO
-import plotTools
+from plotBeautifiers import Lines
+from plotEfficiencies import (
+  BinInfo,
+  EffInfo,
+  getEffValuesForGraph1D,
+  getEffValuesForGraph2D,
+)
+from plotFitResults import BINNING_VAR_PLOT_INFO, plotGraphs1D
+from plotTools import (
+  calcRatioOfGraphs1D,
+  calcRatioOfGraphs2D,
+  getGraph1DFromValues,
+  getGraph2DFromValues,
+  getRangeOfGraph,
+  Graph2DVar,
+  makeDirPath,
+  printGitInfo,
+  setupPlotStyle,
+  slice2DGraph,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -44,9 +59,9 @@ def overlayEfficiencyRatios1D(
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
     graphs: List[ROOT.TGraphErrors] = []
     for effInfo in effInfosForLabel.values():
-      graphs.append(plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, effInfo)))
-    ratioGraphs.append((ratioLabel, plotTools.calcRatioOfGraphs1D(graphs)))
-  plotFitResults.plotGraphs1D(
+      graphs.append(getGraph1DFromValues(getEffValuesForGraph1D(binningVar, effInfo)))
+    ratioGraphs.append((ratioLabel, calcRatioOfGraphs1D(graphs)))
+  plotGraphs1D(
     graphOrGraphs     = ratioGraphs,
     binningVar        = binningVar,
     yAxisTitle        = "Efficiency Ratio",
@@ -88,16 +103,16 @@ def overlayEfficiencyRatios2DSlices(
   for ratioLabel, effInfosForLabel in effInfos.items():
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
     # get efficiencies as 2D graphs
-    efficiencyGraphs2D: Tuple[ROOT.TGraph2DErrors, ...] = tuple(plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies))
+    efficiencyGraphs2D: Tuple[ROOT.TGraph2DErrors, ...] = tuple(getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
                                                                 for efficiencies in effInfosForLabel.values())
     # calculate 2D graph for efficiency ratios and slice it to 1D graphs
-    ratioGraphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
-      plotTools.calcRatioOfGraphs2D(efficiencyGraphs2D, ratioRange = (None, 1.5)),
-      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y
+    ratioGraphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = slice2DGraph(
+      calcRatioOfGraphs2D(efficiencyGraphs2D, ratioRange = (None, 1.5)),
+      Graph2DVar.x if steppingVar == binningVars[0] else Graph2DVar.y
     )
     for steppingVarBinRange, graph in ratioGraphs1D.items():
       if fitGraphs:
-        _, _, xMax, _ = plotTools.getRangeOfGraph(graph)
+        _, _, xMax, _ = getRangeOfGraph(graph)
         epsilon = 1e-3 * graph.GetErrorX(0)  # used to ensure that right bin is chosen
         graph.Fit("pol0", "SEX0EM", "", 0.8 + epsilon, max(0.8 + epsilon, xMax - epsilon))
       graphsToOverlay[steppingVarBinRange].append((ratioLabel, graph))
@@ -106,7 +121,7 @@ def overlayEfficiencyRatios2DSlices(
     steppingVarLabel = f"{steppingVarBinRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
       f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
       f"< {steppingVarBinRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
-    plotFitResults.plotGraphs1D(
+    plotGraphs1D(
       graphs,
       binningVars[binningVarIndex],
       yAxisTitle        = "Efficiency Ratio",
@@ -119,13 +134,16 @@ def overlayEfficiencyRatios2DSlices(
       graphMaximum      = 1.5,
       skipBlack         = True if len(graphs) > 1 else False,
       drawLegend        = True if len(graphs) > 1 else False,
+      beautifiers       = (
+                            Lines(defaultColor = ROOT.kGray + 1, orientation = Lines.Orientation.horizontal, drawContentOverLines = True).set((0.95, 1.00, 1.05)),
+                          )
     )
 
 
 if __name__ == "__main__":
-  plotTools.printGitInfo()
+  printGitInfo()
   ROOT.gROOT.SetBatch(True)
-  plotTools.setupPlotStyle()
+  setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   ratiosToPlot: Dict[str, Tuple[str, str]] = {
@@ -147,7 +165,7 @@ if __name__ == "__main__":
     ),
   }
 
-  pdfDirName = plotTools.makeDirPath("./ratios")
+  pdfDirName = makeDirPath("./ratios")
   graphTitle = "bggen MC / Real Data"
   effInfos:    Dict[str, Dict[Tuple[str, str], List[EffInfo]]] = {}
   binVarNames: Dict[str, Optional[List[Tuple[str, ...]]]]      = {}
