@@ -59,6 +59,7 @@ def makeDirPath(dirPath: str) -> str:
   return dirPath
 
 
+#TODO move into separate module
 def getRootColor(hexColor: str) -> int:
   """Returns ROOT color index for given hex string in form #RRGGBB; if color does not exist yet in ROOT it is created"""
   ROOT.TColor.SetColorThreshold(0)  # ensure GetColor() returns exact color
@@ -100,6 +101,8 @@ MARKERS_OPEN: Tuple[Tuple[int, float], ...] = (
   (ROOT.kOpenDoubleDiamond,     1.10),
 )
 
+#TODO take TObject and check wether it is TAttLine etc.
+#TODO add cycle option; provide more styles by combining colors and markers
 def setCbFriendlyStyle(
   graphOrHist:   Any,
   styleIndex:    int,  # index that switches between styles
@@ -145,6 +148,7 @@ def getRangeOfGraph(graph: ROOT.TGraph) -> Tuple[float, float, float, float]:
   return (xMin.value, yMin.value, xMax.value, yMax.value)
 
 
+#TODO replace by Lines beautifier
 def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
   """Draws zero line when necessary"""
   objType = obj.IsA().GetName()
