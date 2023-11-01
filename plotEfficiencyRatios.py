@@ -44,7 +44,8 @@ from plotTools import (
 print = functools.partial(print, flush = True)
 
 
-HLINES = Lines(defaultColor = ROOT.kGray + 1, orientation = Lines.Orientation.horizontal, drawContentOverLines = True)
+# horizontal lines in graphs
+HLINES = Lines(defaultColor = ROOT.kGray + 1, orientation = Lines.Orientation.horizontal, drawContentOverLines = True).set((0.95, 1.00, 1.05))
 
 
 def overlayEfficiencyRatios1D(
@@ -77,7 +78,7 @@ def overlayEfficiencyRatios1D(
     graphMaximum      = 1.5,
     skipBlack         = True if len(ratioGraphs) > 1 else False,
     drawLegend        = True if len(ratioGraphs) > 1 else False,
-    beautifiers       = (HLINES.set((0.95, 1.00, 1.05)),),
+    beautifiers       = (HLINES,),
   )
 
 
@@ -131,7 +132,7 @@ def overlayEfficiencyRatios2DSlices(
       graphMaximum      = 1.5,
       skipBlack         = True if len(graphs) > 1 else False,
       drawLegend        = True if len(graphs) > 1 else False,
-      beautifiers       = (HLINES.set((0.95, 1.00, 1.05)),),
+      beautifiers       = (HLINES,),
     )
 
 
