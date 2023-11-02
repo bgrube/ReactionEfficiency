@@ -289,6 +289,7 @@ def overlayResolutions(
   pdfDirName:            str = "./",
   diffVariableAxisTitle: Optional[str] = None,
   additionalFilter:      Optional[str] = None,
+  resPlotRange:          Tuple[Optional[float], Optional[float]] = (None, None),
 ) -> None:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
   resBinningVariableName, resBinningVariableLabel, resBinningVariableUnit = plotFitResults.getAxisInfoForBinningVar(resBinningVariable)
@@ -315,7 +316,8 @@ def overlayResolutions(
     pdfFileBaseName   = f"resolution_{resVariableName}",
     pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    graphMinimum      = None,
+    graphMinimum      = resPlotRange[0],
+    graphMaximum      = resPlotRange[1],
     skipBlack         = True if len(resGraphs) > 1 else False,
   )
 
@@ -812,14 +814,15 @@ if __name__ == "__main__":
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   # overlay resolutions of kinematic variables from MC truth
-  diffVariableInfos: Tuple[Tuple[str, str, Tuple[int, float, float], str], ...] = (
-    ("MissingProtonP",     "TruthDeltaP",     (400,   -4,   +4), "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
-    ("MissingProtonTheta", "TruthDeltaTheta", (200,  -60,  +60), "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
-    ("MissingProtonPhi",   "TruthDeltaPhi",   (360, -180, +180), "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
+  diffVariableInfos: Tuple[Tuple[str, str, Tuple[int, float, float], Tuple[float, float], str], ...] = (
+    ("MissingProtonP",     "TruthDeltaP",     (400,   -4,   +4), (0,  0.7), "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
+    ("MissingProtonTheta", "TruthDeltaTheta", (200,  -60,  +60), (0, 20  ), "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
+    ("MissingProtonPhi",   "TruthDeltaPhi",   (360, -180, +180), (0, 70  ), "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
   )
   for diffVariableInfo in diffVariableInfos:
     args                  = diffVariableInfo[:3]
-    diffVariableAxisTitle = diffVariableInfo[3]
+    resPlotRange          = diffVariableInfo[3]
+    diffVariableAxisTitle = diffVariableInfo[4]
     dataToOverlay: List[Tuple[str, ROOT.RDataFrame]] = []
     for dataPeriod, data in inputData.items():
       dataToOverlay.append((dataPeriod, data["MCbggen"]))
@@ -828,20 +831,21 @@ if __name__ == "__main__":
       "additionalFilter"      : '(NmbUnusedShowers == 0) && (NmbTruthTracks == 1) && (ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
       "diffVariableAxisTitle" : diffVariableAxisTitle,
     }
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), **kwargs)
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), **kwargs)
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), **kwargs)
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), **kwargs)
+    overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
+    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
+    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), resPlotRange = resPlotRange, **kwargs)
+    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), resPlotRange = resPlotRange, **kwargs)
 
   # overlay resolutions of kinematic variables from unused tracks
-  diffVariableInfos: Tuple[Tuple[str, str, Tuple[int, float, float], str], ...] = (
-    ("MissingProtonP",     "UnusedDeltaP",     (400,   -4,   +4), "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
-    ("MissingProtonTheta", "UnusedDeltaTheta", (200,  -60,  +60), "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
-    ("MissingProtonPhi",   "UnusedDeltaPhi",   (360, -180, +180), "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
+  diffVariableInfos: Tuple[Tuple[str, str, Tuple[int, float, float], Tuple[float, float], str], ...] = (
+    ("MissingProtonP",     "UnusedDeltaP",     (400,   -4,   +4), (0,   1), "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
+    ("MissingProtonTheta", "UnusedDeltaTheta", (200,  -60,  +60), (0,  30), "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
+    ("MissingProtonPhi",   "UnusedDeltaPhi",   (360, -180, +180), (0, 110), "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
   )
   for diffVariableInfo in diffVariableInfos:
     args                  = diffVariableInfo[:3]
-    diffVariableAxisTitle = diffVariableInfo[3]
+    resPlotRange          = diffVariableInfo[3]
+    diffVariableAxisTitle = diffVariableInfo[4]
     for dataType in ("MCbggen", "RD"):
       dataToOverlay: List[Tuple[str, ROOT.RDataFrame]] = []
       for dataPeriod, data in inputData.items():
@@ -852,10 +856,10 @@ if __name__ == "__main__":
         "diffVariableAxisTitle" : diffVariableAxisTitle,
         "pdfFileNameSuffix"     : "_unused",
       }
-      overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), **kwargs)
-      overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), **kwargs)
-      overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), **kwargs)
-      overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), **kwargs)
+      overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
+      overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
+      overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), resPlotRange = resPlotRange, **kwargs)
+      overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), resPlotRange = resPlotRange, **kwargs)
 
   # overlay all periods for bggen MC and real data
   dataSamplesToOverlay = {}
