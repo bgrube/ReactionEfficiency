@@ -94,3 +94,6 @@ class Lines:
             drawOptions = drawOptions.replace("A", "")  # !Note! graphs do not have SAME option
           obj.Draw(drawOptions)
         pad.RedrawAxis()
+
+
+#TODO define zero-line beautifier

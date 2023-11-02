@@ -25,8 +25,8 @@ import plotFitResults
 from plotFitResults import (
   BinInfo,
   BinningInfo,
-  ParInfo,
   BINNING_VAR_PLOT_INFO,
+  ParInfo,
 )
 import plotTools
 
