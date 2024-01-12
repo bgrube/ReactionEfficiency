@@ -18,13 +18,13 @@ print = functools.partial(print, flush = True)
 
 if __name__ == "__main__":
 
-  # fitDirRoot = "./fits"
-  fitDirRoot = "./fits.pionComparison"
+  # fitRootDir = "./fits"
+  fitRootDir = "./fits.pionComparison"
   dataPeriods = (
     "2017_01-ver03",
     "2018_01-ver02",
     "2018_08-ver02",
-    "2019_11-ver01",
+    # "2019_11-ver01",
   )
 
   dataSamples: List[Dict[str, str]] = []
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
   for fitsForDataSample in fits:
     for fit in fitsForDataSample:
-      fitDirectory = f"{fitDirRoot}/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
+      fitDirectory = f"{fitRootDir}/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
       # prepare directories
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
