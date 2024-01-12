@@ -142,26 +142,30 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
+  # fitRootDir = "./fits"
+  fitRootDir = "./fits.pionComparison"
+  # pdfDirName = makeDirPath("./ratios")
+  pdfDirName = makeDirPath("./ratios.pionComparison")
+
   ratiosToPlot: Dict[str, Tuple[str, str]] = {
     "2017_01-ver03" : (
-      "./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed",
-      "./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",
+      f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed",
+      f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",
     ),
     "2018_01-ver02" : (
-      "./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed",
-      "./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",
+      f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed",
+      f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",
     ),
     "2018_08-ver02" : (
-      "./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed",
-      "./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",
+      f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed",
+      f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",
     ),
     "2019_11-ver01" : (
-      "./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed",
-      "./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",
+      f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed",
+      f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",
     ),
   }
 
-  pdfDirName = makeDirPath("./ratios")
   graphTitle = "bggen MC / Real Data"
   effInfos:    Dict[str, Dict[Tuple[str, str], List[EffInfo]]] = {}
   binVarNames: Dict[str, Optional[List[Tuple[str, ...]]]]      = {}
