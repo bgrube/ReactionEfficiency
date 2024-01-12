@@ -292,6 +292,7 @@ def plotGraphs1D(
   graphMaximum:      Optional[float] = None,
   skipBlack:         bool = True,
   drawLegend:        Optional[bool] = None,
+  forceXRange:       Optional[Tuple[float, float]] = None,
   beautifiers:       Sequence[Any] = [],  #TODO improve type hint by making a base class for beautifiers
 ) -> None:
   """Generic function that plots the given graph(s)"""
@@ -324,6 +325,9 @@ def plotGraphs1D(
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{pdfFileBaseName}_{binningVar}"
                       + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
   multiGraph.Draw("APZ")
+  if forceXRange is not None:
+    canv.Modified()
+    multiGraph.GetXaxis().SetLimits(forceXRange[0], forceXRange[1])
   for beautifier in beautifiers:
     beautifier.draw(multiGraph)
   if drawLegend == True or (drawLegend is None and legendLabels is not None):
