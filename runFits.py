@@ -18,6 +18,8 @@ print = functools.partial(print, flush = True)
 
 if __name__ == "__main__":
 
+  # fitDirRoot = "./fits"
+  fitDirRoot = "./fits.pionComparison"
   dataPeriods = (
     "2017_01-ver03",
     "2018_01-ver02",
@@ -149,7 +151,7 @@ if __name__ == "__main__":
 
   for fitsForDataSample in fits:
     for fit in fitsForDataSample:
-      fitDirectory = f"./fits/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
+      fitDirectory = f"{fitDirRoot}/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
       # prepare directories
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
