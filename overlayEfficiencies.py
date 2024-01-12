@@ -147,43 +147,47 @@ if __name__ == "__main__":
   parser.add_argument("--pdfFileNameSuffix", type = str, default = "", help = "PDF file-name suffix; (default: '%(default)s')")
   args = parser.parse_args()
 
+  # fitRootDir = "./fits"
+  # pdfDirName = plotTools.makeDirPath("./overlays")
+  fitRootDir = "./fits.pionComparison"
+  pdfDirName = plotTools.makeDirPath("./overlays.pionComparison")
+  skipBlack  = True
+  # skipBlack  = False
+
   resultsToOverlay: Dict[str, Tuple[Tuple[str, str], ...]] = {  # dict key is PDF file-name suffix
     "bggen" : (
-      ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
-      ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
-      ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
-      ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
+      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
+      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
+      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
+      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
     ),
     "data" : (
-      ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
-      ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
-      ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
-      ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
+      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
+      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
+      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
+      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
     ),
     "2017_01-ver03" : (
-      ("./fits/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
-      ("./fits/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
     ),
     "2018_01-ver02" : (
-      ("./fits/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
-      ("./fits/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
     ),
     "2018_08-ver02" : (
-      ("./fits/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
-      ("./fits/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
     ),
     "2019_11-ver01" : (
-      ("./fits/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
-      ("./fits/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
     ),
   }
   if args.fitResult:
     # read info from command-line arguments instead
     resultsToOverlay = {args.pdfFileNameSuffix : tuple((fitResult[0], fitResult[1]) for fitResult in args.fitResult)}
 
-  skipBlack = True
-  # skipBlack = False
-  pdfDirName = plotTools.makeDirPath("./overlays")
   for pdfFileNameSuffix, fitResults in resultsToOverlay.items():
     fitResultDirNames = tuple(fitResult[0] for fitResult in fitResults)
     fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
@@ -195,4 +199,4 @@ if __name__ == "__main__":
           overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
         if len(binningVars) == 2:
           overlayEfficiencies2DSlices(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
-                                pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+            pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)

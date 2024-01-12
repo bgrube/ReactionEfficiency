@@ -143,8 +143,8 @@ if __name__ == "__main__":
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # fitRootDir = "./fits"
-  fitRootDir = "./fits.pionComparison"
   # pdfDirName = makeDirPath("./ratios")
+  fitRootDir = "./fits.pionComparison"
   pdfDirName = makeDirPath("./ratios.pionComparison")
 
   ratiosToPlot: Dict[str, Tuple[str, str]] = {
