@@ -24,7 +24,7 @@ if __name__ == "__main__":
     "2017_01-ver03",
     "2018_01-ver02",
     "2018_08-ver02",
-    # "2019_11-ver01",
+    "2019_11-ver01",
   )
 
   dataSamples: List[Dict[str, str]] = []

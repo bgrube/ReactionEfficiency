@@ -180,7 +180,7 @@ def plotEfficiencies2D(
   pdfFileNameSuffix: str   = "",
   markerSize:        float = 0.75,
 ) -> None:
-  """Plots efficiency as a function of given binning variables for 2-dimensional binning"""
+  """Plots 3D view of efficiency as a function of given binning variables for 2-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
   efficiencyGraph = plotTools.getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
   if efficiencyGraph is None:  # nothing to plot
@@ -205,6 +205,50 @@ def plotEfficiencies2D(
     axis.CenterTitle(True)
     axis.SetTitleOffset(titleOffsets[index])
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def plotEfficiencies2DColzText(
+  efficiencies:      Sequence[EffInfo],
+  binningVarsIn:     Sequence[str],  # names of binning variables to plot
+  pdfDirName:        str,  # directory name the PDF file will be written to
+  pdfFileNamePrefix: str   = "Proton_4pi_",
+  pdfFileNameSuffix: str   = "",
+  markerSize:        float = 0.75,
+) -> None:
+  """Plots efficiency as a function of given binning variables for 2-dimensional binning using 'COLZ TEXT' option; works only for equidistant binning"""
+  binningVars = tuple(reversed(binningVarsIn))  # swap p and theta axes
+  print(f"Plotting efficiency as a function of binning variables '{binningVars}' assuming equidistant binning")
+  # filter out relevant efficiencies
+  effInfos = tuple(effInfo for effInfo in efficiencies
+                   if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2))
+  # TGraph2D always performs interpolation when drawn with COLZ -> construct TH2 with matching binning
+  # determine equidistant binning and create histogram
+  xWidths = set(effInfo.binInfo.widths[binningVars[0]] for effInfo in effInfos)
+  yWidths = set(effInfo.binInfo.widths[binningVars[1]] for effInfo in effInfos)
+  assert (len(xWidths) == 1) and (len(yWidths) == 1), f"Binning is not equidistant: x bin widths = {xWidths}; y bin widths = {yWidths}"
+  xWidth = tuple(xWidths)[0]
+  yWidth = tuple(yWidths)[0]
+  xCenters = sorted(set(effInfo.binInfo.centers[binningVars[0]] for effInfo in effInfos))
+  yCenters = sorted(set(effInfo.binInfo.centers[binningVars[1]] for effInfo in effInfos))
+  xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
+  yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
+  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
+  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  efficiencyHist = ROOT.TH2D(
+    f"h{canv.GetName()}", f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']});"
+                          f"{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
+    len(xCenters), *xRange, len(yCenters), *yRange)
+  # fill histogram
+  for effInfo in effInfos:
+    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.centers[binningVars[0]], effInfo.binInfo.centers[binningVars[1]]), effInfo.value.nominal_value)
+  # draw histogram
+  efficiencyHist.SetMinimum(0)
+  efficiencyHist.SetMaximum(1)
+  ROOT.gStyle.SetPaintTextFormat("1.3f")
+  efficiencyHist.Draw("COLZ TEXT")
+  efficiencyHist.SetStats(False)
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
 
 
 if __name__ == "__main__":
@@ -248,3 +292,4 @@ if __name__ == "__main__":
             plotEfficiencies1D(effInfos, binningVars[0],  args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
           elif len(binningVars) == 2:
             plotEfficiencies2D(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies2DColzText(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
