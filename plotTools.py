@@ -12,6 +12,7 @@ from typing import (
   Sequence,
   Set,
   Tuple,
+  Union,
 )
 
 from uncertainties import UFloat, ufloat
@@ -104,7 +105,7 @@ MARKERS_OPEN: Tuple[Tuple[int, float], ...] = (
 #TODO take TObject and check wether it is TAttLine etc.
 #TODO add cycle option; provide more styles by combining colors and markers
 def setCbFriendlyStyle(
-  graphOrHist:   Any,
+  graphOrHist:   Union[ROOT.TGraph, ROOT.TH1],
   styleIndex:    int,  # index that switches between styles
   skipBlack:     bool  = True,  # if set black color is not used
   setMarker:     bool  = True,
@@ -149,7 +150,11 @@ def getRangeOfGraph(graph: ROOT.TGraph) -> Tuple[float, float, float, float]:
 
 
 #TODO replace by Lines beautifier
-def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
+def drawZeroLine(
+  obj: ROOT.TObject,
+  style = ROOT.kDashed,
+  color = ROOT.kBlack
+) -> None:
   """Draws zero line when necessary"""
   objType = obj.IsA().GetName()
   if (objType == "TCanvas") or (objType == "TPad"):
@@ -175,6 +180,33 @@ def drawZeroLine(obj, style = ROOT.kDashed, color = ROOT.kBlack) -> None:
       obj.SetMinimum(0)
   else:
     raise TypeError(f"drawZeroLine() not (yet) implemented for object of type '{objType}'")
+
+
+def redrawFrame(pad: ROOT.TVirtualPad) -> None:
+  """redraws histogram frame to fix overprinting by histogram content"""
+  # unfortunately, filled TH1 or TH2 drawn with COLZ are drawn over
+  # the histogram frame so that they mask half of the line width of
+  # the frame
+  # even worse, this is not considered a bug: https://root-forum.cern.ch/t/th2-colz-obscures-the-top-frame/16699
+  # the "official" workaround is to redraw the frame boc by hand; sigh!
+  pad.RedrawAxis()
+  pad.Update()
+  frame = ROOT.TBox()
+  frame.SetLineColor(ROOT.gStyle.GetFrameLineColor())
+  frame.SetLineStyle(ROOT.gStyle.GetFrameLineStyle())
+  frame.SetLineWidth(ROOT.gStyle.GetFrameLineWidth())
+  frame.SetFillStyle(0)
+  xMin = pad.GetUxmin()
+  xMax = pad.GetUxmax()
+  yMin = pad.GetUymin()
+  yMax = pad.GetUymax()
+  if (pad.GetLogx() == 1):
+    xMin = pow(10, xMin)
+    xMax = pow(10, xMax)
+  if (pad.GetLogy() == 1):
+    yMin = pow(10, yMin)
+    yMax = pow(10, yMax)
+  frame.DrawBox(xMin, yMin, xMax, yMax)
 
 
 def callMemberFunctionsWithArgs(
