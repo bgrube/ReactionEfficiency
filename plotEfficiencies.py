@@ -236,18 +236,20 @@ def plotEfficiencies2DColzText(
   assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
   assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
   efficiencyHist = ROOT.TH2D(
-    f"h{canv.GetName()}", f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']});"
-                          f"{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
+    f"h{canv.GetName()}", f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
+                          f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
     len(xCenters), *xRange, len(yCenters), *yRange)
   # fill histogram
   for effInfo in effInfos:
-    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.centers[binningVars[0]], effInfo.binInfo.centers[binningVars[1]]), effInfo.value.nominal_value)
+    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.centers[binningVars[0]], effInfo.binInfo.centers[binningVars[1]]),
+                                 effInfo.value.nominal_value)
   # draw histogram
-  efficiencyHist.SetMinimum(0)
+  efficiencyHist.SetMinimum(1e-9) # if set to exactly 0, zero entries are printed
   efficiencyHist.SetMaximum(1)
   ROOT.gStyle.SetPaintTextFormat("1.3f")
   efficiencyHist.Draw("COLZ TEXT")
   efficiencyHist.SetStats(False)
+  plotTools.redrawFrame(canv)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
 
 
