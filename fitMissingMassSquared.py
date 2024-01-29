@@ -530,18 +530,23 @@ if __name__ == "__main__":
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
   # additionalCut     = ""
-  additionalCut     = "(NmbUnusedShowers == 0)"
+  # additionalCut     = "(NmbUnusedShowers == 0)"
+  additionalCut     = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"
   kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
-    # 1D binnings
-    [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
-    [("MissingProtonP",     100,    0,      5)],    # [GeV/c]
-    [("MissingProtonTheta",  72,    0,     90)],    # [deg]
-    [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
+    # # 1D binnings
+    # [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
+    # [("MissingProtonP",     100,    0,      5)],    # [GeV/c]
+    # [("MissingProtonTheta",  72,    0,     90)],    # [deg]
+    # [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
     # 2D binnings
+    # [
+    #   ("MissingProtonTheta", 9, 0, 90),  # [deg]
+    #   ("MissingProtonP",    25, 0,  5),  # [GeV/c]
+    # ],
     [
-      ("MissingProtonTheta", 9, 0, 90),  # [deg]
-      ("MissingProtonP",    25, 0,  5),  # [GeV/c]
+      ("MissingProtonTheta", 10, 0, 20),  # [deg]
+      ("MissingProtonP",      9, 0,  9),  # [GeV/c]
     ],
   ]
 
