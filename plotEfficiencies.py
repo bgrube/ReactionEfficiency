@@ -172,7 +172,7 @@ def getEffValuesForGraph2D(
   return graphValues
 
 
-def plotEfficiencies2D(
+def plotEfficiencies2DPerspective(
   efficiencies:      Sequence[EffInfo],
   binningVars:       Sequence[str],  # names of binning variables to plot
   pdfDirName:        str,  # directory name the PDF file will be written to
@@ -213,7 +213,6 @@ def plotEfficiencies2DColzText(
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str   = "Proton_4pi_",
   pdfFileNameSuffix: str   = "",
-  markerSize:        float = 0.75,
 ) -> None:
   """Plots efficiency as a function of given binning variables for 2-dimensional binning using 'COLZ TEXT' option; works only for equidistant binning"""
   binningVars = tuple(reversed(binningVarsIn))  # swap p and theta axes
@@ -293,5 +292,5 @@ if __name__ == "__main__":
           if len(binningVars) == 1:
             plotEfficiencies1D(effInfos, binningVars[0],  args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
           elif len(binningVars) == 2:
-            plotEfficiencies2D(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
-            plotEfficiencies2DColzText(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies2DPerspective(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies2DColzText   (effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
