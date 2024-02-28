@@ -14,15 +14,16 @@
 	// mutool draw -A 8 -r <dpi, e.g. 600> -c rgba -o <out.png> <in.pdf>
 	TColor* newColor = new TColor((Float_t)1, 1, 1, 1);
 	newColor->SetName("white_background");
-	const int fillColor = newColor->GetNumber();  // cannot use kWhite here
+	int fillColor = newColor->GetNumber();  // cannot use kWhite here
 	gStyle->SetFillColor      (fillColor);
 	gStyle->SetFrameFillColor (fillColor);
+	gStyle->SetTitleColor     (fillColor);
 	gStyle->SetTitleFillColor (fillColor);
 	gStyle->SetStatColor      (fillColor);
 	gStyle->SetLegendFillColor(fillColor);
 	newColor = new TColor((Float_t)1, 1, 1, 0);  // cannot use TColor::GetColorTransparent as it checks for existing colors
 	newColor->SetName("transparent_background");
-	const int fullyTransparentColor = newColor->GetNumber();
+	int fullyTransparentColor = newColor->GetNumber();
 	gStyle->SetPadColor       (fullyTransparentColor);
 	gStyle->SetCanvasColor    (fullyTransparentColor);
 	gStyle->SetLegendFillColor(fullyTransparentColor);
@@ -38,6 +39,6 @@
 	gStyle->SetHistMinimumZero(true);
 	TGaxis::SetMaxDigits(3);  // restrict the number of digits in axis tick labels
 
-	// gStyle->SetPaperSize(20, 26);   // set A4 paper size
-	gStyle->SetPaperSize(20, 24);  // set letter paper size
+	// gStyle->SetPaperSize(kA4);   // set A4 paper size
+	gStyle->SetPaperSize(TStyle::kUSLetter);  // set letter paper size
 }
