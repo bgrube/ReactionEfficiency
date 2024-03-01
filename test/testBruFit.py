@@ -5,18 +5,21 @@ import functools
 
 import ROOT
 
+import plotTools
+
 
 # always flush print() to reduce garbling of log files due to buffering
 print = functools.partial(print, flush = True)
 
 
 if __name__ == "__main__":
+
   dataFileName         = "../data/RD/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.RD_2017_01-ver03_goodToF.root.brufit"  # name of file that contains data to be fitted
   templateDataFileName = "../data/MCbggen/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03_goodToF.root.brufit"  # name of file from which signal histogram is filled
-  cut                  = "((NmbUnusedShowers == 0) && (MissingProtonP > 0.5))"  # common cut applied to both data samples
+  cut                  = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"  # common cut applied to both data samples
 
-  sigCut               = f"(({cut}) && (IsSignal == 1))"  # cut that selects signal events
-  bkgCut               = f"(({cut}) && (IsSignal == 0))"  # cut that selects background events
+  sigCut               = f"(({cut})) && ((IsSignal == 1))"  # cut that selects signal events
+  bkgCut               = f"(({cut})) && ((IsSignal == 0))"  # cut that selects background events
   treeName             = "pippippimpimpmiss"  # name of tree that holds the data to fit
   fitVariable          = "MissingMassSquared_Measured"  # name of branch that holds data to fit and template-data for signal and background, respectively
   fitRange             = "-0.25, 3.75"  # [(GeV/c)^2]
@@ -27,7 +30,8 @@ if __name__ == "__main__":
   weightLabel          = "RfSideband"
 
   ROOT.gROOT.SetBatch(True)
-  ROOT.gROOT.ProcessLine(".x ${BRUFIT}/macros/LoadBru.C")
+  plotTools.setupPlotStyle("../rootlogon.C")
+  ROOT.gROOT.ProcessLine(".x $BRUFIT/macros/LoadBru.C")
 
   # create the fit manager and set the output directory for fit results, plots, and weights
   fitDirName = "./out"
