@@ -12,15 +12,10 @@ screen
 
 # project dirs
 data/**
-fits/**
+fits*/**
 
 #VSCode
 .vscode
-
-# Python
-env
-__pycache__
-.ipynb_checkpoints
 
 # Prerequisites
 *.d
@@ -55,3 +50,19 @@ __pycache__
 *.exe
 *.out
 *.app
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+.ipynb_checkpoints
