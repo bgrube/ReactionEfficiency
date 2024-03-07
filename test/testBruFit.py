@@ -15,6 +15,7 @@ print = functools.partial(print, flush = True)
 
 @dataclass
 class FitSetup:
+  """Holds setup information for a fit"""
   dataFileName:     str
   templateFileName: str
   commonCut:        str
@@ -24,10 +25,57 @@ class FitSetup:
   fitDirName:       str
 
 
+def createPdf(
+  fitManager:       "ROOT.FitManager",
+  fitSetup:         FitSetup,
+  treeName:         str,
+  fitVariable:      str,
+  weightLabel:      str,
+  weightBranchName: str,
+  comboIdName:      str,
+  pdfName:          str,
+  cut:              str,
+) -> None:
+  """Creates a template histogram PDF from weighted Monte Carlo data"""
+  # create RF-sideband weights for background histogram PDF
+  weightObjectName = f"{weightLabel}Weights{pdfName}"
+  weightFileName   = f"{fitSetup.fitDirName}/{weightObjectName}.root"
+  print(f">>> Reading weights '{weightBranchName}' from tree '{treeName}' in file '{fitSetup.templateFileName}'"
+  f" and  writing them to key '{weightObjectName}' in file '{weightFileName}', and assigning label '{weightObjectName}' while applying cut(s) '{cut}'")
+  currentDir = ROOT.gDirectory
+  inputFile = ROOT.TFile.Open(fitSetup.templateFileName, "READ")
+  inputTree = inputFile.Get(treeName)
+  currentDir.cd()
+  weights = ROOT.Weights(weightObjectName)  # set name of the Weights object
+  weights.SetFile(weightFileName)
+  weights.SetSpecies(weightObjectName)
+  weights.SetIDName(comboIdName)
+  weights.WeightBySelection(inputTree, cut, weightBranchName)
+  weights.SortWeights()
+  weights.Save()
+  # define histogram PDF with fudge parameters
+  fitManager.SetUp().FactoryPDF(
+    f"RooHSEventsHistPDF::{pdfName}({fitVariable}, smear_{pdfName}[0], shift_{pdfName}[0], scale_{pdfName}[1])"
+    # f"RooHSEventsHistPDF::{pdfName}({fitVariable}, smear_{pdfName}[0, 0, 0], shift_{pdfName}[0, 0, 0], scale_{pdfName}[1, 1, 1])"
+    # f"RooHSEventsHistPDF::{pdfName}({fitVariable}, smear_{pdfName}[0, 0, 0.5], shift_{pdfName}[0, -0.25, 0.25], scale_{pdfName}[1, 0.5, 1.5])"
+    + f"WEIGHTS@{weightObjectName},{weightFileName},{weightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
+  )
+  # constrain PDF fudge parameters, if left free
+  # pdf = fitManager.SetUp().WS().pdf(pdfName)
+  # fitManager.SetUp().AddGausConstraint(pdf.AlphaConstraint())  # constrain smear
+  # fitManager.SetUp().AddGausConstraint(pdf.OffConstraint())    # constrain shift
+  # fitManager.SetUp().AddGausConstraint(pdf.ScaleConstraint())  # constrain scale
+  # load data for template histograms; ensure that calling code has already defined the kinematical binnings
+  print(f">>> Loading data for histogram PDF '{pdfName}' from tree '{treeName}' in file '{fitSetup.templateFileName}'"
+  + f" and applying weights from '{weightObjectName}' in file '{weightFileName}'")
+  fitManager.LoadSimulated(treeName, fitSetup.templateFileName, pdfName)
+  fitManager.SetUp().LoadSpeciesPDF(pdfName, 1.0)
+
 
 if __name__ == "__main__":
 
   dataFileName = "../data/MCbggen/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03_goodToF.root.brufit"
+  # define fit setups
   fitSetups: list[FitSetup] = [
     # fit real data with bggen templates
     FitSetup(
@@ -104,76 +152,13 @@ if __name__ == "__main__":
     # the data tree must have a double branch of the given name containing a unique combo-ID number
     fitManager.SetUp().SetIDBranchName(comboIdName)
 
+    # create fit function
     if fitSetup.useSigPdf:
-      # 1) signal histogram PDF
-      # create RF-sideband weights for signal histogram PDF
-      sigWeightObjectName = f"{weightLabel}Weights{sigPdfName}"
-      sigWeightFileName   = f"{fitSetup.fitDirName}/{sigWeightObjectName}.root"
-      print(f">>> Reading weights '{weightBranchName}' from tree '{treeName}' in file '{fitSetup.templateFileName}'"
-            f" and  writing them to key '{sigWeightObjectName}' in file '{sigWeightFileName}', and assigning label '{sigWeightObjectName}' while applying cut(s) '{sigCut}'")
-      currentDir = ROOT.gDirectory
-      inputFile = ROOT.TFile.Open(fitSetup.templateFileName, "READ")
-      inputTree = inputFile.Get(treeName)
-      currentDir.cd()
-      weights = ROOT.Weights(sigWeightObjectName)  # set name of the Weights object
-      weights.SetFile(sigWeightFileName)
-      weights.SetSpecies(sigWeightObjectName)
-      weights.SetIDName(comboIdName)
-      weights.WeightBySelection(inputTree, sigCut, weightBranchName)
-      weights.SortWeights()
-      weights.Save()
-      # define signal histogram PDF with fudge parameters
-      fitManager.SetUp().FactoryPDF(
-        f"RooHSEventsHistPDF::{sigPdfName}({fitVariable}, smear_{sigPdfName}[0], shift_{sigPdfName}[0], scale_{sigPdfName}[1])"
-        # f"RooHSEventsHistPDF::{sigPdfName}({fitVariable}, smear_{sigPdfName}[0, 0, 0], shift_{sigPdfName}[0, 0, 0], scale_{sigPdfName}[1, 1, 1])"
-        # f"RooHSEventsHistPDF::{sigPdfName}({fitVariable}, smear_{sigPdfName}[0, 0, 0.5], shift_{sigPdfName}[0, -0.25, 0.25], scale_{sigPdfName}[1, 0.5, 1.5])"
-        + f"WEIGHTS@{sigWeightObjectName},{sigWeightFileName},{sigWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
-      )
-      # constrain signal PDF fudge parameters, if left free
-      # sigPdf = fitManager.SetUp().WS().pdf(sigPdfName)
-      # fitManager.SetUp().AddGausConstraint(sigPdf.AlphaConstraint())  # constrain smear
-      # fitManager.SetUp().AddGausConstraint(sigPdf.OffConstraint())    # constrain shift
-      # fitManager.SetUp().AddGausConstraint(sigPdf.ScaleConstraint())  # constrain scale
-      # load data for template histograms; ensure that calling code has already defined the kinematical binnings
-      print(f">>> Loading data for histogram PDF '{sigPdfName}' from tree '{treeName}' in file '{fitSetup.templateFileName}'"
-      + f" and applying weights from '{sigWeightObjectName}' in file '{sigWeightFileName}'")
-      fitManager.LoadSimulated(treeName, fitSetup.templateFileName, sigPdfName)
-      fitManager.SetUp().LoadSpeciesPDF(sigPdfName, 1.0)
-
+      # signal histogram PDF
+      createPdf(fitManager, fitSetup, treeName, fitVariable, weightLabel, weightBranchName, comboIdName, sigPdfName, sigCut)
     if fitSetup.useBkgPdf:
-      # 2) background PDF
-      # create RF-sideband weights for background histogram PDF
-      bkgWeightObjectName = f"{weightLabel}Weights{bkgPdfName}"
-      bkgWeightFileName   = f"{fitSetup.fitDirName}/{bkgWeightObjectName}.root"
-      print(f">>> Reading weights '{weightBranchName}' from tree '{treeName}' in file '{fitSetup.templateFileName}'"
-            f" and  writing them to key '{bkgWeightObjectName}' in file '{bkgWeightFileName}', and assigning label '{bkgWeightObjectName}' while applying cut(s) '{bkgCut}'")
-      currentDir = ROOT.gDirectory
-      inputFile = ROOT.TFile.Open(fitSetup.templateFileName, "READ")
-      inputTree = inputFile.Get(treeName)
-      currentDir.cd()
-      weights = ROOT.Weights(bkgWeightObjectName)  # set name of the Weights object
-      weights.SetFile(bkgWeightFileName)
-      weights.SetSpecies(bkgWeightObjectName)
-      weights.SetIDName(comboIdName)
-      weights.WeightBySelection(inputTree, bkgCut, weightBranchName)
-      weights.SortWeights()
-      weights.Save()
-      # define background histogram PDF with fudge parameters
-      fitManager.SetUp().FactoryPDF(
-        f"RooHSEventsHistPDF::{bkgPdfName}({fitVariable}, smear_{bkgPdfName}[0], shift_{bkgPdfName}[0], scale_{bkgPdfName}[1])"
-        # f"RooHSEventsHistPDF::{bkgPdfName}({fitVariable}, smear_{bkgPdfName}[0, 0, 0.5], shift_{bkgPdfName}[0, -0.25, 0.25], scale_{bkgPdfName}[1, 0.5, 1.5])"
-        + f"WEIGHTS@{bkgWeightObjectName},{bkgWeightFileName},{bkgWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
-      )
-      # constrain background PDF fudge parameters, if left free
-      # bkgPdf = fitManager.SetUp().WS().pdf(bkgPdfName)
-      # fitManager.SetUp().AddGausConstraint(bkgPdf.AlphaConstraint())  # constrain smear
-      # fitManager.SetUp().AddGausConstraint(bkgPdf.OffConstraint())    # constrain shift
-      # fitManager.SetUp().AddGausConstraint(bkgPdf.ScaleConstraint())  # constrain scale
-      # load data for template histograms; ensure that calling code has already defined the kinematical binnings
-      print(f">>> Loading data for histogram PDF '{bkgPdfName}' from tree '{treeName}' in file '{fitSetup.templateFileName}'"
-      + f" and applying weights from '{bkgWeightObjectName}' in file '{bkgWeightFileName}'")
-      fitManager.LoadSimulated(treeName, fitSetup.templateFileName, bkgPdfName)
-      fitManager.SetUp().LoadSpeciesPDF(bkgPdfName, 1.0)
+      # background PDF
+      createPdf(fitManager, fitSetup, treeName, fitVariable, weightLabel, weightBranchName, comboIdName, bkgPdfName, bkgCut)
 
     # create RF-sideband weights for data to be fitted
     dataWeightObjectName = f"{weightLabel}WeightsData"
