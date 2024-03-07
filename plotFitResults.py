@@ -2,7 +2,7 @@
 
 
 import argparse
-import collections
+import collections.abc
 from dataclasses import dataclass
 import functools
 import itertools
@@ -186,7 +186,7 @@ def readParInfoForBin(
   fitResult      = fitResultFile.Get("MinuitResult")
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
-  if isinstance(fitParNamesToRead, collections.Mapping):
+  if isinstance(fitParNamesToRead, collections.abc.Mapping):
     # fitParNamesToRead is some kind of dict
     # read only selected fit parameters; and use new key names for them
     for fitParKey, fitParName in fitParNamesToRead.items():
