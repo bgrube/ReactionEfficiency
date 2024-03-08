@@ -1,9 +1,9 @@
-*.bak
-*.log
-*.old
-*.orig
-*.pdf
-*.root*
+**/*.bak*
+**/*.log*
+**/*.old
+**/*.orig
+**/*.pdf
+**/*.root*
 *_dictUmbrella.h
 *_dictContent.h
 .nfs*
@@ -13,6 +13,7 @@ screen
 # project dirs
 data/**
 fits*/**
+plots*/**
 
 #VSCode
 .vscode
