@@ -74,13 +74,13 @@ def createPdf(
 
 if __name__ == "__main__":
 
-  dataFileName = "../data/MCbggen/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03_goodToF.root.brufit"
+  bggenFileName = "../data/MCbggen/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03_goodToF.root.brufit"
   # define fit setups
   fitSetups: list[FitSetup] = [
     # fit real data with bggen templates
     FitSetup(
       dataFileName     = "../data/RD/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.RD_2017_01-ver03_goodToF.root.brufit",
-      templateFileName = "../data/MCbggen/2017_01-ver03_goodToF/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03_goodToF.root.brufit",
+      templateFileName = bggenFileName,
       commonCut        = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5) && ((10 < MissingProtonTheta) && (MissingProtonTheta < 20)) && ((4.5 < MissingProtonP) && (MissingProtonP < 9))",
       dataCut          = "(1)",
       useSigPdf        = True,
@@ -89,8 +89,8 @@ if __name__ == "__main__":
     ),
     # fit bggen signal data with true template; should match perfectly
     FitSetup(
-      dataFileName     = dataFileName,
-      templateFileName = dataFileName,
+      dataFileName     = bggenFileName,
+      templateFileName = bggenFileName,
       commonCut        = "(1)",
       dataCut          = "(IsSignal == 1)",  # cut applied only to data
       useSigPdf        = True,  # en/disables signal PDF
@@ -99,8 +99,8 @@ if __name__ == "__main__":
     ),
     # fit bggen background data with true template; should match perfectly
     FitSetup(
-      dataFileName     = dataFileName,
-      templateFileName = dataFileName,
+      dataFileName     = bggenFileName,
+      templateFileName = bggenFileName,
       commonCut        = "(1)",
       dataCut          = "(IsSignal == 0)",  # cut applied only to data
       useSigPdf        = False,  # en/disables signal PDF
@@ -109,8 +109,8 @@ if __name__ == "__main__":
     ),
     # fit bggen signal + background data with true templates; should match perfectly
     FitSetup(
-      dataFileName     = dataFileName,
-      templateFileName = dataFileName,
+      dataFileName     = bggenFileName,
+      templateFileName = bggenFileName,
       commonCut        = "(1)",
       dataCut          = "(1)",  # cut applied only to data
       useSigPdf        = True,  # en/disables signal PDF
