@@ -25,7 +25,7 @@ print = functools.partial(print, flush = True)
 
 def andCuts(cuts: Iterable[Optional[str]]) -> str:
   """Creates cut string where given cuts are combined by via logical and, ignoring None and empty cut strings"""
-  cutsWithBraces = (f"({cut})" for cut in filter(None, cuts))  # filters out None _and_ ""
+  cutsWithBraces = (f"({cut})" for cut in filter(None, cuts))  # surround each cut by braces and filter out None _and_ ""
   return " && ".join(cutsWithBraces)
 
 
@@ -48,7 +48,7 @@ def readWeights(
   inputFile = ROOT.TFile.Open(inputFileName, "READ")
   inputTree = inputFile.Get(inputTreeName)
   currentDir.cd()
-  weights = ROOT.Weights(sWeightObjectName)  # name of the Weights object
+  weights = ROOT.Weights(sWeightObjectName)  # set name of the Weights object
   weights.SetFile(sWeightFileName)
   weights.SetSpecies(sWeightLabel)
   weights.SetIDName(comboIdName)
@@ -138,8 +138,8 @@ def defineHistogramPdf(
   """Defines histogram-based PDF"""
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = "RfSideband"
-  rfSWeightFileName   = f"{outputDirName}/rfSidebandWeights{pdfName}.root"
   rfSWeightObjectName = f"{rfSWeightLabel}Weights{pdfName}"
+  rfSWeightFileName   = f"{outputDirName}/{rfSWeightObjectName}.root"
   readWeights(
     inputFileName     = templateDataFileName,
     inputTreeName     = templateDataTreeName,
@@ -453,8 +453,8 @@ def performFit(
 
   # create RF-sideband weights for data to be fitted
   rfSWeightLabel      = "RfSideband"
-  rfSWeightFileName   = f"{fitDirName}/rfSidebandWeightsData.root"
   rfSWeightObjectName = f"{rfSWeightLabel}WeightsData"
+  rfSWeightFileName   = f"{fitDirName}/{rfSWeightObjectName}.root"
   readWeights(
     inputFileName     = dataFileName,
     inputTreeName     = dataTreeName,
@@ -476,7 +476,8 @@ def performFit(
         print("Forcing regeneration of binned tree files")
       else:
         print("Could not find (all) binned tree files; regenerating binned tree files")
-    fitManager.LoadData(dataTreeName, dataFileName, "Data")
+    # fitManager.LoadData(dataTreeName, dataFileName, "Data")  # signature of HS::FIT::FitManager::LoadData() changed in b6e688a
+    fitManager.LoadData(dataTreeName, dataFileName)
   else:
     print("Using existing binned tree files:")
     for binFileName in binFileNames:
@@ -487,6 +488,8 @@ def performFit(
   if not kinematicBinning:
     nmbThreadsPerJob = 5 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
+  print("Using the following global fit options")
+  fitManager.SetUp().FitOptions().Print("")
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
     print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
