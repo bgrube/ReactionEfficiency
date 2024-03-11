@@ -133,7 +133,8 @@ def overlayEfficiencyRatios2DSlices(
       graphMaximum      = 1.5,
       skipBlack         = True if len(graphs) > 1 else False,
       drawLegend        = True if len(graphs) > 1 else False,
-      forceXRange       = (1, 6),
+      # forceXRange       = (1, 6),
+      forceXRange       = (0, 9),
       beautifiers       = (HLINES,),
     )
 
@@ -192,16 +193,16 @@ def overlayEfficiencyRatios2DColzText(
     ratioHist2D = effHists2D[0].Clone()
     ratioHist2D.Divide(effHists2D[1])
     # draw ratio histogram
-    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_effratio_{binningVars[0]}_{binningVars[1]}_{ratioLabel}{pdfFileNameSuffix}", "")
-    canv.SetRightMargin(0.15)
+    canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_effratio_{binningVars[0]}_{binningVars[1]}_{ratioLabel.replace(' ', '_')}{pdfFileNameSuffix}", "")
+    canv.SetRightMargin(0.15)  # make space for color axis
     ROOT.gStyle.SetPalette(ROOT.kVisibleSpectrum)
     if histTitle is not None:
       ratioHist2D.SetTitle(histTitle)
     ratioHist2D.SetZTitle("Efficiency Ratio")
-    ratioHist2D.SetMinimum(0.93)
+    ratioHist2D.SetMinimum(0.93)  # adjust range such that green part of color scale corresponds to approximately 1.00 +- 0.02
     ratioHist2D.SetMaximum(1.09)
     ROOT.gStyle.SetPaintTextFormat("1.3f")
-    ratioHist2D.Draw("COLZ TEXT")
+    ratioHist2D.Draw("COLZ0 TEXT")  # make sure values outside of z range are also plotted
     ratioHist2D.SetStats(False)
     redrawFrame(canv)
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
@@ -229,6 +230,10 @@ if __name__ == "__main__":
     #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",
     #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed",
     # ),
+    # "2018_01 good ToF" : (
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.data_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_01-ver02_goodToF_allFixed",
+    # ),
     # "2018_08-ver02" : (
     #   f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",
     #   f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed",
@@ -240,6 +245,14 @@ if __name__ == "__main__":
     # "2019_11-ver01" : (
     #   f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",
     #   f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed",
+    # ),
+    # "2018_01 MC" : (
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed",
+    # ),
+    # "2018_01 Data" : (
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.data_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",
     # ),
     "2018_08 MC" : (
       f"{fitRootDir}/2018_08-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_08-ver02_goodToF_allFixed",
@@ -266,6 +279,6 @@ if __name__ == "__main__":
       for binningVars in firstBinVarNames:
         if len(binningVars) == 1:
           overlayEfficiencyRatios1D(effInfos, binningVars[0], pdfDirName, graphTitle = title)
-        if len(binningVars) == 2:
+        elif len(binningVars) == 2:
           overlayEfficiencyRatios2DSlices  (effInfos, binningVars[:2], steppingVar = binningVars[1], pdfDirName = pdfDirName, graphTitle = title)
           overlayEfficiencyRatios2DColzText(effInfos, binningVars[:2], pdfDirName = pdfDirName, histTitle = title)
