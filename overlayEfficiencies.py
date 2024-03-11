@@ -131,6 +131,7 @@ def overlayEfficiencies2DSlices(
       graphMinimum      = 0.0,
       graphMaximum      = 1.0,
       skipBlack         = skipBlack,
+      forceXRange       = (1, 6),
     )
 
 
@@ -197,6 +198,6 @@ if __name__ == "__main__":
       for binningVars in binVarNames:
         if len(binningVars) == 1:
           overlayEfficiencies1D(effInfos, binningVars[0], pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
-        if len(binningVars) == 2:
+        elif len(binningVars) == 2:
           overlayEfficiencies2DSlices(effInfos, binningVars = binningVars[:2], steppingVar = binningVars[1],
             pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
