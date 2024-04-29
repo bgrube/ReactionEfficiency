@@ -137,15 +137,15 @@ def defineHistogramPdf(
 ) -> None:
   """Defines histogram-based PDF"""
   # create RF-sideband weights for histogram PDF
-  rfSWeightLabel      = "RfSideband"
-  rfSWeightObjectName = f"{rfSWeightLabel}Weights{pdfName}"
+  rfSWeightLabel      = f"RfSideband{pdfName}"
+  rfSWeightObjectName = f"{rfSWeightLabel}Weights"
   rfSWeightFileName   = f"{outputDirName}/{rfSWeightObjectName}.root"
   readWeights(
     inputFileName     = templateDataFileName,
     inputTreeName     = templateDataTreeName,
     weightBranchName  = weightBranchName,
     comboIdName       = comboIdName,
-    sWeightLabel      = rfSWeightObjectName,
+    sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
     cut               = cut,
@@ -452,15 +452,15 @@ def performFit(
     )
 
   # create RF-sideband weights for data to be fitted
-  rfSWeightLabel      = "RfSideband"
-  rfSWeightObjectName = f"{rfSWeightLabel}WeightsData"
+  rfSWeightLabel      = "RfSidebandData"
+  rfSWeightObjectName = f"{rfSWeightLabel}Weights"
   rfSWeightFileName   = f"{fitDirName}/{rfSWeightObjectName}.root"
   readWeights(
     inputFileName     = dataFileName,
     inputTreeName     = dataTreeName,
     weightBranchName  = "AccidWeightFactor",
     comboIdName       = comboIdName,
-    sWeightLabel      = rfSWeightObjectName,
+    sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
     cut               = andCuts((commonCut, dataCut)),
