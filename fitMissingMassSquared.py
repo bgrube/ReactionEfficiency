@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# !Note! Needs BruFit branch `spin1spin0_rw` hash eae4b6f5 or later
 
 import argparse
 import functools
@@ -15,6 +16,7 @@ from typing import (
 )
 
 import ROOT
+assert ROOT.gROOT.GetVersionInt() >= 62800, "ROOT version >= 6.28.0 is required"
 
 import plotTools
 
@@ -134,6 +136,8 @@ def defineHistogramPdf(
   weightBranchName:     str,  # name of branch from which to read weights
   comboIdName:          str,  # name of branch with unique combo ID
   cut:                  str,  # cut that is applied when filling histogram
+  nmbBins:              int = 100,  # number of bins of template histogram
+  useAdaptiveBinning:   bool = False,
 ) -> None:
   """Defines histogram-based PDF"""
   # create RF-sideband weights for histogram PDF
@@ -155,8 +159,17 @@ def defineHistogramPdf(
   #     shift = shifts histogram in x-direction, i.e. PDF(x - shift)
   #     scale = scales histogram in x-direction around its maximum value, i.e. PDF(scale * (x - maxPos) + maxPos)
   fitManager.SetUp().FactoryPDF(
-    f"RooHSEventsHistPDF::{pdfName}({fitVariable}, smear_{pdfName}[{parDefs['smear']}], shift_{pdfName}[{parDefs['shift']}], scale_{pdfName}[{parDefs['scale']}])"
-    + f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
+    ("BruEventsHistPeakPDF" if useAdaptiveBinning else "RooHSEventsHistPDF") + f"::{pdfName}("
+      f"{fitVariable}, "                        # variable to construct template histogram from
+      f"smear_{pdfName}[{parDefs['smear']}], "  # convolute template histogram with Gaussian of width 'smear'
+      f"shift_{pdfName}[{parDefs['shift']}], "  # shift template histogram in x-direction
+      f"scale_{pdfName}[{parDefs['scale']}], "  # scale template histogram in x-direction
+      "0, "    # do not smooth template histogram
+      "0, "    # do not interpolate template histogram
+      f"{nmbBins}, "
+      "50000"  # number of bins used to calculate normalization
+    ")"
+    f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
   )
   # constrain PDF fudge parameters
   # the constraints are derived from the smear, shift, and scale parameter initial values and limits, i.e.
@@ -186,6 +199,7 @@ def defineSigPdf(
   outputDirName:        str = "",  # name of directory where weight files are written
   templateDataFileName: str = "",  # name of file from which histogram is filled
   templateDataTreeName: str = "",  # name of tree from which histogram is filled
+  templateNmbBins:      int = 100,  # number of bins of template histograms
   weightBranchName:     str = "",  # name of branch from which to read weights
   comboIdName:          str = "",  # name of branch with unique combo ID
   cut:                  str = "",  # cut that is applied when filling histogram
@@ -229,6 +243,7 @@ def defineSigPdf(
       weightBranchName,
       comboIdName,
       cut = andCuts((cut, "(IsSignal == 1)")),
+      nmbBins = templateNmbBins,
     )
   else:
     raise ValueError(f"Unknown signal PDF type '{pdfTypeArgs[0]}'")
@@ -244,12 +259,13 @@ def defineBkgPdf(
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
   pdfName:              str = "BkgPdf",
   # arguments only needed for histogram PDF
-  outputDirName:        str = "",  # name of directory where weight files are written
-  templateDataFileName: str = "",  # name of file from which histogram is filled
-  templateDataTreeName: str = "",  # name of tree from which histogram is filled
-  weightBranchName:     str = "",  # name of branch from which to read weights
-  comboIdName:          str = "",  # name of branch with unique combo ID
-  cut:                  str = "",  # cut that is applied when filling histogram
+  outputDirName:        str = "",   # name of directory where weight files are written
+  templateDataFileName: str = "",   # name of file from which histogram is filled
+  templateDataTreeName: str = "",   # name of tree from which histogram is filled
+  templateNmbBins:      int = 100,  # number of bins of template histograms
+  weightBranchName:     str = "",   # name of branch from which to read weights
+  comboIdName:          str = "",   # name of branch with unique combo ID
+  cut:                  str = "",   # cut that is applied when filling histogram
 ):
   """Defines signal PDFs of various types"""
   print(f"Defining background PDF '{pdfName}' of type '{pdfType}'")
@@ -327,6 +343,7 @@ def defineBkgPdf(
       weightBranchName,
       comboIdName,
       cut =andCuts((cut, "(IsSignal == 0)")),
+      nmbBins = templateNmbBins,
     )
   else:
     raise ValueError(f"Unknown background PDF type '{pdfTypeArgs[0]}'")
@@ -355,11 +372,12 @@ def setRooFitOptions(
 ) -> None:
   """Sets general fit options"""
   print("Setting RooFit options")
+  # fitManager.SetUp().ErrorsWrong()  # use faster "naive" calculation of errors
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
   fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
                                                                 # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelizes calculation of likelihood using the given number of cores
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # ROOT 6.28/00 global parallelization settings: enables use of RooFit's parallel minimization backend using the given number of cores
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # global parallelization settings: use given number of workers in parallelization # does not work with ROOT 6.28
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelize likelihood calculation using given number of cores
   fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))
   fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
@@ -389,6 +407,7 @@ def performFit(
   templateDataSigTreeName: str           = "pippippimpimpmiss",            # name of tree from which signal histogram is filled
   templateDataBkgFileName: str           = "",                             # name of file from which background histogram is filled
   templateDataBkgTreeName: str           = "pippippimpimpmiss",            # name of tree from which background histogram is filled
+  templateNmbBins:         int           = 100,                            # number of bins of template histograms
   fitVariable:             str           = "MissingMassSquared_Measured",  # name of branch that holds data to fit and template-data for signal and background, respectively
   fitRange:                str           = "-0.25, 3.75",                  # [(GeV/c)^2]
   comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
@@ -418,6 +437,7 @@ def performFit(
   # define fit variable and set fit range
   print(f"Reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
   fitManager.SetUp().LoadVariable(f"{fitVariable}[{fitRange}]")
+  fitManager.SetUp().GetVar(fitVariable).setBins(templateNmbBins)
   # define combo-ID variable
   # the data tree must have a double branch of the given name containing a unique combo-ID number
   fitManager.SetUp().SetIDBranchName(comboIdName)
@@ -435,6 +455,7 @@ def performFit(
       outputDirName        = fitDirName,
       templateDataFileName = templateDataSigFileName,
       templateDataTreeName = templateDataSigTreeName,
+      templateNmbBins      = templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
       comboIdName          = comboIdName,
       cut                  = commonCut,
@@ -446,6 +467,7 @@ def performFit(
       outputDirName        = fitDirName,
       templateDataFileName = templateDataBkgFileName,
       templateDataTreeName = templateDataBkgTreeName,
+      templateNmbBins      = templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
       comboIdName          = comboIdName,
       cut                  = commonCut
@@ -485,18 +507,21 @@ def performFit(
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
   # perform fit and create fit-result plots
-  if not kinematicBinning:
-    nmbThreadsPerJob = 5 * nmbThreadsPerJob
+  # if not kinematicBinning:
+  #   nmbThreadsPerJob = 5 * nmbThreadsPerJob
   setRooFitOptions(fitManager, nmbThreadsPerJob)
-  print("Using the following global fit options")
+  print("Using the following global fit options:")
   fitManager.SetUp().FitOptions().Print("")
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
-    ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
-    ROOT.Proof.Go(fitManager, nmbProofJobs)
+    #FIXME PROOF does not work with ROOT 6.28
+    # print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
+    # ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
+    # ROOT.Proof.Go(fitManager, nmbProofJobs)
+    print(f"Perform fit running {nmbThreadsPerJob} threads in parallel")
+    ROOT.Here.Go(fitManager)
   else:
-    print(f"Running {nmbThreadsPerJob} threads in parallel")
+    print(f"Perform fit running {nmbThreadsPerJob} threads in parallel")
     ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
