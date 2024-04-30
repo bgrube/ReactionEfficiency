@@ -2,7 +2,6 @@
 
 
 import functools
-import glob
 import os
 import shutil
 import subprocess
@@ -18,13 +17,17 @@ print = functools.partial(print, flush = True)
 
 if __name__ == "__main__":
 
-  # fitRootDir = "./fits"
-  fitRootDir = "./fits.pionComparison"
+  fitRootDir = "./fits"
+  # fitRootDir = "./fits.pionComparison"
+  # fitRootDir = "./fits.pionComparison.R6.28"
   dataPeriods = (
-    "2017_01-ver03",
-    "2018_01-ver02",
-    "2018_08-ver02",
-    "2019_11-ver01",
+    # "2017_01-ver03",
+    # "2018_01-ver02",
+    # "2018_08-ver02",
+    # "2019_11-ver01",
+    "2017_01-ver03_goodToF",
+    # "2018_01-ver02_goodToF",
+    # "2018_08-ver02_goodToF",
   )
 
   dataSamples: List[Dict[str, str]] = []
@@ -32,7 +35,7 @@ if __name__ == "__main__":
     dataSamples += [
       { # bggen MC
         **dict.fromkeys(["dataFileName", "bggenFileName"],
-                        f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # dataFileName and bggenFileName have identical value
+                        f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # dataFileName and bggenFileName have identical values
         "dataPeriod" : dataPeriod,
         "dataLabel"  : f"bggen_{dataPeriod}",
       },
@@ -166,7 +169,6 @@ if __name__ == "__main__":
         raise RuntimeError(f"Fitting script failed with exit code '{result.returncode}'")
       # postprocess fit results
       subprocess.run(f"./cleanFitDir.sh \"{fitDirectory}\"", shell = True)
-      subprocess.run(f"./cleanBruFitLogFile.py \"{fitDirectory}\"", shell = True)
       print("Plotting fit results...")
       subprocess.run(f"./plotFitResults.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotFitResults.log\"", shell = True)
       print("Plotting efficiencies...")
