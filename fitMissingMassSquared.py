@@ -136,7 +136,7 @@ def defineHistogramPdf(
   weightBranchName:     str,  # name of branch from which to read weights
   comboIdName:          str,  # name of branch with unique combo ID
   cut:                  str,  # cut that is applied when filling histogram
-  nmbBins:              int = 100,  # number of bins of template histogram
+  nmbBins:              int  = 100,  # number of bins of template histogram
   useAdaptiveBinning:   bool = False,
 ) -> None:
   """Defines histogram-based PDF"""
@@ -376,7 +376,7 @@ def setRooFitOptions(
   # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
   fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
                                                                 # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # global parallelization settings: use given number of workers in parallelization # does not work with ROOT 6.28
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # global parallelization settings: use given number of workers in parallelization; requires ROOT to be built with -Droofit_multiprocess=ON
   fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelize likelihood calculation using given number of cores
   fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))
@@ -385,9 +385,9 @@ def setRooFitOptions(
   # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")  # doesn't work
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit"))  # overridden by HS::FIT::Minuit2::FitTo()
   # fitManager.SetMinimiser(ROOT.Minuit())
-  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit2"))
-  # fitManager.SetMinimiser(ROOT.Minuit2())
+  ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit2"))  # doesn't work
+  # fitManager.SetMinimiser(ROOT.Minuit2())  # doesn't work
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS
 
@@ -540,10 +540,8 @@ if __name__ == "__main__":
   # bggenFileName = f"./data/MCbggen/2017_01-ver03/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
   bggenFileName = f"./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
   # dataFileName  = bggenFileName
-  # dataFileName  = f"./data/RD/2017_01-ver04/pippippimpimpmiss_flatTree.RD_2017_01-ver04_030730.root.brufit"
-  dataFileName  = f"./data/RD/2018_01-ver02/old/pippippimpimpmiss_flatTree.RD_2018_01-ver02_041003.root.brufit"
-  # dataFileName  = f"./data/RD/2018_01-ver02/old/pippippimpimpmiss_flatTree.RD_2018_01-ver02_042030.root.brufit"
-  # dataFileName  = f"./data/RD/2018_01-ver02/old/pippippimpimpmiss_flatTree.RD_2018_01-ver02_042550.root.brufit"
+  # dataFileName  = f"./data/RD/2017_01-ver03/pippippimpimpmiss_flatTree.RD_2017_01-ver03.root.brufit"
+  dataFileName  = f"./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root.brufit"
   print(f"Script was called using: '{' '.join(sys.argv)}'")
   parser = argparse.ArgumentParser(description="Plots BruFit results.")
   parser.add_argument("outputDirName", nargs = "?", type = str, default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
