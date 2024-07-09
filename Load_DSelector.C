@@ -1,1 +1,0 @@
-/group/halld/Software/builds/Linux_CentOS7.7-x86_64-gcc4.8.5/gluex_root_analysis/gluex_root_analysis-1.21.1^hdr4370/scripts/Load_DSelector.C
