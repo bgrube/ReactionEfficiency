@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 
 
+from __future__ import annotations
+
 import argparse
 from collections import defaultdict
 from dataclasses import dataclass
 import functools
-import numpy as np
 import os
 import sys
 from typing import (
-  Dict,
   Iterable,
-  List,
   Mapping,
   Optional,
   Sequence,
-  Set,
-  Tuple,
 )
 
 from uncertainties import UFloat, ufloat
@@ -38,15 +35,15 @@ def getEfficiencies(
   fitResultDirNames: Sequence[str],
   fitLabels:         Sequence[str] = [],
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
-) -> Tuple[Dict[Tuple[str, str], List[EffInfo]], Optional[List[Tuple[str, ...]]]]:
+) -> tuple[dict[tuple[str, str], list[EffInfo]], Optional[list[tuple[str, ...]]]]:
   """Reads yields from given fit directories and calculates efficiencies for each directory"""
   assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"List of fit-result directory names '{fitResultDirNames}' has duplicate elements"
   assert (not fitLabels) or len(fitLabels) == len(fitResultDirNames), f"Number of given fit labels ({len(fitLabels)}) does not match number of fit directories ({len(fitResultDirNames)})"
   print("Reading yields and calculating efficiencies")
-  effInfos:    Dict[Tuple[str, str], List[EffInfo]] = {}    # effInfos[(<fit directory>, <fit label>)][<bin>]
-  binVarNames: Optional[List[Tuple[str, ...]]]      = None  # binning variables for each binning
+  effInfos:    dict[tuple[str, str], list[EffInfo]] = {}    # effInfos[(<fit directory>, <fit label>)][<bin>]
+  binVarNames: Optional[list[tuple[str, ...]]]      = None  # binning variables for each binning
   for fitIndex, fitResultDirName in enumerate(fitResultDirNames):
-    yieldInfos: Dict[str, List[ParInfo]] = {}  # yieldInfos[<dataset>][<bin>]
+    yieldInfos: dict[str, list[ParInfo]] = {}  # yieldInfos[<dataset>][<bin>]
     for dataSet in dataSets:
       print(f"Reading yields for '{dataSet}' dataset")
       yieldInfos[dataSet]  = []
@@ -65,7 +62,7 @@ def getEfficiencies(
 
 
 def overlayEfficiencies1D(
-  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
+  effInfos:          Mapping[tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str = "Proton_4pi_",
@@ -75,7 +72,7 @@ def overlayEfficiencies1D(
 ) -> None:
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
-  graphs1D: List[Tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
+  graphs1D: list[tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
                                                    for (_, fitLabel), efficiencies in effInfos.items()]
   plotFitResults.plotGraphs1D(
     graphs1D,
@@ -93,7 +90,7 @@ def overlayEfficiencies1D(
 
 
 def overlayEfficiencies2DSlices(
-  effInfos:          Mapping[Tuple[str, str], Sequence[EffInfo]],
+  effInfos:          Mapping[tuple[str, str], Sequence[EffInfo]],
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,  # directory name the PDF file will be written to
@@ -107,9 +104,9 @@ def overlayEfficiencies2DSlices(
   assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
   binningVarIndex  = 0 if steppingVar == binningVars[1] else 1
   # read efficiency values and slice them into 1D graphs
-  graphsToOverlay: Dict[Tuple[float, float], List[Tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
+  graphsToOverlay: dict[tuple[float, float], list[tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
   for (_, fitLabel), efficiencies in effInfos.items():
-    graphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
+    graphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
       plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies)),
       plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y)
     for steppingVarBinRange, graph in graphs1D.items():
@@ -155,7 +152,7 @@ if __name__ == "__main__":
   skipBlack  = True
   # skipBlack  = False
 
-  resultsToOverlay: Dict[str, Tuple[Tuple[str, str], ...]] = {  # dict key is PDF file-name suffix
+  resultsToOverlay: dict[str, tuple[tuple[str, str], ...]] = {  # dict key is PDF file-name suffix
     "bggen" : (
       (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
       (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),

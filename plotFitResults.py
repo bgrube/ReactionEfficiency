@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 
+from __future__ import annotations
+
 import argparse
-import collections.abc
+from collections.abc import Mapping
 from dataclasses import dataclass
 import functools
 import itertools
@@ -11,14 +13,10 @@ import os
 import sys
 from typing import (
   Any,
-  Dict,
-  List,
-  Mapping,
   Optional,
   Sequence,
-  Tuple,
   Union,
-)  #TODO use A | B syntax with `from __future__ import annotations` for Union and Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/; use builtin types, see https://peps.python.org/pep-0585/#implementation
+)  #TODO use A | B syntax with `from __future__ import annotations` for Union and Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/; use collections.abc instead of typing, see https://peps.python.org/pep-0585/#implementation
 
 from uncertainties import UFloat, ufloat
 
@@ -41,14 +39,14 @@ from plotTools import (
 print = functools.partial(print, flush = True)
 
 
-BINNING_VAR_PLOT_INFO: Dict[str, Dict[str, str]] = {
+BINNING_VAR_PLOT_INFO: dict[str, dict[str, str]] = {
   "BeamEnergy"         : {"label" : "#it{E}_{beam}",                 "unit" : "GeV"},
   "MissingProtonP"     : {"label" : "#it{p}_{miss}^{kin. fit}",      "unit" : "GeV/#it{c}"},
   "MissingProtonTheta" : {"label" : "#it{#theta}_{miss}^{kin. fit}", "unit" : "deg"},
   "MissingProtonPhi"   : {"label" : "#it{#phi}_{miss}^{kin. fit}",   "unit" : "deg"},
 }
 
-def getAxisInfoForBinningVar(binningVar: Union[str, Tuple[str, str]]) -> Tuple[str, str, str]:
+def getAxisInfoForBinningVar(binningVar: Union[str, tuple[str, str]]) -> tuple[str, str, str]:
   varName = None
   if isinstance(binningVar, str):
     varName = binningVar
@@ -67,12 +65,12 @@ REMOVE_PARAM_BOX = False
 class BinInfo:
   """Stores information about a single kinematic bin"""
   name:    str               # bin name
-  centers: Dict[str, float]  # bin centers { <binning var> : <bin center>, ... }
-  widths:  Dict[str, float]  # bin widths  { <binning var> : <bin width>,  ... }
+  centers: dict[str, float]  # bin centers { <binning var> : <bin center>, ... }
+  widths:  dict[str, float]  # bin widths  { <binning var> : <bin width>,  ... }
   dirName: str               # directory name for bins
 
   @property
-  def varNames(self) -> Tuple[str, ...]:
+  def varNames(self) -> tuple[str, ...]:
     """Returns names of kinematic variables used for binning"""
     return tuple(sorted(self.centers.keys()))
 
@@ -89,21 +87,21 @@ class BinInfo:
 @dataclass
 class BinningInfo:
   """Stores information about one particular kinematic binning"""
-  infos:   List[BinInfo]  # info for all bins of the kinematic binning
+  infos:   list[BinInfo]  # info for all bins of the kinematic binning
   dirName: str            # directory that contains all bins of the kinematic binning
 
   @property
-  def names(self) -> Tuple[str, ...]:
+  def names(self) -> tuple[str, ...]:
     """Returns tuple with bin names"""
     return tuple(binInfo.name for binInfo in self.infos)
 
   @property
-  def dirNames(self) -> Tuple[str, ...]:
+  def dirNames(self) -> tuple[str, ...]:
     """Returns tuple with directory names for all bins"""
     return tuple(binInfo.dirName for binInfo in self.infos)
 
   @property
-  def varNames(self) -> Tuple[str, ...]:
+  def varNames(self) -> tuple[str, ...]:
     """Returns names of kinematic variables used for binning"""
     varNames = None
     for binInfo in self.infos:
@@ -115,7 +113,7 @@ class BinningInfo:
     return varNames or tuple()
 
   @property
-  def fitResultFileNames(self) -> Tuple[str, ...]:
+  def fitResultFileNames(self) -> tuple[str, ...]:
     """Returns tuple with fit-result file names for all bin"""
     return tuple(binInfo.fitResultFileName for binInfo in self.infos)
 
@@ -133,7 +131,7 @@ def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
   axes = bins.GetVarAxis()
   binVarNames = tuple(axis.GetName() for axis in axes)
   axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
-  binInfos: List[BinInfo] = []
+  binInfos: list[BinInfo] = []
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
     axisBinCenters = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
     axisBinWidths  = tuple(axes[axisIndex].GetBinWidth (axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
@@ -148,11 +146,11 @@ def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
   return BinningInfo(binInfos, fitResultDirName)
 
 
-def getBinningInfosFromDir(fitResultDirName: str) -> List[Optional[BinningInfo]]:
+def getBinningInfosFromDir(fitResultDirName: str) -> list[Optional[BinningInfo]]:
   """Reads binning infos from all 1st-level subdirectories that contain a 'DataBinsConfig.root' file"""
-  binningInfos: List[Optional[BinningInfo]] = []
+  binningInfos: list[Optional[BinningInfo]] = []
   # find all subdirectories with binning files non-recursively
-  subDirNames: List[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
+  subDirNames: list[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
   # get binning info from all subdirectories
   for subDirName in subDirNames:
     print(f"Found binning info in directory '{subDirName}'")
@@ -164,10 +162,10 @@ def getBinningInfosFromDir(fitResultDirName: str) -> List[Optional[BinningInfo]]
 class ParInfo:
   """Stores information about parameter values in a single kinematic bin"""
   binInfo: BinInfo            # info for the kinematic bin
-  values:  Dict[str, UFloat]  # mapping of parameter names to values
+  values:  dict[str, UFloat]  # mapping of parameter names to values
 
   @property
-  def names(self) -> Tuple[str, ...]:
+  def names(self) -> tuple[str, ...]:
     """Returns parameter names"""
     return tuple(sorted(self.values.keys()))
 
@@ -204,7 +202,7 @@ def readParInfoForBin(
   # get fit parameters
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
-  if isinstance(fitParNamesToRead, collections.abc.Mapping):
+  if isinstance(fitParNamesToRead, Mapping):
     # fitParNamesToRead is some kind of dict
     # read only selected fit parameters; and use new key names for them
     for fitParKey, fitParName in fitParNamesToRead.items():
@@ -222,9 +220,9 @@ def readParInfoForBin(
   return ParInfo(binInfo, parValuesInBin)
 
 
-def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
+def readParInfosForBinning(binningInfo: BinningInfo) -> list[ParInfo]:
   """Reads parameter values from fit results for given kinematic binning"""
-  parInfos: List[ParInfo] = []
+  parInfos: list[ParInfo] = []
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
     parInfo = readParInfoForBin(binInfo)
@@ -285,9 +283,9 @@ def getParValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   parName:    str,  # name of value, i.e. y-axis
   parInfos:   Sequence[ParInfo],
-) -> Tuple[Tuple[UFloat, UFloat], ...]:
+) -> tuple[tuple[UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos"""
-  graphValues: Tuple[Tuple[UFloat, UFloat], ...] = tuple(
+  graphValues: tuple[tuple[UFloat, UFloat], ...] = tuple(
     (ufloat(parInfo.binInfo.centers[binVarName], parInfo.binInfo.widths[binVarName] / 2.0), parInfo.values[parName])
     for parInfo in parInfos
     if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names) and (len(parInfo.binInfo.varNames) == 1)
@@ -297,7 +295,7 @@ def getParValuesForGraph1D(
 
 #TODO add sequence of beautifier functors as optional argument
 def plotGraphs1D(
-  graphOrGraphs:     Union[ROOT.TGraph, Sequence[Tuple[str, ROOT.TGraph]]],
+  graphOrGraphs:     Union[ROOT.TGraph, Sequence[tuple[str, ROOT.TGraph]]],
   binningVar:        str,
   yAxisTitle:        str,
   pdfDirName:        str,
@@ -309,11 +307,11 @@ def plotGraphs1D(
   graphMaximum:      Optional[float] = None,
   skipBlack:         bool = True,
   drawLegend:        Optional[bool] = None,
-  forceXRange:       Optional[Tuple[float, float]] = None,
+  forceXRange:       Optional[tuple[float, float]] = None,
   beautifiers:       Sequence[Any] = [],  #TODO improve type hint by making a base class for beautifiers
 ) -> None:
   """Generic function that plots the given graph(s)"""
-  graphs: List[Tuple[str, ROOT.TGraph]] = []
+  graphs: list[tuple[str, ROOT.TGraph]] = []
   if isinstance(graphOrGraphs, ROOT.TGraph):
     graphs.append(("", graphOrGraphs))
   elif isinstance(graphOrGraphs, Sequence):
@@ -370,7 +368,7 @@ def plotParValue1D(
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueGraphs: List[Tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
+  parValueGraphs: list[tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
                                                    for dataSet in parInfos]
   plotGraphs1D(
     graphOrGraphs     = parValueGraphs,
@@ -407,9 +405,9 @@ def getParValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   parName:     str,  # name of value, i.e. z-axis
   parInfos:    Sequence[ParInfo],
-) -> Tuple[Tuple[UFloat, UFloat, UFloat], ...]:
+) -> tuple[tuple[UFloat, UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos"""
-  graphValues: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = tuple(
+  graphValues: tuple[tuple[UFloat, UFloat, UFloat], ...] = tuple(
     (
       ufloat(parInfo.binInfo.centers[binVarNames[0]], parInfo.binInfo.widths[binVarNames[0]] / 2.0),
       ufloat(parInfo.binInfo.centers[binVarNames[1]], parInfo.binInfo.widths[binVarNames[1]] / 2.0),
@@ -433,7 +431,7 @@ def plotParValue2D(
   savedFrameFillColor = ROOT.gStyle.GetFrameFillColor()
   ROOT.gStyle.SetFrameFillColor(0)  # switch back to default; otherwise graphs obstruct histogram frame
   print(f"Plotting parameter '{parName}' as a function of binning variables '{binningVars}'")
-  parValueGraphs: Dict[str, ROOT.TGraph2DErrors] = {}  # store graphs here to keep them in memory
+  parValueGraphs: dict[str, ROOT.TGraph2DErrors] = {}  # store graphs here to keep them in memory
   xMin = yMin = zMin = +math.inf
   xMax = yMax = zMax = -math.inf
   for dataSet in parInfos:
@@ -493,14 +491,14 @@ if __name__ == "__main__":
   fitVariable = "MissingMassSquared_Measured"
 
   # plot fits and read parameter values from fit results
-  parInfos:    Dict[str, List[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
-  parNames:    Optional[Tuple[str, ...]]       = None
-  binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
+  parInfos:    dict[str, list[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
+  parNames:    Optional[tuple[str, ...]]       = None
+  binVarNames: Optional[list[tuple[str, ...]]] = None  # binning variables for each binning
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
     plotFitResult(BinInfo("", {}, {}, fitResultDirName), fitVariable)
-    binVarNamesInDataSet: List[Tuple[str, ...]] = []
+    binVarNamesInDataSet: list[tuple[str, ...]] = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:
         binVarNamesInDataSet.append(binningInfo.varNames)

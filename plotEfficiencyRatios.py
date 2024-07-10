@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 
 
+from __future__ import annotations
+
 from collections import defaultdict
 import functools
 import os
 from typing import (
-  Dict,
-  List,
   Mapping,
   Optional,
   Sequence,
-  Tuple,
 )
 
 from uncertainties import UFloat, ufloat
@@ -20,7 +19,6 @@ import ROOT
 import overlayEfficiencies
 from plotBeautifiers import Lines
 from plotEfficiencies import (
-  BinInfo,
   EffInfo,
   getEffValuesForGraph1D,
   getEffValuesForGraph2D,
@@ -50,7 +48,7 @@ HLINES = Lines(defaultColor = ROOT.kGray + 1, orientation = Lines.Orientation.ho
 
 
 def overlayEfficiencyRatios1D(
-  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
+  effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVar:        str,
   pdfDirName:        str,
   pdfFileNamePrefix: str = "Proton_4pi_",
@@ -59,10 +57,10 @@ def overlayEfficiencyRatios1D(
 ) -> None:
   """Plots efficiency ratios as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Plotting efficiency ratio for binning variable '{binningVar}'")
-  ratioGraphs: List[Tuple[str, ROOT.TGraphErrors]] = []
+  ratioGraphs: list[tuple[str, ROOT.TGraphErrors]] = []
   for ratioLabel, effInfosForLabel in effInfos.items():
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
-    graphs: List[ROOT.TGraphErrors] = []
+    graphs: list[ROOT.TGraphErrors] = []
     for effInfo in effInfosForLabel.values():
       graphs.append(getGraph1DFromValues(getEffValuesForGraph1D(binningVar, effInfo)))
     ratioGraphs.append((ratioLabel, calcRatioOfGraphs1D(graphs)))
@@ -84,7 +82,7 @@ def overlayEfficiencyRatios1D(
 
 
 def overlayEfficiencyRatios2DSlices(
-  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
+  effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,
@@ -98,14 +96,14 @@ def overlayEfficiencyRatios2DSlices(
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
   assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
   binningVarIndex  = 0 if steppingVar == binningVars[1] else 1
-  graphsToOverlay: Dict[Tuple[float, float], List[Tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
+  graphsToOverlay: dict[tuple[float, float], list[tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
   for ratioLabel, effInfosForLabel in effInfos.items():
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
     # get efficiencies as 2D graphs
-    efficiencyGraphs2D: Tuple[ROOT.TGraph2DErrors, ...] = tuple(getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
+    efficiencyGraphs2D: tuple[ROOT.TGraph2DErrors, ...] = tuple(getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
                                                                 for efficiencies in effInfosForLabel.values())
     # calculate 2D graph for efficiency ratios and slice it to 1D graphs
-    ratioGraphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = slice2DGraph(
+    ratioGraphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = slice2DGraph(
       calcRatioOfGraphs2D(efficiencyGraphs2D, ratioRange = (None, 1.5)),
       Graph2DVar.x if steppingVar == binningVars[0] else Graph2DVar.y
     )
@@ -175,7 +173,7 @@ def getHist2DFromEfficiencies(
 
 
 def overlayEfficiencyRatios2DColzText(
-  effInfos:          Mapping[str, Mapping[Tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
+  effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVars:       Sequence[str],
   pdfDirName:        str,
   pdfFileNamePrefix: str = "Proton_4pi_",
@@ -187,7 +185,7 @@ def overlayEfficiencyRatios2DColzText(
   for ratioLabel, effInfosForLabel in effInfos.items():
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
     # get efficiencies as 2D histograms
-    effHists2D: Tuple[ROOT.TH2D, ...] = tuple(getHist2DFromEfficiencies(binningVars, effs, histName = f"hEfficiency2D_{binningVars[0]}_{binningVars[1]}_fitLabel")
+    effHists2D: tuple[ROOT.TH2D, ...] = tuple(getHist2DFromEfficiencies(binningVars, effs, histName = f"hEfficiency2D_{binningVars[0]}_{binningVars[1]}_fitLabel")
                                               for (_, fitLabel), effs in effInfosForLabel.items())
     # calculate ratio histogram
     ratioHist2D = effHists2D[0].Clone()
@@ -221,7 +219,7 @@ if __name__ == "__main__":
   fitRootDir = "./fits.pionComparison2"
   pdfDirName = makeDirPath("./ratios.pionComparison2")
 
-  ratiosToPlot: Dict[str, Tuple[str, str]] = {
+  ratiosToPlot: dict[str, tuple[str, str]] = {
     # "2017_01-ver03" : (
     #   f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",
     #   f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed",
@@ -266,8 +264,8 @@ if __name__ == "__main__":
 
   # title = "Real Data / MC"
   title = "Good ToF / All Files"
-  effInfos:    Dict[str, Dict[Tuple[str, str], List[EffInfo]]] = {}
-  binVarNames: Dict[str, Optional[List[Tuple[str, ...]]]]      = {}
+  effInfos:    dict[str, dict[tuple[str, str], list[EffInfo]]] = {}
+  binVarNames: dict[str, Optional[list[tuple[str, ...]]]]      = {}
   for ratioLabel, fitResults in ratiosToPlot.items():
     effInfos[ratioLabel], binVarNames[ratioLabel] = overlayEfficiencies.getEfficiencies(fitResultDirNames = tuple(fitResult for fitResult in fitResults))
   print("Plotting efficiency ratios")

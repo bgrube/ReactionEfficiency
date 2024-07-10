@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 
 
+from __future__ import annotations
+
 import argparse
 from dataclasses import dataclass
 import functools
 import math
-import numpy as np
 import os
 import sys
 from typing import (
-  Dict,
-  List,
   MutableMapping,
   Optional,
   Sequence,
-  Tuple,
 )
 
 from uncertainties import UFloat, ufloat
@@ -35,7 +33,7 @@ import plotTools
 print = functools.partial(print, flush = True)
 
 
-YIELD_PAR_NAMES: Dict[str, str] = {
+YIELD_PAR_NAMES: dict[str, str] = {
   "Signal"     : "Yld_SigPdf",
   "Background" : "Yld_BkgPdf",
 }
@@ -71,9 +69,9 @@ def readYieldInfosForBinning(
   binningInfo:   BinningInfo,
   readIntegrals: bool = False,
   fitVariable:   str  = "",
-) -> List[ParInfo]:
+) -> list[ParInfo]:
   """Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning"""
-  yieldInfos: List[ParInfo] = []
+  yieldInfos: list[ParInfo] = []
   # read overall yields
   overallBinInfo = BinInfo("Overall", {}, {}, binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
@@ -99,7 +97,7 @@ class EffInfo:
   value:   UFloat   # efficiency value
 
 
-def calculateEfficiencies(yieldInfos: MutableMapping[str, List[ParInfo]]) -> List[EffInfo]:
+def calculateEfficiencies(yieldInfos: MutableMapping[str, list[ParInfo]]) -> list[EffInfo]:
   """Calculates efficiencies from yields"""
   assert ("Found" in yieldInfos) and ("Missing" in yieldInfos), "Either 'Found', 'Missing' or both datasets are missing"
   if len(yieldInfos["Found"]) != len(yieldInfos["Missing"]):
@@ -112,7 +110,7 @@ def calculateEfficiencies(yieldInfos: MutableMapping[str, List[ParInfo]]) -> Lis
       yieldInfoMissing for yieldInfoMissing in yieldInfos["Missing"]
       if any(yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo) for yieldInfoFound in yieldInfos["Found"])
     ]
-  effInfos: List[EffInfo] = []
+  effInfos: list[EffInfo] = []
   for index, yieldInfoFound in enumerate(yieldInfos["Found"]):
     yieldInfoMissing = yieldInfos["Missing"][index]
     assert yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo), f"Bin infos for 'Found' and 'Missing' are not identical: {yieldInfoFound.binInfo} vs. {yieldInfoMissing.binInfo}"
@@ -134,9 +132,9 @@ def calculateEfficiencies(yieldInfos: MutableMapping[str, List[ParInfo]]) -> Lis
 def getEffValuesForGraph1D(
   binVarName: str,  # name of the binning variable, i.e. x-axis
   effInfos:   Sequence[EffInfo],
-) -> List[Tuple[UFloat, UFloat]]:
+) -> list[tuple[UFloat, UFloat]]:
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
-  graphValues: List[Tuple[UFloat, UFloat]] = [
+  graphValues: list[tuple[UFloat, UFloat]] = [
     (ufloat(effInfo.binInfo.centers[binVarName], effInfo.binInfo.widths[binVarName] / 2.0), effInfo.value)
     for effInfo in effInfos
     if (binVarName in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 1)]
@@ -169,9 +167,9 @@ def plotEfficiencies1D(
 def getEffValuesForGraph2D(
   binVarNames: Sequence[str],  # names of the binning variables, i.e. x-axis and y-axis
   effInfos:    Sequence[EffInfo],
-) -> Tuple[Tuple[UFloat, UFloat, UFloat], ...]:
+) -> tuple[tuple[UFloat, UFloat, UFloat], ...]:
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
-  graphValues: Tuple[Tuple[UFloat, UFloat, UFloat], ...] = tuple(
+  graphValues: tuple[tuple[UFloat, UFloat, UFloat], ...] = tuple(
     (
       ufloat(effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.widths[binVarNames[0]] / 2.0),
       ufloat(effInfo.binInfo.centers[binVarNames[1]], effInfo.binInfo.widths[binVarNames[1]] / 2.0),
@@ -279,13 +277,13 @@ if __name__ == "__main__":
 
   for readIntegrals in (True, False):
     print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
-    yieldInfos:  Dict[str, List[ParInfo]]        = {}    # yieldInfos[<dataset>][<bin>]
-    binVarNames: Optional[List[Tuple[str, ...]]] = None  # binning variables for each binning
+    yieldInfos:  dict[str, list[ParInfo]]        = {}    # yieldInfos[<dataset>][<bin>]
+    binVarNames: Optional[list[tuple[str, ...]]] = None  # binning variables for each binning
     for dataSet in dataSets:
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
       fitResultDirName = f"{args.outputDirName}/{dataSet}"
       yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName), readIntegrals, fitVariable)  # overall yield values
-      binVarNamesInDataSet: List[Tuple[str, ...]] = []
+      binVarNamesInDataSet: list[tuple[str, ...]] = []
       for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
         if binningInfo:
           binVarNamesInDataSet.append(binningInfo.varNames)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ctypes
 from enum import Enum
 import functools
@@ -6,12 +8,9 @@ import os
 import subprocess
 from typing import (
   Any,
-  Dict,
-  List,
   Optional,
   Sequence,
   Set,
-  Tuple,
   Union,
 )
 
@@ -28,7 +27,7 @@ print = functools.partial(print, flush = True)
 # see also Bang Wong, https://www.nature.com/articles/nmeth.1618.pdf
 #     https://davidmathlogic.com/colorblind
 #     https://yoshke.org/blog/colorblind-friendly-diagrams
-COLORS_CB_FRIENDLY: Tuple[str, ...] = (
+COLORS_CB_FRIENDLY: tuple[str, ...] = (
   "#000000",  # black
   "#0072B2",  # blue
   "#D55E00",  # vermillion
@@ -74,7 +73,7 @@ def getCbFriendlyRootColor(
   return getRootColor(COLORS_CB_FRIENDLY[index + (1 if skipBlack else 0)])
 
 # 11 filled marker styles; the float is a relative scaling factor to obtain equal apparent sizes
-MARKERS_FILLED: Tuple[Tuple[int, float], ...] = (
+MARKERS_FILLED: tuple[tuple[int, float], ...] = (
   (ROOT.kFullCircle,            0.75),
   (ROOT.kFullSquare,            0.70),
   (ROOT.kFullDiamond,           1.00),
@@ -88,7 +87,7 @@ MARKERS_FILLED: Tuple[Tuple[int, float], ...] = (
   (ROOT.kFullDoubleDiamond,     1.10),
 )
 # 11 open marker styles
-MARKERS_OPEN: Tuple[Tuple[int, float], ...] = (
+MARKERS_OPEN: tuple[tuple[int, float], ...] = (
   (ROOT.kOpenCircle,            0.75),
   (ROOT.kOpenSquare,            0.70),
   (ROOT.kOpenDiamond,           1.00),
@@ -140,7 +139,7 @@ def setupPlotStyle(rootLogonPath: str = "./rootlogon.C") -> None:
   ROOT.gStyle.SetTitleOffset(1.35, "Y")
 
 
-def getRangeOfGraph(graph: ROOT.TGraph) -> Tuple[float, float, float, float]:
+def getRangeOfGraph(graph: ROOT.TGraph) -> tuple[float, float, float, float]:
   xMin = ctypes.c_double()
   xMax = ctypes.c_double()
   yMin = ctypes.c_double()
@@ -211,7 +210,7 @@ def redrawFrame(pad: ROOT.TVirtualPad) -> None:
 
 def callMemberFunctionsWithArgs(
   instance:          Any,             # instance for which member functions will be called
-  functionsWithArgs: Dict[str, Any],  # member-function names with argments
+  functionsWithArgs: dict[str, Any],  # member-function names with argments
 ) -> None:
   """Calls member functions of given object with given arguments"""
   for functionName, argument in functionsWithArgs.items():
@@ -224,14 +223,14 @@ def callMemberFunctionsWithArgs(
 
 def calcRatioOfGraphs1D(
   graphs:     Sequence[ROOT.TGraphErrors],
-  ratioRange: Tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
+  ratioRange: tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
 ) -> ROOT.TGraphErrors:
   """Creates 1D graph with ratio graphs[0] / graphs[1] for points with identical x positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
-  xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
-  xErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
-  yVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetY()),  tuple(graphs[1].GetY()) )
-  yErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEY()), tuple(graphs[1].GetEY()))
+  xVals: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
+  xErrs: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
+  yVals: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetY()),  tuple(graphs[1].GetY()) )
+  yErrs: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetEY()), tuple(graphs[1].GetEY()))
   ratioGraph = ROOT.TGraphErrors()
   ratioGraph.SetName(f"{graphs[0].GetName()}_{graphs[1].GetName()}")
   countPoints = 0  # counts points that match in both graphs
@@ -261,16 +260,16 @@ def calcRatioOfGraphs1D(
 
 def calcRatioOfGraphs2D(
   graphs:     Sequence[ROOT.TGraph2DErrors],
-  ratioRange: Tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
+  ratioRange: tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
 ) -> ROOT.TGraph2DErrors:
   """Creates 2D graph with ratio graphs[0] / graphs[1] for points with identical (x, y) positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
-  xVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
-  xErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
-  yVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetY()),  tuple(graphs[1].GetY()) )
-  yErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEY()), tuple(graphs[1].GetEY()))
-  zVals: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetZ()),  tuple(graphs[1].GetZ()) )
-  zErrs: Tuple[Tuple[float, ...], Tuple[float, ...]] = (tuple(graphs[0].GetEZ()), tuple(graphs[1].GetEZ()))
+  xVals: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetX()),  tuple(graphs[1].GetX()) )
+  xErrs: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetEX()), tuple(graphs[1].GetEX()))
+  yVals: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetY()),  tuple(graphs[1].GetY()) )
+  yErrs: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetEY()), tuple(graphs[1].GetEY()))
+  zVals: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetZ()),  tuple(graphs[1].GetZ()) )
+  zErrs: tuple[tuple[float, ...], tuple[float, ...]] = (tuple(graphs[0].GetEZ()), tuple(graphs[1].GetEZ()))
   ratioGraph = ROOT.TGraph2DErrors()
   ratioGraph.SetName(f"{graphs[0].GetName()}_{graphs[1].GetName()}")
   countPoints = 0  # counts points that match in both graphs
@@ -300,7 +299,7 @@ def calcRatioOfGraphs2D(
 
 
 def getGraph1DFromValues(
-  graphValues:     Sequence[Tuple[UFloat, UFloat]],
+  graphValues:     Sequence[tuple[UFloat, UFloat]],
   shiftByFraction: float = 0,
 ) -> Optional[ROOT.TGraphErrors]:
   """Creates ROOT.TGraphErrors from given values"""
@@ -322,7 +321,7 @@ def getGraph1DFromValues(
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
-def getGraph2DFromValues(graphValues: Sequence[Tuple[UFloat, UFloat, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
+def getGraph2DFromValues(graphValues: Sequence[tuple[UFloat, UFloat, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
   """Creates ROOT.TGraph2DErrors from given values"""
   if not graphValues:
     print("No data to plot")
@@ -344,10 +343,10 @@ Graph2DVar = Enum("Graph2DVar", ("x", "y"))
 def slice2DGraph(
   graph2D:     ROOT.TGraph2DErrors,
   steppingVar: Graph2DVar,
-) -> Dict[Tuple[float, float], ROOT.TGraphErrors]:
+) -> dict[tuple[float, float], ROOT.TGraphErrors]:
   """Slices a 2D graph into 1D graphs assuming equidistant binning in stepping variable; returns dictionary with bin range of stepping variable and corresponding 1D graph"""
   # read values from 2D graph assuming equidistant binning
-  values: Dict[str, Tuple[float, ...]] = {
+  values: dict[str, tuple[float, ...]] = {
     "x"    : tuple(graph2D.GetX()),
     "xErr" : tuple(graph2D.GetEX()),
     "y"    : tuple(graph2D.GetY()),
@@ -361,7 +360,7 @@ def slice2DGraph(
   steppingVarHalfBinWidth = next(iter(steppingVarHalfBinWidths))
   plottingVar = Graph2DVar.x if steppingVar == Graph2DVar.y else Graph2DVar.y
   # construct 1D graph for each bin of stepping variable
-  graphs1D: Dict[Tuple[float, float], ROOT.TGraphErrors] = {}
+  graphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = {}
   for steppingVarBinCenter in sorted(steppingVarBinCenters):
     xVals = np.array([value for i, value in enumerate(values[plottingVar.name])         if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
     xErrs = np.array([value for i, value in enumerate(values[plottingVar.name + "Err"]) if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")

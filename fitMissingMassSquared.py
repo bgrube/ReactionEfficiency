@@ -2,17 +2,17 @@
 
 # !Note! Needs BruFit branch `spin1spin0_rw` hash eae4b6f5 or later
 
+from __future__ import annotations
+
 import argparse
 import functools
 import os
 import sys
 from typing import (
   Iterable,
-  List,
   Mapping,
   Optional,
   Sequence,
-  Tuple,
 )
 
 import ROOT
@@ -352,7 +352,7 @@ def defineBkgPdf(
   fitManager.SetUp().LoadSpeciesPDF("BkgPdf", bkgPdfWeightStartVal)
 
 
-def binnedTreeFilesIn(outputDirName: str) -> List[str]:
+def binnedTreeFilesIn(outputDirName: str) -> list[str]:
   """Returns list of file names with binned data"""
   binningFileName = f"{outputDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
@@ -395,7 +395,7 @@ def setRooFitOptions(
 def performFit(
   dataFileName:            str,                                            # path to file that contains data to fit
   outputDirName:           str,                                            # where to write all output files
-  kinematicBinning:        Sequence[Tuple[str, int, float, float]],        # binning info with one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
+  kinematicBinning:        Sequence[tuple[str, int, float, float]],        # binning info with one tuple per dimension [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
   pdfTypeSig:              str           = "Histogram",                    # type of signal PDF
   fixParsSig:              Sequence[str] = (),                             # fit-parameter names of signal function to fix
   pdfTypeBkg:              str           = "Histogram",                    # type of background PDF
@@ -557,7 +557,7 @@ if __name__ == "__main__":
   # additionalCut     = ""
   # additionalCut     = "(NmbUnusedShowers == 0)"
   additionalCut     = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"
-  kinematicBinnings: List[List[Tuple[str, int, float, float]]] = [
+  kinematicBinnings: list[list[tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # # 1D binnings
     # [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]

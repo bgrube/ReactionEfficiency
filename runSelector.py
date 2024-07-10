@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 
+from __future__ import annotations
+
 import functools
 import glob
 import os
-from typing import List
 
 import ROOT
 
@@ -67,12 +68,16 @@ if __name__ == "__main__":
 
   # define input files
   dataPeriods = [
-    "2017_01-ver03",
-    "2018_01-ver02",
-    "2018_08-ver02",
-    "2019_11-ver01",
+    # "2017_01-ver03",
+    # "2018_01-ver02",
+    # "2018_08-ver02",
+    # "2019_11-ver01",
+    "2017_01-ver03_goodToF",
+    # "2018_01-ver02_goodToF",
+    # "2018_08-ver02_goodToF",
   ]
-  for dataType in ("MCbggen", "RD"):
+  # for dataType in ("MCbggen", "RD"):
+  for dataType in ("MCbggen",):
     for dataPeriod in dataPeriods:
       dataDir = f"./data/{dataType}/{dataPeriod}"
       inFileNamePattern = f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"
@@ -81,7 +86,7 @@ if __name__ == "__main__":
       assert inFileNames, f"Did not find any files matching the name pattern"
 
       # run selector and create flat-tree files
-      flatTreeFileNames: List[str] = []
+      flatTreeFileNames: list[str] = []
       for inFileName in inFileNames:
         runNumber = inFileName.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeName}_<run number>.root`
         if not runNumber.isnumeric():

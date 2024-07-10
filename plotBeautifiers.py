@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -5,10 +7,8 @@ import functools
 import numbers
 from typing import (
   ContextManager,
-  List,
   Optional,
   Sequence,
-  Tuple,
   Union,
 )
 
@@ -51,12 +51,12 @@ class Lines:
   defaultStyle:         ROOT.Style_t = ROOT.kDashed
   orientation:          Orientation  = Orientation.vertical
   drawContentOverLines: bool         = False
-  _lineDefs:            List[Tuple[float, ROOT.Color_t, ROOT.Style_t]] = field(default_factory = list)
+  _lineDefs:            list[tuple[float, ROOT.Color_t, ROOT.Style_t]] = field(default_factory = list)
 
   def set(
     self,
-    lineDefs: Union[Sequence[float], Sequence[Tuple[float, ROOT.Color_t, ROOT.Style_t]]]
-  ) -> "Lines":
+    lineDefs: Union[Sequence[float], Sequence[tuple[float, ROOT.Color_t, ROOT.Style_t]]]
+  ) -> Lines:
     """Returns copy of object with a line defined for each given user coordinate, optionally with individual style definitions"""
     assert len(lineDefs) > 0, f"set() must be called with non-empty sequence"
     return Lines(
