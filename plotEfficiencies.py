@@ -73,7 +73,7 @@ def readYieldInfosForBinning(
   fitVariable:   str  = "",
 ) -> List[ParInfo]:
   """Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning"""
-  yieldInfos = []
+  yieldInfos: List[ParInfo] = []
   # read overall yields
   overallBinInfo = BinInfo("Overall", {}, {}, binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
@@ -101,7 +101,7 @@ def calculateEfficiencies(yieldInfos: Mapping[str, Sequence[ParInfo]]) -> List[E
   """Calculates efficiencies from yields"""
   assert ("Found" in yieldInfos) and ("Missing" in yieldInfos), "Either 'Found', 'Missing' or both datasets are missing"
   assert len(yieldInfos["Found"]) == len(yieldInfos["Missing"]), f"'Found' and 'Missing' datasets have different number of kinematic bins: {len(yieldInfos['Found'])} vs. {len(yieldInfos['Missing'])}"
-  effInfos = []
+  effInfos: List[EffInfo] = []
   for index, yieldInfoFound in enumerate(yieldInfos["Found"]):
     yieldInfoMissing = yieldInfos["Missing"][index]
     assert yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo), f"Bin infos for 'Found' and 'Missing' are not identical: {yieldInfoFound.binInfo} vs. {yieldInfoMissing.binInfo}"
@@ -274,7 +274,7 @@ if __name__ == "__main__":
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
       fitResultDirName = f"{args.outputDirName}/{dataSet}"
       yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName), readIntegrals, fitVariable)  # overall yield values
-      binVarNamesInDataSet = []
+      binVarNamesInDataSet: List[Tuple[str, ...]] = []
       for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
         if binningInfo:
           binVarNamesInDataSet.append(binningInfo.varNames)

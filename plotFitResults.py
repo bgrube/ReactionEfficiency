@@ -18,7 +18,7 @@ from typing import (
   Sequence,
   Tuple,
   Union,
-)
+)  #TODO use A | B syntax with `from __future__ import annotations` for Union and Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/; use builtin types, see https://peps.python.org/pep-0585/#implementation
 
 from uncertainties import UFloat, ufloat
 
@@ -207,7 +207,7 @@ def readParInfoForBin(
 
 def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   """Reads parameter values from fit results for given kinematic binning"""
-  parInfos = []
+  parInfos: List[ParInfo] = []
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
     parInfo = readParInfoForBin(binInfo)
@@ -483,7 +483,7 @@ if __name__ == "__main__":
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
     plotFitResult(BinInfo("", {}, {}, fitResultDirName), fitVariable)
-    binVarNamesInDataSet = []
+    binVarNamesInDataSet: List[Tuple[str, ...]] = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:
         binVarNamesInDataSet.append(binningInfo.varNames)
