@@ -7,10 +7,7 @@ import functools
 import numpy as np
 import os
 import subprocess
-from typing import (
-  Any,
-  Optional,
-)
+from typing import Any
 
 from uncertainties import UFloat, ufloat
 
@@ -221,7 +218,7 @@ def callMemberFunctionsWithArgs(
 
 def calcRatioOfGraphs1D(
   graphs:     Sequence[ROOT.TGraphErrors],
-  ratioRange: tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
+  ratioRange: tuple[float | None, float | None] = (None, None),  # is set, ratios outside this range are not filled into graph
 ) -> ROOT.TGraphErrors:
   """Creates 1D graph with ratio graphs[0] / graphs[1] for points with identical x positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
@@ -258,7 +255,7 @@ def calcRatioOfGraphs1D(
 
 def calcRatioOfGraphs2D(
   graphs:     Sequence[ROOT.TGraph2DErrors],
-  ratioRange: tuple[Optional[float], Optional[float]] = (None, None),  # is set, ratios outside this range are not filled into graph
+  ratioRange: tuple[float | None, float | None] = (None, None),  # is set, ratios outside this range are not filled into graph
 ) -> ROOT.TGraph2DErrors:
   """Creates 2D graph with ratio graphs[0] / graphs[1] for points with identical (x, y) positions"""
   assert len(graphs) == 2, f"Need exactly 2 graphs to calculate ratio but got {graphs}"
@@ -299,7 +296,7 @@ def calcRatioOfGraphs2D(
 def getGraph1DFromValues(
   graphValues:     Sequence[tuple[UFloat, UFloat]],
   shiftByFraction: float = 0,
-) -> Optional[ROOT.TGraphErrors]:
+) -> ROOT.TGraphErrors | None:
   """Creates ROOT.TGraphErrors from given values"""
   if not graphValues:
     print("No data to plot")
@@ -319,7 +316,7 @@ def getGraph1DFromValues(
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
-def getGraph2DFromValues(graphValues: Sequence[tuple[UFloat, UFloat, UFloat]]) -> Optional[ROOT.TGraph2DErrors]:
+def getGraph2DFromValues(graphValues: Sequence[tuple[UFloat, UFloat, UFloat]]) -> ROOT.TGraph2DErrors | None:
   """Creates ROOT.TGraph2DErrors from given values"""
   if not graphValues:
     print("No data to plot")

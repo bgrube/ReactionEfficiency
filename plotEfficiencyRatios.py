@@ -10,7 +10,6 @@ from collections.abc import (
 )
 import functools
 import os
-from typing import Optional
 
 from uncertainties import UFloat, ufloat
 
@@ -51,9 +50,9 @@ def overlayEfficiencyRatios1D(
   effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVar:        str,
   pdfDirName:        str,
-  pdfFileNamePrefix: str = "Proton_4pi_",
-  pdfFileNameSuffix: str = "",
-  graphTitle:        Optional[str] = None,
+  pdfFileNamePrefix: str        = "Proton_4pi_",
+  pdfFileNameSuffix: str        = "",
+  graphTitle:        str | None = None,
 ) -> None:
   """Plots efficiency ratios as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Plotting efficiency ratio for binning variable '{binningVar}'")
@@ -86,10 +85,10 @@ def overlayEfficiencyRatios2DSlices(
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,
-  pdfFileNamePrefix: str = "Proton_4pi_",
-  pdfFileNameSuffix: str = "",
-  graphTitle:        Optional[str] = None,
-  fitGraphs:         bool = False,
+  pdfFileNamePrefix: str        = "Proton_4pi_",
+  pdfFileNameSuffix: str        = "",
+  graphTitle:        str | None = None,
+  fitGraphs:         bool       = False,
 ) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
@@ -176,9 +175,9 @@ def overlayEfficiencyRatios2DColzText(
   effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
   binningVars:       Sequence[str],
   pdfDirName:        str,
-  pdfFileNamePrefix: str = "Proton_4pi_",
-  pdfFileNameSuffix: str = "",
-  histTitle:         Optional[str] = None,
+  pdfFileNamePrefix: str        = "Proton_4pi_",
+  pdfFileNameSuffix: str        = "",
+  histTitle:         str | None = None,
 ) -> None:
   """Plots efficiency ratios as a function of given binning variables for 2-dimensional binning using 'COLZ TEXT' option; works only for equidistant binning"""
   print(f"Plotting efficiency ratios as a function of binning variables '{binningVars}' assuming equidistant binning")
@@ -265,7 +264,7 @@ if __name__ == "__main__":
   # title = "Real Data / MC"
   title = "Good ToF / All Files"
   effInfos:    dict[str, dict[tuple[str, str], list[EffInfo]]] = {}
-  binVarNames: dict[str, Optional[list[tuple[str, ...]]]]      = {}
+  binVarNames: dict[str, list[tuple[str, ...]] | None]         = {}
   for ratioLabel, fitResults in ratiosToPlot.items():
     effInfos[ratioLabel], binVarNames[ratioLabel] = overlayEfficiencies.getEfficiencies(fitResultDirNames = tuple(fitResult for fitResult in fitResults))
   print("Plotting efficiency ratios")

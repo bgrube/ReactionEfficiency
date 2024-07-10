@@ -13,7 +13,6 @@ from collections.abc import (
 import functools
 import os
 import sys
-from typing import Optional
 
 import ROOT
 assert ROOT.gROOT.GetVersionInt() >= 62800, "ROOT version >= 6.28.0 is required"
@@ -25,7 +24,7 @@ import plotTools
 print = functools.partial(print, flush = True)
 
 
-def andCuts(cuts: Iterable[Optional[str]]) -> str:
+def andCuts(cuts: Iterable[str | None]) -> str:
   """Creates cut string where given cuts are combined by via logical and, ignoring None and empty cut strings"""
   cutsWithBraces = (f"({cut})" for cut in filter(None, cuts))  # surround each cut by braces and filter out None _and_ ""
   return " && ".join(cutsWithBraces)
@@ -194,15 +193,15 @@ def defineSigPdf(
   fitVariable:          str,
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
-  pdfName:              str = "SigPdf",
+  pdfName:              str           = "SigPdf",
   # arguments only needed for histogram PDF
-  outputDirName:        str = "",  # name of directory where weight files are written
-  templateDataFileName: str = "",  # name of file from which histogram is filled
-  templateDataTreeName: str = "",  # name of tree from which histogram is filled
-  templateNmbBins:      int = 100,  # number of bins of template histograms
-  weightBranchName:     str = "",  # name of branch from which to read weights
-  comboIdName:          str = "",  # name of branch with unique combo ID
-  cut:                  str = "",  # cut that is applied when filling histogram
+  outputDirName:        str           = "",  # name of directory where weight files are written
+  templateDataFileName: str           = "",  # name of file from which histogram is filled
+  templateDataTreeName: str           = "",  # name of tree from which histogram is filled
+  templateNmbBins:      int           = 100,  # number of bins of template histograms
+  weightBranchName:     str           = "",  # name of branch from which to read weights
+  comboIdName:          str           = "",  # name of branch with unique combo ID
+  cut:                  str           = "",  # cut that is applied when filling histogram
 ) -> None:
   """Defines signal PDFs of various types"""
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
@@ -257,15 +256,15 @@ def defineBkgPdf(
   fitVariable:          str,
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
-  pdfName:              str = "BkgPdf",
+  pdfName:              str           = "BkgPdf",
   # arguments only needed for histogram PDF
-  outputDirName:        str = "",   # name of directory where weight files are written
-  templateDataFileName: str = "",   # name of file from which histogram is filled
-  templateDataTreeName: str = "",   # name of tree from which histogram is filled
-  templateNmbBins:      int = 100,  # number of bins of template histograms
-  weightBranchName:     str = "",   # name of branch from which to read weights
-  comboIdName:          str = "",   # name of branch with unique combo ID
-  cut:                  str = "",   # cut that is applied when filling histogram
+  outputDirName:        str           = "",   # name of directory where weight files are written
+  templateDataFileName: str           = "",   # name of file from which histogram is filled
+  templateDataTreeName: str           = "",   # name of tree from which histogram is filled
+  templateNmbBins:      int           = 100,  # number of bins of template histograms
+  weightBranchName:     str           = "",   # name of branch from which to read weights
+  comboIdName:          str           = "",   # name of branch with unique combo ID
+  cut:                  str           = "",   # cut that is applied when filling histogram
 ):
   """Defines signal PDFs of various types"""
   print(f"Defining background PDF '{pdfName}' of type '{pdfType}'")

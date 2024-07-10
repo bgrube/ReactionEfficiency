@@ -14,10 +14,7 @@ import itertools
 import math
 import os
 import sys
-from typing import (
-  Any,
-  Optional,
-)  #TODO use A | B syntax with `from __future__ import annotations` for Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/
+from typing import Any
 
 from uncertainties import UFloat, ufloat
 
@@ -119,7 +116,7 @@ class BinningInfo:
     return tuple(binInfo.fitResultFileName for binInfo in self.infos)
 
 
-def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
+def getBinningFromDir(fitResultDirName: str) -> BinningInfo | None:
   """Reads binning info from given directory"""
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
   if not os.path.isfile(binningFileName):
@@ -147,9 +144,9 @@ def getBinningFromDir(fitResultDirName: str) -> Optional[BinningInfo]:
   return BinningInfo(binInfos, fitResultDirName)
 
 
-def getBinningInfosFromDir(fitResultDirName: str) -> list[Optional[BinningInfo]]:
+def getBinningInfosFromDir(fitResultDirName: str) -> list[BinningInfo | None]:
   """Reads binning infos from all 1st-level subdirectories that contain a 'DataBinsConfig.root' file"""
-  binningInfos: list[Optional[BinningInfo]] = []
+  binningInfos: list[BinningInfo | None] = []
   # find all subdirectories with binning files non-recursively
   subDirNames: list[str] = sorted([entry.path for entry in os.scandir(fitResultDirName) if entry.is_dir() and os.path.isfile(f"{entry.path}/DataBinsConfig.root")])
   # get binning info from all subdirectories
@@ -173,8 +170,8 @@ class ParInfo:
 
 def readParInfoForBin(
   binInfo:           BinInfo,
-  fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
-) -> Optional[ParInfo]:
+  fitParNamesToRead: Mapping[str, str] | None = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
+) -> ParInfo | None:
   """Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names"""
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
@@ -241,7 +238,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> list[ParInfo]:
 def plotFitResult(
   binInfo:     BinInfo,
   fitVariable: str,
-  pdfDirName:  Optional[str] = None,  # overrides default PDF output path (i.e. same dir as fit result file) if set
+  pdfDirName:  str | None = None,  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ) -> None:
   """Plots fit result for given kinematic bin"""
   fitResultFileName = binInfo.fitResultFileName
@@ -301,15 +298,15 @@ def plotGraphs1D(
   yAxisTitle:        str,
   pdfDirName:        str,
   pdfFileBaseName:   str,
-  pdfFileNamePrefix: str = "Proton_4pi_",
-  pdfFileNameSuffix: str = "",
-  graphTitle:        Optional[str] = None,
-  graphMinimum:      Optional[float] = 0.0,
-  graphMaximum:      Optional[float] = None,
-  skipBlack:         bool = True,
-  drawLegend:        Optional[bool] = None,
-  forceXRange:       Optional[tuple[float, float]] = None,
-  beautifiers:       Sequence[Any] = [],  #TODO improve type hint by making a base class for beautifiers
+  pdfFileNamePrefix: str                        = "Proton_4pi_",
+  pdfFileNameSuffix: str                        = "",
+  graphTitle:        str | None                 = None,
+  graphMinimum:      float | None               = 0.0,
+  graphMaximum:      float | None               = None,
+  skipBlack:         bool                       = True,
+  drawLegend:        bool | None                = None,
+  forceXRange:       tuple[float, float] | None = None,
+  beautifiers:       Sequence[Any]              = [],  #TODO improve type hint by making a base class for beautifiers
 ) -> None:
   """Generic function that plots the given graph(s)"""
   graphs: list[tuple[str, ROOT.TGraph]] = []
@@ -492,9 +489,9 @@ if __name__ == "__main__":
   fitVariable = "MissingMassSquared_Measured"
 
   # plot fits and read parameter values from fit results
-  parInfos:    dict[str, list[ParInfo]]        = {}    # parInfos[<dataset>][<bin>]
-  parNames:    Optional[tuple[str, ...]]       = None
-  binVarNames: Optional[list[tuple[str, ...]]] = None  # binning variables for each binning
+  parInfos:    dict[str, list[ParInfo]]     = {}    # parInfos[<dataset>][<bin>]
+  parNames:    tuple[str, ...] | None       = None
+  binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")

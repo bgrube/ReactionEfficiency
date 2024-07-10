@@ -14,7 +14,6 @@ from dataclasses import dataclass
 import functools
 import os
 import sys
-from typing import Optional
 
 from uncertainties import UFloat, ufloat
 
@@ -35,13 +34,13 @@ def getEfficiencies(
   fitResultDirNames: Sequence[str],
   fitLabels:         Sequence[str] = [],
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
-) -> tuple[dict[tuple[str, str], list[EffInfo]], Optional[list[tuple[str, ...]]]]:
+) -> tuple[dict[tuple[str, str], list[EffInfo]], list[tuple[str, ...]] | None]:
   """Reads yields from given fit directories and calculates efficiencies for each directory"""
   assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"List of fit-result directory names '{fitResultDirNames}' has duplicate elements"
   assert (not fitLabels) or len(fitLabels) == len(fitResultDirNames), f"Number of given fit labels ({len(fitLabels)}) does not match number of fit directories ({len(fitResultDirNames)})"
   print("Reading yields and calculating efficiencies")
   effInfos:    dict[tuple[str, str], list[EffInfo]] = {}    # effInfos[(<fit directory>, <fit label>)][<bin>]
-  binVarNames: Optional[list[tuple[str, ...]]]      = None  # binning variables for each binning
+  binVarNames: list[tuple[str, ...]] | None         = None  # binning variables for each binning
   for fitIndex, fitResultDirName in enumerate(fitResultDirNames):
     yieldInfos: dict[str, list[ParInfo]] = {}  # yieldInfos[<dataset>][<bin>]
     for dataSet in dataSets:
@@ -65,10 +64,10 @@ def overlayEfficiencies1D(
   effInfos:          Mapping[tuple[str, str], Sequence[EffInfo]],
   binningVar:        str,
   pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNamePrefix: str = "Proton_4pi_",
-  pdfFileNameSuffix: str = "",
-  graphTitle:        Optional[str] = None,
-  skipBlack:         bool = True,
+  pdfFileNamePrefix: str        = "Proton_4pi_",
+  pdfFileNameSuffix: str        = "",
+  graphTitle:        str | None = None,
+  skipBlack:         bool       = True,
 ) -> None:
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
@@ -94,8 +93,8 @@ def overlayEfficiencies2DSlices(
   binningVars:       Sequence[str],
   steppingVar:       str,
   pdfDirName:        str,  # directory name the PDF file will be written to
-  pdfFileNamePrefix: str = "Proton_4pi_",
-  pdfFileNameSuffix: str = "",
+  pdfFileNamePrefix: str  = "Proton_4pi_",
+  pdfFileNameSuffix: str  = "",
   skipBlack:         bool = True,
 ) -> None:
   """Overlays efficiencies as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""

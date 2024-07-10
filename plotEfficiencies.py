@@ -13,7 +13,6 @@ import functools
 import math
 import os
 import sys
-from typing import Optional
 
 from uncertainties import UFloat, ufloat
 
@@ -277,8 +276,8 @@ if __name__ == "__main__":
 
   for readIntegrals in (True, False):
     print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
-    yieldInfos:  dict[str, list[ParInfo]]        = {}    # yieldInfos[<dataset>][<bin>]
-    binVarNames: Optional[list[tuple[str, ...]]] = None  # binning variables for each binning
+    yieldInfos:  dict[str, list[ParInfo]]     = {}    # yieldInfos[<dataset>][<bin>]
+    binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
     for dataSet in dataSets:
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
       fitResultDirName = f"{args.outputDirName}/{dataSet}"

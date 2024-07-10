@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 import functools
 import numbers
-from typing import Optional
 
 import ROOT
 
@@ -19,11 +18,11 @@ print = functools.partial(print, flush = True)
 
 
 @contextmanager
-def padOf(obj: ROOT.TObject) -> Generator[Optional[ROOT.TVirtualPad], None, None]:
+def padOf(obj: ROOT.TObject) -> Generator[ROOT.TVirtualPad | None, None, None]:
   """Context manager that sets pad, which contains the given TObject, as current pad"""
   lastgPad = ROOT.gPad;  # save current gPad
   # find pad of obj
-  objPad: Optional[ROOT.TVirtualPad] = None
+  objPad: ROOT.TVirtualPad | None = None
   for canv in ROOT.gROOT.GetListOfCanvases():
     # search in canvas
     if canv.GetListOfPrimitives().FindObject(obj):
