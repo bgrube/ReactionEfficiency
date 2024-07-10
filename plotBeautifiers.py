@@ -9,10 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import functools
 import numbers
-from typing import (
-  Optional,
-  Union,
-)
+from typing import Optional
 
 import ROOT
 
@@ -57,7 +54,7 @@ class Lines:
 
   def set(
     self,
-    lineDefs: Union[Sequence[float], Sequence[tuple[float, ROOT.Color_t, ROOT.Style_t]]]
+    lineDefs: Sequence[float] | Sequence[tuple[float, ROOT.Color_t, ROOT.Style_t]]
   ) -> Lines:
     """Returns copy of object with a line defined for each given user coordinate, optionally with individual style definitions"""
     assert len(lineDefs) > 0, f"set() must be called with non-empty sequence"

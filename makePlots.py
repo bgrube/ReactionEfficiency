@@ -10,7 +10,6 @@ import numpy as np
 from typing import (
   Any,
   Optional,
-  Union,
 )
 
 import ROOT
@@ -54,10 +53,10 @@ COLOR_CASES = {
 def overlayDataSamples1D(
   dataSamples:       dict[str, dict[str, Any]],  # TFile or RDataFrame and style definitions for each data-set label
   histName:          Optional[str]                         = None,  # name of histogram to plot; required for TFile
-  variable:          Optional[Union[str, tuple[str, str]]] = None,  # variable to plot; may be column name, or tuple with new column definition; required for RDataFrame
+  variable:          Optional[str | tuple[str, str]] = None,        # variable to plot; may be column name, or tuple with new column definition; required for RDataFrame
   axisTitles:        Optional[str]                         = None,  # semicolon-separated list; required for RDataFrame
   binning:           Optional[tuple[int, float, float]]    = None,  # tuple with binning definition; required for RDataFrame
-  weightVariable:    Optional[Union[str, tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[str | tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   pdfDirName:        str = "./",
@@ -107,7 +106,7 @@ def overlayDataSamples1D(
 def drawHistogram(
   inFileName:        str,
   histName:          str,
-  rebinFactor:       Union[int, Sequence[int]] = 1,  # if integer -> rebin x axis; if sequence of 2 integers -> rebin x and y axes
+  rebinFactor:       int | Sequence[int] = 1,  # if integer -> rebin x axis; if sequence of 2 integers -> rebin x and y axes
   drawOption:        str = "HIST",
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
@@ -132,14 +131,14 @@ def drawHistogram(
 
 def getHistND(
   inputData:        ROOT.RDataFrame,
-  variables:        tuple[Union[str, tuple[str, str]], ...],  # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
-  axisTitles:       str,    # semicolon-separated list
-  binning:          Union[tuple[int, float, float], tuple[int, float, float, int, float, float]],  # tuple with 1D or 2D binning definitions
-  weightVariable:   Optional[Union[str, tuple[str, str]]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  variables:        tuple[str | tuple[str, str], ...],  # variable(s) to plot; is tuple of either column names or tuples with new column definitions; defines dimension of histogram
+  axisTitles:       str,                                # semicolon-separated list
+  binning:          tuple[int, float, float] | tuple[int, float, float, int, float, float],  # tuple with 1D or 2D binning definitions
+  weightVariable:   Optional[str | tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
   filterExpression: Optional[str] = None,
   histNameSuffix:   str = "",
   histTitle:        str = "",
-) -> Union[ROOT.TH1D, ROOT.TH2D]:
+) -> ROOT.TH1D | ROOT.TH2D:
   """Creates histogram from given variables in RDataFrame, applying optional weighting and filtering"""
   histDim = len(variables)
   assert 1 <= histDim <= 2, "currently, only 1D and 2D histograms are supported"
@@ -197,10 +196,10 @@ def setDefaultYAxisTitle(
 
 def plot1D(
   inputData:         ROOT.RDataFrame,
-  variable:          Union[str, tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
-  axisTitles:        str,  # semicolon-separated list
+  variable:          str | tuple[str, str],     # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,                       # semicolon-separated list
   binning:           tuple[int, float, float],  # tuple with binning definition
-  weightVariable:    Optional[Union[str, tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[str | tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   pdfDirName:        str = "./",
@@ -217,11 +216,11 @@ def plot1D(
 
 def plot2D(
   inputData:         ROOT.RDataFrame,
-  xVariable:         Union[str, tuple[str, str]],  # x variable to plot; may be column name, or tuple with new column definition
-  yVariable:         Union[str, tuple[str, str]],  # y variable to plot; may be column name, or tuple with new column definition
-  axisTitles:        str,  # semicolon-separated list
+  xVariable:         str | tuple[str, str],  # x variable to plot; may be column name, or tuple with new column definition
+  yVariable:         str | tuple[str, str],  # y variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,                    # semicolon-separated list
   binning:           tuple[int, float, float, int, float, float],  # tuple with binning definition
-  weightVariable:    Optional[Union[str, tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[str | tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   pdfDirName:        str = "./",
@@ -239,9 +238,9 @@ def getResolutionGraph(
   inputData:           ROOT.RDataFrame,
   diffVariable:        str,                          # residual from which resolution is measured
   diffVariableBinning: tuple[int, float, float],     # tuple with binning definition for diffVariable
-  resBinningVariable:  Union[str, tuple[str, str]],  # variable to bin resolution in; may be column name, or tuple with new column definition
+  resBinningVariable:  str | tuple[str, str],        # variable to bin resolution in; may be column name, or tuple with new column definition
   resBinning:          tuple[int, float, float],     # tuple with binning definition for resBinningVariable
-  weightVariable:      Optional[Union[str, tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:      Optional[str | tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   additionalFilter:    Optional[str] = None,
   histTitle:           Optional[str] = None,
   histPdfFileName:     Optional[str] = None,
@@ -276,9 +275,9 @@ def overlayResolutions(
   resVariableName:       str,                          # name of variable for which resolution is estimated
   diffVariable:          str,                          # residual from which resolution is measured
   diffVariableBinning:   tuple[int, float, float],     # tuple with binning definition for diffVariable
-  resBinningVariable:    Union[str, tuple[str, str]],  # variable to bin resolution in; may be column name, or tuple with new column definition
+  resBinningVariable:    str | tuple[str, str],        # variable to bin resolution in; may be column name, or tuple with new column definition
   resBinning:            tuple[int, float, float],     # tuple with binning definition for resBinningVariable
-  weightVariable:        Optional[Union[str, tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:        Optional[str | tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix:     str = "Proton_4pi_",
   pdfFileNameSuffix:     str = "",
   pdfDirName:            str = "./",
@@ -319,10 +318,10 @@ def overlayResolutions(
 
 def overlayCases(
   inputData:         ROOT.RDataFrame,
-  variable:          Union[str, tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
-  axisTitles:        str,  # semicolon-separated list
+  variable:          str | tuple[str, str],     # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,                       # semicolon-separated list
   binning:           tuple[int, float, float],  # tuple with binning definition
-  weightVariable:    Optional[Union[str, tuple[str, str]]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:    Optional[str | tuple[str, str]] = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
   pdfDirName:        str = "./",
@@ -401,7 +400,7 @@ ROOT.gInterpreter.Declare(CPP_CODE)
 
 def getTopologyHist(
   inputData:        ROOT.RDataFrame,
-  weightVariable:   Optional[Union[str, tuple[str, str]]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
+  weightVariable:   Optional[str | tuple[str, str]] = None,  # may be None (= no weighting), string with column name, or tuple with new column definition
   filterExpression: Optional[str] = None,
   histNameSuffix:   str = "",
 ) -> tuple[list[str], ROOT.TH1F]:
@@ -508,10 +507,10 @@ def plotTopologyHist(
 
 def overlayTopologies(
   inputData:         ROOT.RDataFrame,
-  variable:          Union[str, tuple[str, str]],  # variable to plot; may be column name, or tuple with new column definition
-  axisTitles:        str,  # semicolon-separated list
+  variable:          str | tuple[str, str],     # variable to plot; may be column name, or tuple with new column definition
+  axisTitles:        str,                       # semicolon-separated list
   binning:           tuple[int, float, float],  # tuple with binning definition
-  toposToPlot:       dict[str, list[str]],  # topologies to plot for each case
+  toposToPlot:       dict[str, list[str]],      # topologies to plot for each case
   additionalFilter:  Optional[str] = None,
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "_MCbggen_topologies",

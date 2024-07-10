@@ -10,7 +10,6 @@ import subprocess
 from typing import (
   Any,
   Optional,
-  Union,
 )
 
 from uncertainties import UFloat, ufloat
@@ -103,7 +102,7 @@ MARKERS_OPEN: tuple[tuple[int, float], ...] = (
 #TODO take TObject and check wether it is TAttLine etc.
 #TODO add cycle option; provide more styles by combining colors and markers
 def setCbFriendlyStyle(
-  graphOrHist:   Union[ROOT.TGraph, ROOT.TH1],
+  graphOrHist:   ROOT.TGraph | ROOT.TH1,
   styleIndex:    int,  # index that switches between styles
   skipBlack:     bool  = True,  # if set black color is not used
   setMarker:     bool  = True,

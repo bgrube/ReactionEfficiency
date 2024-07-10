@@ -17,8 +17,7 @@ import sys
 from typing import (
   Any,
   Optional,
-  Union,
-)  #TODO use A | B syntax with `from __future__ import annotations` for Union and Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/
+)  #TODO use A | B syntax with `from __future__ import annotations` for Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/
 
 from uncertainties import UFloat, ufloat
 
@@ -48,7 +47,7 @@ BINNING_VAR_PLOT_INFO: dict[str, dict[str, str]] = {
   "MissingProtonPhi"   : {"label" : "#it{#phi}_{miss}^{kin. fit}",   "unit" : "deg"},
 }
 
-def getAxisInfoForBinningVar(binningVar: Union[str, tuple[str, str]]) -> tuple[str, str, str]:
+def getAxisInfoForBinningVar(binningVar: str | tuple[str, str]) -> tuple[str, str, str]:
   varName = None
   if isinstance(binningVar, str):
     varName = binningVar
@@ -297,7 +296,7 @@ def getParValuesForGraph1D(
 
 #TODO add sequence of beautifier functors as optional argument
 def plotGraphs1D(
-  graphOrGraphs:     Union[ROOT.TGraph, Sequence[tuple[str, ROOT.TGraph]]],
+  graphOrGraphs:     ROOT.TGraph | Sequence[tuple[str, ROOT.TGraph]],
   binningVar:        str,
   yAxisTitle:        str,
   pdfDirName:        str,
