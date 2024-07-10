@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
-import functools
-import os
-from typing import (
+from collections.abc import (
   Mapping,
-  Optional,
   Sequence,
 )
+import functools
+import os
+from typing import Optional
 
 from uncertainties import UFloat, ufloat
 

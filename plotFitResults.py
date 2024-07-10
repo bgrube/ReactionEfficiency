@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Mapping
+from collections.abc import (
+  Mapping,
+  Sequence,
+)
 from dataclasses import dataclass
 import functools
 import itertools
@@ -14,9 +17,8 @@ import sys
 from typing import (
   Any,
   Optional,
-  Sequence,
   Union,
-)  #TODO use A | B syntax with `from __future__ import annotations` for Union and Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/; use collections.abc instead of typing, see https://peps.python.org/pep-0585/#implementation
+)  #TODO use A | B syntax with `from __future__ import annotations` for Union and Optional, see https://adamj.eu/tech/2022/10/17/python-type-hints-old-and-new-syntaxes/
 
 from uncertainties import UFloat, ufloat
 

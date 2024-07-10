@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import (
+  Generator,
+  Sequence,
+)
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 import functools
 import numbers
 from typing import (
-  ContextManager,
   Optional,
-  Sequence,
   Union,
 )
 
@@ -20,7 +22,7 @@ print = functools.partial(print, flush = True)
 
 
 @contextmanager
-def padOf(obj: ROOT.TObject) -> ContextManager[Optional[ROOT.TVirtualPad]]:
+def padOf(obj: ROOT.TObject) -> Generator[Optional[ROOT.TVirtualPad], None, None]:
   """Context manager that sets pad, which contains the given TObject, as current pad"""
   lastgPad = ROOT.gPad;  # save current gPad
   # find pad of obj

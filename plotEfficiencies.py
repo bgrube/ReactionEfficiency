@@ -4,16 +4,16 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import (
+  MutableMapping,
+  Sequence,
+)
 from dataclasses import dataclass
 import functools
 import math
 import os
 import sys
-from typing import (
-  MutableMapping,
-  Optional,
-  Sequence,
-)
+from typing import Optional
 
 from uncertainties import UFloat, ufloat
 

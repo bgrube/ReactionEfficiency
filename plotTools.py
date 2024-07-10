@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 import ctypes
 from enum import Enum
 import functools
@@ -9,8 +10,6 @@ import subprocess
 from typing import (
   Any,
   Optional,
-  Sequence,
-  Set,
   Union,
 )
 
@@ -354,8 +353,8 @@ def slice2DGraph(
     "z"    : tuple(graph2D.GetZ()),
     "zErr" : tuple(graph2D.GetEZ()),
   }
-  steppingVarBinCenters:    Set[float] = set(values[steppingVar.name])
-  steppingVarHalfBinWidths: Set[float] = set((round(value, 10) for value in values[steppingVar.name + "Err"]))
+  steppingVarBinCenters:    set[float] = set(values[steppingVar.name])
+  steppingVarHalfBinWidths: set[float] = set((round(value, 10) for value in values[steppingVar.name + "Err"]))
   assert len(steppingVarHalfBinWidths) == 1, f"Binning for stepping variable is not equidistant; found half bin widths {steppingVarHalfBinWidths}"
   steppingVarHalfBinWidth = next(iter(steppingVarHalfBinWidths))
   plottingVar = Graph2DVar.x if steppingVar == Graph2DVar.y else Graph2DVar.y

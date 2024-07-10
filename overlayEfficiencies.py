@@ -5,16 +5,16 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+from collections.abc import (
+  Iterable,
+  Mapping,
+  Sequence,
+)
 from dataclasses import dataclass
 import functools
 import os
 import sys
-from typing import (
-  Iterable,
-  Mapping,
-  Optional,
-  Sequence,
-)
+from typing import Optional
 
 from uncertainties import UFloat, ufloat
 

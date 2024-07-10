@@ -5,15 +5,15 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import (
+  Iterable,
+  Mapping,
+  Sequence,
+)
 import functools
 import os
 import sys
-from typing import (
-  Iterable,
-  Mapping,
-  Optional,
-  Sequence,
-)
+from typing import Optional
 
 import ROOT
 assert ROOT.gROOT.GetVersionInt() >= 62800, "ROOT version >= 6.28.0 is required"
