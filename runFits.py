@@ -152,6 +152,7 @@ if __name__ == "__main__":
   # pdfTypeBkg = "SkewedGaussian_ExpMod",
   # pdfTypeBkg = "SkewedGaussian_Log",
 
+  ROOT.gBenchmark.Start("Total processing time")
   for fitsForDataSample in fits:
     for fit in fitsForDataSample:
       fitDirectory = f"{fitRootDir}/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
@@ -173,3 +174,4 @@ if __name__ == "__main__":
       subprocess.run(f"./plotFitResults.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotFitResults.log\"", shell = True)
       print("Plotting efficiencies...")
       subprocess.run(f"./plotEfficiencies.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotEfficiencies.log\"", shell = True)
+  ROOT.gBenchmark.Show("Total processing time")
