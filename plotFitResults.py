@@ -175,15 +175,33 @@ class ParInfo:
 def readParInfoForBin(
   binInfo:           BinInfo,
   fitParNamesToRead: Optional[Mapping[str, str]] = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
-) -> ParInfo:
+) -> Optional[ParInfo]:
   """Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names"""
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
     return ParInfo(binInfo, {})
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
-  fitResultFile  = ROOT.TFile.Open(fitResultFileName, "READ")
-  fitResult      = fitResultFile.Get("MinuitResult")
+  fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
+  fitResult     = fitResultFile.Get("MinuitResult")
+  # filter out unsuccessful fits
+  minimizerStatuses = [(i, fitResult.statusLabelHistory(i), fitResult.statusCodeHistory(i)) for i in range(fitResult.numStatusHistory())]
+  if not all(status[2] == 0 for status in minimizerStatuses):
+    print("Disregarding fit because its status is " + ", ".join([f"[{status[0]}] {status[1]} = {status[2]}" for status in minimizerStatuses]))
+    return None
+  if fitResult.minNll() == 0:
+    print("Disregarding fit because NLL at minimum = 0")
+    return None
+  if fitResult.edm() == 0:
+    print("Disregarding fit because EDM = 0")
+    return None
+  print(f"    status        = {fitResult.status()}")
+  print(f"    covQual       = {fitResult.covQual()}")
+  print(f"    edm           = {fitResult.edm()}")
+  print(f"    minNll        = {fitResult.minNll()}")
+  print(f"    numInvalidNLL = {fitResult.numInvalidNLL()}")
+  # fitResult.Print()
+  # get fit parameters
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
   if isinstance(fitParNamesToRead, collections.abc.Mapping):
@@ -200,7 +218,6 @@ def readParInfoForBin(
   else:
     # read all parameters
     parValuesInBin.update({fitPar.GetName() : ufloat(fitPar.getVal(), fitPar.getError()) for fitPar in fitPars})
-  print("    Fit result status:", ", ".join([f"[{i}] {fitResult.statusCodeHistory(i)} = {fitResult.statusLabelHistory(i)}" for i in range(fitResult.numStatusHistory())]))
   fitResultFile.Close()
   return ParInfo(binInfo, parValuesInBin)
 
@@ -211,7 +228,7 @@ def readParInfosForBinning(binningInfo: BinningInfo) -> List[ParInfo]:
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
     parInfo = readParInfoForBin(binInfo)
-    if parInfo.values:
+    if parInfo is not None and parInfo.values:
       # ensure that the parameter sets of the fit functions are the same in all kinematic bins, for which parameters could be read successfully
       parNamesInBin = parInfo.names
       if parNames is not None:

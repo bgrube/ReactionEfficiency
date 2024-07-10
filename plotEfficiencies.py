@@ -11,7 +11,7 @@ import sys
 from typing import (
   Dict,
   List,
-  Mapping,
+  MutableMapping,
   Optional,
   Sequence,
   Tuple,
@@ -79,14 +79,16 @@ def readYieldInfosForBinning(
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
-    print(f"Read overall yields: {yieldInfo}")
-    yieldInfos.append(yieldInfo)  # first entry always contains overall yields
+    if yieldInfo is not None:
+      print(f"Read overall yields: {yieldInfo}")
+      yieldInfos.append(yieldInfo)  # first entry always contains overall yields
   # read yields for each bin
   for binInfo in binningInfo.infos:
     yieldInfo = readDataIntegralFromFitFile(binInfo, fitVariable) if readIntegrals \
       else plotFitResults.readParInfoForBin(binInfo, YIELD_PAR_NAMES)
-    print(f"Read yields for kinematic bin: {yieldInfo}")
-    yieldInfos.append(yieldInfo)
+    if yieldInfo is not None:
+      print(f"Read yields for kinematic bin: {yieldInfo}")
+      yieldInfos.append(yieldInfo)
   return yieldInfos
 
 
@@ -97,10 +99,19 @@ class EffInfo:
   value:   UFloat   # efficiency value
 
 
-def calculateEfficiencies(yieldInfos: Mapping[str, Sequence[ParInfo]]) -> List[EffInfo]:
+def calculateEfficiencies(yieldInfos: MutableMapping[str, List[ParInfo]]) -> List[EffInfo]:
   """Calculates efficiencies from yields"""
   assert ("Found" in yieldInfos) and ("Missing" in yieldInfos), "Either 'Found', 'Missing' or both datasets are missing"
-  assert len(yieldInfos["Found"]) == len(yieldInfos["Missing"]), f"'Found' and 'Missing' datasets have different number of kinematic bins: {len(yieldInfos['Found'])} vs. {len(yieldInfos['Missing'])}"
+  if len(yieldInfos["Found"]) != len(yieldInfos["Missing"]):
+    # ensure that both yieldInfos have the same set of bins
+    yieldInfos["Found"] = [
+      yieldInfoFound for yieldInfoFound in yieldInfos["Found"]
+      if any(yieldInfoMissing.binInfo.isSameBinAs(yieldInfoFound.binInfo) for yieldInfoMissing in yieldInfos["Missing"])
+    ]
+    yieldInfos["Missing"] = [
+      yieldInfoMissing for yieldInfoMissing in yieldInfos["Missing"]
+      if any(yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo) for yieldInfoFound in yieldInfos["Found"])
+    ]
   effInfos: List[EffInfo] = []
   for index, yieldInfoFound in enumerate(yieldInfos["Found"]):
     yieldInfoMissing = yieldInfos["Missing"][index]
