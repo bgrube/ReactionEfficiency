@@ -514,10 +514,9 @@ def performFit(
   fitManager.SetUp().FitOptions().Print("")
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    #FIXME PROOF does not work with ROOT 6.28
-    # print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
-    # ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
-    # ROOT.Proof.Go(fitManager, nmbProofJobs)
+    print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
+    ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
+    ROOT.Proof.Go(fitManager, nmbProofJobs)
     print(f"Perform fit running {nmbThreadsPerJob} threads in parallel")
     ROOT.Here.Go(fitManager)
   else:
