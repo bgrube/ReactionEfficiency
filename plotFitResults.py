@@ -185,18 +185,21 @@ def readParInfoForBin(
   if not all(status[2] == 0 for status in minimizerStatuses):
     print("Disregarding fit because its status is " + ", ".join([f"[{status[0]}] {status[1]} = {status[2]}" for status in minimizerStatuses]))
     return None
+  # if fitResult.covQual() != 3:  # this cut seems to be too aggressive, in particular when fudge parameters are freed
+  #   print("Disregarding fit because covariance matrix was not positive definite")
+  #   return None
   if fitResult.minNll() == 0:
     print("Disregarding fit because NLL at minimum = 0")
     return None
   if fitResult.edm() == 0:
     print("Disregarding fit because EDM = 0")
     return None
-  print(f"    status        = {fitResult.status()}")
-  print(f"    covQual       = {fitResult.covQual()}")
-  print(f"    edm           = {fitResult.edm()}")
-  print(f"    minNll        = {fitResult.minNll()}")
-  print(f"    numInvalidNLL = {fitResult.numInvalidNLL()}")
-  # fitResult.Print()
+  # print(f"    status        = {fitResult.status()}")
+  # print(f"    covQual       = {fitResult.covQual()}")
+  # print(f"    edm           = {fitResult.edm()}")
+  # print(f"    minNll        = {fitResult.minNll()}")
+  # print(f"    numInvalidNLL = {fitResult.numInvalidNLL()}")
+  fitResult.Print()
   # get fit parameters
   fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}

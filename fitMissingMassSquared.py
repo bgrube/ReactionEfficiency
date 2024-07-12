@@ -136,6 +136,7 @@ def defineHistogramPdf(
   comboIdName:          str,  # name of branch with unique combo ID
   cut:                  str,  # cut that is applied when filling histogram
   nmbBins:              int  = 100,  # number of bins of template histogram
+  # useAdaptiveBinning:   bool = True,
   useAdaptiveBinning:   bool = False,
 ) -> None:
   """Defines histogram-based PDF"""

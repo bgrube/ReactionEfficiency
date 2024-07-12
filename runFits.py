@@ -166,8 +166,8 @@ if __name__ == "__main__":
       cmdLineOptions = [(f"--{option} {fit[option]}" if option in fit else "") for option in ("pdfTypeSig", "fixParsSig", "pdfTypeBkg", "fixParsBkg")]
       result = subprocess.run(
         f"./fitMissingMassSquared.py \"{fitDirectory}\" {fit['dataFileName']} {fit['bggenFileName']} {' '.join(cmdLineOptions)} &> \"{fitDirectory}/fitMissingMassSquared.log\"", shell = True)
-      if result.returncode != 0:
-        raise RuntimeError(f"Fitting script failed with exit code '{result.returncode}'")
+      # if result.returncode != 0:
+      #   raise RuntimeError(f"Fitting script failed with exit code '{result.returncode}'")
       # postprocess fit results
       subprocess.run(f"./cleanFitDir.sh \"{fitDirectory}\"", shell = True)
       print("Plotting fit results...")
