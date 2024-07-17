@@ -17,6 +17,8 @@ import sys
 from uncertainties import UFloat, ufloat
 
 import ROOT
+if __name__ == "__main__":
+  ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
 import plotFitResults
 from plotFitResults import (
