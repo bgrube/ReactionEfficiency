@@ -1,4 +1,5 @@
 {
+	// std::cout << gInterpreter->GetCurrentMacroName() << endl;  // print path of this file
 	gROOT->SetStyle("Modern");
 
 	// no borders
