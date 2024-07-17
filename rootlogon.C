@@ -24,7 +24,7 @@
 	newColor = new TColor(TColor::GetFreeColorIndex(), 1, 1, 1, "transparent_background", 0);
 	int fullyTransparentColor = newColor->GetNumber();
 	gStyle->SetPadColor       (fullyTransparentColor);
-	gStyle->SetCanvasColor    (fullyTransparentColor);
+	gStyle->SetCanvasColor    (fullyTransparentColor);  //TODO in ROOT 6.32 this exposes undeleted axes objects
 	gStyle->SetLegendFillColor(fullyTransparentColor);
 
 	gStyle->SetOptTitle(true);
