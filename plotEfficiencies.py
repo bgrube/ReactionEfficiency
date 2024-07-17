@@ -101,16 +101,15 @@ class EffInfo:
 def calculateEfficiencies(yieldInfos: MutableMapping[str, list[ParInfo]]) -> list[EffInfo]:
   """Calculates efficiencies from yields"""
   assert ("Found" in yieldInfos) and ("Missing" in yieldInfos), "Either 'Found', 'Missing' or both datasets are missing"
-  if len(yieldInfos["Found"]) != len(yieldInfos["Missing"]):
-    # ensure that both yieldInfos have the same set of bins
-    yieldInfos["Found"] = [
-      yieldInfoFound for yieldInfoFound in yieldInfos["Found"]
-      if any(yieldInfoMissing.binInfo.isSameBinAs(yieldInfoFound.binInfo) for yieldInfoMissing in yieldInfos["Missing"])
-    ]
-    yieldInfos["Missing"] = [
-      yieldInfoMissing for yieldInfoMissing in yieldInfos["Missing"]
-      if any(yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo) for yieldInfoFound in yieldInfos["Found"])
-    ]
+  # ensure that yieldInfos for 'Found' and 'Missing' have the same set of bins
+  yieldInfos["Found"] = [
+    yieldInfoFound for yieldInfoFound in yieldInfos["Found"]
+    if any(yieldInfoMissing.binInfo.isSameBinAs(yieldInfoFound.binInfo) for yieldInfoMissing in yieldInfos["Missing"])
+  ]
+  yieldInfos["Missing"] = [
+    yieldInfoMissing for yieldInfoMissing in yieldInfos["Missing"]
+    if any(yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo) for yieldInfoFound in yieldInfos["Found"])
+  ]
   effInfos: list[EffInfo] = []
   for index, yieldInfoFound in enumerate(yieldInfos["Found"]):
     yieldInfoMissing = yieldInfos["Missing"][index]
