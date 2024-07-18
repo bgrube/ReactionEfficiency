@@ -49,7 +49,7 @@ def readDataIntegralFromFitFile(
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
-    return ParInfo(binInfo, {})
+    return ParInfo(binInfo, fitVariable, {})
   print(f"Reading fitted data histogram from file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{'' if binInfo.name == 'Overall' else binInfo.name}_{fitVariable}"
@@ -63,7 +63,7 @@ def readDataIntegralFromFitFile(
   for i in range(dataHist.GetN()):
     integral += yVals[i]
   fitResultFile.Close()
-  return ParInfo(binInfo, {"Signal" : ufloat(integral, math.sqrt(integral))})
+  return ParInfo(binInfo, fitVariable, {"Signal" : ufloat(integral, math.sqrt(integral))})
 
 
 def readYieldInfosForBinning(
@@ -77,14 +77,14 @@ def readYieldInfosForBinning(
   overallBinInfo = BinInfo("Overall", {}, {}, binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
-      else plotFitResults.readParInfoForBin(overallBinInfo, YIELD_PAR_NAMES)
+      else plotFitResults.readParInfoForBin(overallBinInfo, fitVariable, YIELD_PAR_NAMES)
     if yieldInfo is not None:
       print(f"Read overall yields: {yieldInfo}")
       yieldInfos.append(yieldInfo)  # first entry always contains overall yields
   # read yields for each bin
   for binInfo in binningInfo.infos:
     yieldInfo = readDataIntegralFromFitFile(binInfo, fitVariable) if readIntegrals \
-      else plotFitResults.readParInfoForBin(binInfo, YIELD_PAR_NAMES)
+      else plotFitResults.readParInfoForBin(binInfo, fitVariable, YIELD_PAR_NAMES)
     if yieldInfo is not None:
       print(f"Read yields for kinematic bin: {yieldInfo}")
       yieldInfos.append(yieldInfo)

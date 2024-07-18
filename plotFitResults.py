@@ -160,6 +160,7 @@ def getBinningInfosFromDir(fitResultDirName: str) -> list[BinningInfo | None]:
 class ParInfo:
   """Stores information about parameter values in a single kinematic bin"""
   binInfo: BinInfo            # info for the kinematic bin
+  fitVariable: str            # name of the fit variable
   values:  dict[str, UFloat]  # mapping of parameter names to values
 
   @property
@@ -167,16 +168,25 @@ class ParInfo:
     """Returns parameter names"""
     return tuple(sorted(self.values.keys()))
 
+  def readChi2From(self, fitResultFile: ROOT.TFile) -> None:
+    """Reads reduced chi^2 value from given fit-result file"""
+    # BruFit (mis)uses TPad::SetTheta() to store the reduced chi^2
+    # value in the canvas used to plot the fit result
+    canvName = (self.binInfo.name if self.binInfo.name and self.binInfo.name != "Overall" else "") + f"_{self.fitVariable}"
+    canv = fitResultFile.Get(canvName)
+    self.values["redChi2"] = ufloat(canv.GetTheta(), 0)
+
 
 def readParInfoForBin(
   binInfo:           BinInfo,
+  fitVariable:       str,  # name of the fit variable
   fitParNamesToRead: Mapping[str, str] | None = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ) -> ParInfo | None:
   """Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names"""
   fitResultFileName = binInfo.fitResultFileName
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
-    return ParInfo(binInfo, {})
+    return ParInfo(binInfo, fitVariable, {})
   print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   fitResult     = fitResultFile.Get("MinuitResult")
@@ -217,16 +227,21 @@ def readParInfoForBin(
   else:
     # read all parameters
     parValuesInBin.update({fitPar.GetName() : ufloat(fitPar.getVal(), fitPar.getError()) for fitPar in fitPars})
+  parInfo = ParInfo(binInfo, fitVariable, parValuesInBin)
+  parInfo.readChi2From(fitResultFile)
   fitResultFile.Close()
-  return ParInfo(binInfo, parValuesInBin)
+  return parInfo
 
 
-def readParInfosForBinning(binningInfo: BinningInfo) -> list[ParInfo]:
+def readParInfosForBinning(
+  binningInfo: BinningInfo,
+  fitVariable: str,  # name of the fit variable
+) -> list[ParInfo]:
   """Reads parameter values from fit results for given kinematic binning"""
   parInfos: list[ParInfo] = []
   parNames = None  # used to compare parameter names for current and previous bin
   for binInfo in binningInfo.infos:
-    parInfo = readParInfoForBin(binInfo)
+    parInfo = readParInfoForBin(binInfo, fitVariable)
     if parInfo is not None and parInfo.values:
       # ensure that the parameter sets of the fit functions are the same in all kinematic bins, for which parameters could be read successfully
       parNamesInBin = parInfo.names
@@ -508,7 +523,7 @@ if __name__ == "__main__":
           plotFitResults(binningInfo, fitVariable)
           if not dataSet in parInfos:
             parInfos[dataSet] = []
-          parInfos[dataSet].extend(readParInfosForBinning(binningInfo))
+          parInfos[dataSet].extend(readParInfosForBinning(binningInfo, fitVariable))
           parNamesInBinning = parInfos[dataSet][-1].names  # readParInfosForBinning() ensures that parameter names are identical within a binning
           if parNames is not None:
             assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} for dataset '{dataSet}' and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous dataset"
