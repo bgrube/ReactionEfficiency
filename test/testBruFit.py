@@ -28,7 +28,7 @@ class FitSetup:
 
 
 def createPdf(
-  fitManager:       "ROOT.FitManager",
+  fitManager:       ROOT.FitManager,
   fitSetup:         FitSetup,
   treeName:         str,
   fitVariable:      str,

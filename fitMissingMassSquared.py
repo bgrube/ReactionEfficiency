@@ -59,7 +59,7 @@ def readWeights(
 
 
 def defineGaussianPdf(
-  fitManager:  "ROOT.FitManager",
+  fitManager:  ROOT.FitManager,
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -69,7 +69,7 @@ def defineGaussianPdf(
 
 
 def defineDoubleGaussianPdf(
-  fitManager:  "ROOT.FitManager",
+  fitManager:  ROOT.FitManager,
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -91,7 +91,7 @@ def defineDoubleGaussianPdf(
 
 
 def defineSkewedGaussianPdf(
-  fitManager:  "ROOT.FitManager",
+  fitManager:  ROOT.FitManager,
   fitVariable: str,
   pdfName:     str,
   parDefs:     Mapping[str, str],  # maps parameter names to their definition strings
@@ -125,7 +125,7 @@ def defineSkewedGaussianPdf(
 
 
 def defineHistogramPdf(
-  fitManager:           "ROOT.FitManager",
+  fitManager:           ROOT.FitManager,
   fitVariable:          str,
   pdfName:              str,
   parDefs:              Mapping[str, str],  # maps parameter names to their definition strings
@@ -190,7 +190,7 @@ def defineHistogramPdf(
 
 
 def defineSigPdf(
-  fitManager:           "ROOT.FitManager",
+  fitManager:           ROOT.FitManager,
   fitVariable:          str,
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
@@ -253,7 +253,7 @@ def defineSigPdf(
 
 
 def defineBkgPdf(
-  fitManager:           "ROOT.FitManager",
+  fitManager:           ROOT.FitManager,
   fitVariable:          str,
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
@@ -367,7 +367,7 @@ def binnedTreeFilesIn(outputDirName: str) -> list[str]:
 
 
 def setRooFitOptions(
-  fitManager:       "ROOT.FitManager",
+  fitManager:       ROOT.FitManager,
   nmbThreadsPerJob: int,
 ) -> None:
   """Sets general fit options"""
