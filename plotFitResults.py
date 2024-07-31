@@ -159,9 +159,9 @@ def getBinningInfosFromDir(fitResultDirName: str) -> list[BinningInfo | None]:
 @dataclass
 class ParInfo:
   """Stores information about parameter values in a single kinematic bin"""
-  binInfo: BinInfo            # info for the kinematic bin
-  fitVariable: str            # name of the fit variable
-  values:  dict[str, UFloat]  # mapping of parameter names to values
+  binInfo:     BinInfo            # info for the kinematic bin
+  fitVariable: str                # name of the fit variable
+  values:      dict[str, UFloat]  # mapping of parameter names to values
 
   @property
   def names(self) -> tuple[str, ...]:
@@ -193,25 +193,29 @@ def readParInfoForBin(
   # filter out unsuccessful fits
   minimizerStatuses = [(i, fitResult.statusLabelHistory(i), fitResult.statusCodeHistory(i)) for i in range(fitResult.numStatusHistory())]
   if not all(status[2] == 0 for status in minimizerStatuses):
-    print("Disregarding fit because its status is " + ", ".join([f"[{status[0]}] {status[1]} = {status[2]}" for status in minimizerStatuses]))
+    print("Disregarding fit result because its status is " + ", ".join([f"[{status[0]}] {status[1]} = {status[2]}" for status in minimizerStatuses]))
     return None
   # if fitResult.covQual() != 3:  # this cut seems to be too aggressive, in particular when fudge parameters are freed
-  #   print("Disregarding fit because covariance matrix was not positive definite")
+  #   print("Disregarding fit result because covariance matrix was not positive definite")
   #   return None
   if fitResult.minNll() == 0:
-    print("Disregarding fit because NLL at minimum = 0")
+    print("Disregarding fit result because NLL at minimum = 0")
     return None
   if fitResult.edm() == 0:
-    print("Disregarding fit because EDM = 0")
+    print("Disregarding fit result because EDM = 0")
     return None
-  # print(f"    status        = {fitResult.status()}")
-  # print(f"    covQual       = {fitResult.covQual()}")
-  # print(f"    edm           = {fitResult.edm()}")
-  # print(f"    minNll        = {fitResult.minNll()}")
-  # print(f"    numInvalidNLL = {fitResult.numInvalidNLL()}")
+  # remove fits with suspicious signal yields
+  fitPars       = fitResult.floatParsFinal()
+  sigYieldIndex = fitPars.index("Yld_SigPdf")
+  if sigYieldIndex >= 0:
+    sigYield = fitPars[sigYieldIndex]
+    if sigYield.getVal() < 100 or sigYield.getError() / sigYield.getVal() > 1:
+      print(f"Disregarding fit result because the signal yield {sigYield.getVal()} +- {sigYield.getError()} is too small or its uncertainty too large")
+      return None
+  # parValuesInBin[fitParKey] = ufloat(fitPar.getVal(), fitPar.getError())
+  # print(f"{fitResult.numInvalidNLL()=}")
   fitResult.Print()
   # get fit parameters
-  fitPars        = fitResult.floatParsFinal()
   parValuesInBin = {}
   if isinstance(fitParNamesToRead, Mapping):
     # fitParNamesToRead is some kind of dict
