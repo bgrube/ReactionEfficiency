@@ -372,24 +372,27 @@ def setRooFitOptions(
 ) -> None:
   """Sets general fit options"""
   print("Setting RooFit options")
-  # fitManager.SetUp().ErrorsWrong()  # use faster "naive" calculation of errors
-  # see https://root.cern/doc/master/classRooAbsPdf.html#a52c4a5926a161bcb72eab46890b0590e
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.BatchMode(True))  # computes a batch of likelihood values at a time, uses faster math functions and possibly auto vectorization
-                                                                # !Note! RooBatchCompute Library was revamped in ROOT 6.26/00 see https://github.com/root-project/root/tree/master/roofit/batchcompute
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))  # global parallelization settings: use given number of workers in parallelization; requires ROOT to be built with -Droofit_multiprocess=ON
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.NumCPU(nmbThreadsPerJob))       # parallelize likelihood calculation using given number of cores
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Warnings(True))
-  fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))  # times CPU and wall clock consumption of fit steps
-  # force Minimizer
-  # ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit")  # doesn't work
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit"))  # overridden by HS::FIT::Minuit2::FitTo()
-  # fitManager.SetMinimiser(ROOT.Minuit())
-  ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minimizer("Minuit2"))  # doesn't work
-  # fitManager.SetMinimiser(ROOT.Minuit2())  # doesn't work
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))  # do not run HESSE
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))  # run MINOS
+  # see https://root.cern.ch/doc/v632/classRooAbsPdf.html#ab0721374836c343a710f5ff92a326ff5
+  # global parallelization settings
+  if nmbThreadsPerJob > 1:
+    fitManager.SetUp().AddFitOption(ROOT.RooFit.Parallelize(nmbThreadsPerJob))
+    # use given number of workers in parallelization; requires ROOT to be built with -Droofit_multiprocess=ON
+    # option has no effect on processes run by Proof
+    # with Parallelize()
+    #   * minimization is significantly slower than without
+    #   * parameter values are identical but uncertainties are smaller, in some cases significantly
+    #   * estimated distance to minimum (EDM) is much smaller (the value without Parallelize() seems implausible), while the minimum FCN value is identical
+
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.PrintLevel(2))         # more output; default is 1
+  fitManager.SetUp().AddFitOption(ROOT.RooFit.Timer(True))           # times CPU and wall clock consumption of fit steps
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.TimingAnalysis(True))  # outputs the timings at the end of a run to json log files
+
+  # uncertainty calculation
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(True))  # run HESSE before MIGRAD
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))        # so not run HESSE after MIGRAD
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))         # run MINOS after HESSE
+  # fitManager.SetUp().ErrorsWrong()                                 # use faster "naive" calculation of errors
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.AsymptoticError())   # use asymptotically correct uncertainty estimate for weighted events
 
 
 def performFit(
@@ -412,7 +415,7 @@ def performFit(
   fitRange:                str           = "-0.25, 3.75",                  # [(GeV/c)^2]
   comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
   regenBinnedTrees:        bool          = False,                          # if set, force regeneration of files with binned trees
-  nmbThreadsPerJob:        int           = 5,
+  nmbThreadsPerJob:        int           = 0,
   nmbProofJobs:            int           = 20,  #TODO? automatically determine number of PROOF jobs
 ) -> None:
   """Sets up and performs fit"""
@@ -507,20 +510,16 @@ def performFit(
     fitManager.ReloadData(dataTreeName, dataFileName, "Data")
 
   # perform fit and create fit-result plots
-  # if not kinematicBinning:
-  #   nmbThreadsPerJob = 5 * nmbThreadsPerJob
-  setRooFitOptions(fitManager, nmbThreadsPerJob)
+  setRooFitOptions(fitManager, nmbThreadsPerJob if kinematicBinning else 5 * nmbThreadsPerJob)
   print("Using the following global fit options:")
   fitManager.SetUp().FitOptions().Print("")
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    print(f"Running {nmbProofJobs} PROOF jobs each with {nmbThreadsPerJob} threads in parallel")
+    print(f"Running {nmbProofJobs} PROOF jobs")
     ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
     ROOT.Proof.Go(fitManager, nmbProofJobs)
-    print(f"Perform fit running {nmbThreadsPerJob} threads in parallel")
-    ROOT.Here.Go(fitManager)
   else:
-    print(f"Perform fit running {nmbThreadsPerJob} threads in parallel")
+    print("Performing fit" + (f" running {nmbThreadsPerJob} threads in parallel" if nmbThreadsPerJob > 0 else ""))
     ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
@@ -573,6 +572,10 @@ if __name__ == "__main__":
       ("MissingProtonTheta", 10, 0, 20),  # [deg]
       ("MissingProtonP",      9, 0,  9),  # [GeV/c]
     ],
+    # [
+    #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
+    #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
+    # ],
   ]
 
   dataSets = {
