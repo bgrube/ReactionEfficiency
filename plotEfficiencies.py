@@ -252,7 +252,7 @@ def plotEfficiencies2DColzText(
   efficiencyHist = ROOT.TH2D(
     f"h{canv.GetName()}", f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
                           f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
-    len(xCenters), *xRange, len(yCenters), *yRange)
+    int((xRange[1] - xRange[0]) / xWidth), *xRange, int((yRange[1] - yRange[0]) / yWidth), *yRange)
   # fill histogram
   for effInfo in effInfos:
     efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.centers[binningVars[0]], effInfo.binInfo.centers[binningVars[1]]),
