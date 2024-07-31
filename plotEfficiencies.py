@@ -98,32 +98,38 @@ class EffInfo:
   value:   UFloat   # efficiency value
 
 
-def calculateEfficiencies(yieldInfos: MutableMapping[str, list[ParInfo]]) -> list[EffInfo]:
+def calculateEfficiencies(
+  yieldInfos: MutableMapping[str, list[ParInfo]],  # [<dataset>][<bin>]
+  useMissing: bool = True,  # True: 'Missing' dataset is used for efficiency calculation; False: 'Total' dataset is used instead
+) -> list[EffInfo]:
   """Calculates efficiencies from yields"""
-  assert ("Found" in yieldInfos) and ("Missing" in yieldInfos), "Either 'Found', 'Missing' or both datasets are missing"
-  # ensure that yieldInfos for 'Found' and 'Missing' have the same set of bins
-  yieldInfos["Found"] = [
-    yieldInfoFound for yieldInfoFound in yieldInfos["Found"]
-    if any(yieldInfoMissing.binInfo.isSameBinAs(yieldInfoFound.binInfo) for yieldInfoMissing in yieldInfos["Missing"])
-  ]
-  yieldInfos["Missing"] = [
-    yieldInfoMissing for yieldInfoMissing in yieldInfos["Missing"]
-    if any(yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo) for yieldInfoFound in yieldInfos["Found"])
-  ]
+  # ensure yieldInfos contain the required datasets
+  dataSets = ("Found", "Missing" if useMissing else "Total")
+  for dataSet in dataSets:
+    assert (dataSet in yieldInfos), f"'{dataSet}' dataset is missing"
+  # ensure that yieldInfos for 'Found' and 'Missing'/'Total' have the same set of bins
+  for setA, setB in (dataSets, reversed(dataSets)):
+    yieldInfos[setA] = [
+      yieldInfoFound for yieldInfoFound in yieldInfos[setA]
+      if any(yieldInfoOther.binInfo.isSameBinAs(yieldInfoFound.binInfo) for yieldInfoOther in yieldInfos[setB])
+    ]
   effInfos: list[EffInfo] = []
-  for index, yieldInfoFound in enumerate(yieldInfos["Found"]):
-    yieldInfoMissing = yieldInfos["Missing"][index]
-    assert yieldInfoFound.binInfo.isSameBinAs(yieldInfoMissing.binInfo), f"Bin infos for 'Found' and 'Missing' are not identical: {yieldInfoFound.binInfo} vs. {yieldInfoMissing.binInfo}"
+  for index, yieldInfoFound in enumerate(yieldInfos[dataSets[0]]):
+    yieldInfoOther = yieldInfos[dataSets[1]][index]  # yield from 'Missing' or 'Total' dataset
+    assert yieldInfoFound.binInfo.isSameBinAs(yieldInfoOther.binInfo), f"Bin infos for '{dataSets[0]}' and '{dataSets[1]}' are not identical: {yieldInfoFound.binInfo} vs. {yieldInfoOther.binInfo}"
     # calculate efficiency
     if "Signal" not in yieldInfoFound.names:
-      print(f"No 'Signal' yield info for 'Found' case: {yieldInfoFound}")
+      print(f"No 'Signal' yield info for '{dataSets[0]}' case: {yieldInfoFound}")
       continue
-    if "Signal" not in yieldInfoMissing.names:
-      print(f"No 'Signal' yield info for 'Missing' case: {yieldInfoMissing}")
+    if "Signal" not in yieldInfoOther.names:
+      print(f"No 'Signal' yield info for '{dataSets[1]}' case: {yieldInfoOther}")
       continue
-    nmbFound   = yieldInfoFound.values  ["Signal"]
-    nmbMissing = yieldInfoMissing.values["Signal"]
-    effInfo = EffInfo(yieldInfoFound.binInfo, nmbFound / (nmbFound + nmbMissing))
+    nmbFound = yieldInfoFound.values["Signal"]
+    if useMissing:
+      nmbTotal = nmbFound + yieldInfoOther.values["Signal"]  # 'Found' + 'Missing'
+    else:
+      nmbTotal = yieldInfoOther.values["Signal"]  # 'Total'
+    effInfo = EffInfo(yieldInfoFound.binInfo, nmbFound / nmbTotal)
     print(f"Efficiency = {effInfo}")
     effInfos.append(effInfo)
   return effInfos
@@ -277,7 +283,7 @@ if __name__ == "__main__":
 
   for readIntegrals in (True, False):
     print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
-    yieldInfos:  dict[str, list[ParInfo]]     = {}    # yieldInfos[<dataset>][<bin>]
+    yieldInfos:  dict[str, list[ParInfo]]     = {}    # [<dataset>][<bin>]
     binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
     for dataSet in dataSets:
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
