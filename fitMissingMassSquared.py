@@ -388,11 +388,12 @@ def setRooFitOptions(
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.TimingAnalysis(True))  # outputs the timings at the end of a run to json log files
 
   # uncertainty calculation
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(True))  # run HESSE before MIGRAD
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))        # so not run HESSE after MIGRAD
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))         # run MINOS after HESSE
-  # fitManager.SetUp().ErrorsWrong()                                 # use faster "naive" calculation of errors
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.AsymptoticError())   # use asymptotically correct uncertainty estimate for weighted events
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(False))     # do not run HESSE before MIGRAD; has no effect
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(True))     # run HESSE before MIGRAD; no effect; just triggers warning "RooMinimizer::hesse: Error, run Migrad before Hesse!"
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))           # do not run HESSE after MIGRAD; ca. 10% faster, only slightly different uncertainties
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))            # run MINOS after HESSE; crashes with "sum-of-weights and asymptotic error correction do not work with MINOS errors."
+  # fitManager.SetUp().ErrorsWrong()                                    # use faster "naive" calculation of errors; ca. 10% faster, much smaller uncertainty estimates but plausible EDM values
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.AsymptoticError(True))  # use asymptotically correct uncertainty estimate for weighted events; crashes with "ERROR: Cannot compute both asymptotically correct and SumW2 errors."
 
 
 def performFit(
