@@ -493,6 +493,7 @@ def plotParValue2D(
   legend = canv.BuildLegend()
   legend.SetFillStyle(0)
   legend.SetBorderSize(0)
+  canv.Update()  # needed to get rid of transient frame and axis objects
   canv.SaveAs(f"{pdfDirName}/{hist.GetName()}.pdf")
   ROOT.gStyle.SetFrameFillColor(savedFrameFillColor)  # restore previous value
 
