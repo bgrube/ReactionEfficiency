@@ -136,7 +136,6 @@ def defineHistogramPdf(
   comboIdName:          str,  # name of branch with unique combo ID
   cut:                  str,  # cut that is applied when filling histogram
   nmbBins:              int  = 100,  # number of bins of template histogram
-  # useAdaptiveBinning:   bool = True,
   useAdaptiveBinning:   bool = False,
 ) -> None:
   """Defines histogram-based PDF"""
@@ -155,17 +154,21 @@ def defineHistogramPdf(
     cut               = cut,
   )
   # histogram PDF with fudge parameters that allow (small) deviations from the original shape:
-  #     smear = width of Gaussian the histogram is convoluted with
-  #     shift = shifts histogram in x-direction, i.e. PDF(x - shift)
-  #     scale = scales histogram in x-direction around its maximum value, i.e. PDF(scale * (x - maxPos) + maxPos)
+  #     smear = width of the Gaussian, the histogram is convoluted with
+  #     shift = shift of histogram in x-direction, i.e. PDF(x - shift)
+  #     scale = scale of histogram in x-direction around its maximum value, i.e. PDF(scale * (x - maxPos) + maxPos)
   fitManager.SetUp().FactoryPDF(
-    ("BruEventsHistPeakPDF" if useAdaptiveBinning else "RooHSEventsHistPDF") + f"::{pdfName}("
+    ("BruEventsHistPeakPDF" if useAdaptiveBinning else "RooHSEventsHistPDF")
+    + f"::{pdfName}"
+    "("
       f"{fitVariable}, "                        # variable to construct template histogram from
       f"smear_{pdfName}[{parDefs['smear']}], "  # convolute template histogram with Gaussian of width 'smear'
       f"shift_{pdfName}[{parDefs['shift']}], "  # shift template histogram in x-direction
       f"scale_{pdfName}[{parDefs['scale']}], "  # scale template histogram in x-direction
-      "0, "    # do not smooth template histogram
-      "0, "    # do not interpolate template histogram
+      # "0, "  # do not smooth template histogram
+      "1, "  # smooth template histogram
+      # "0, "  # do not interpolate template histogram
+      "1, "  # interpolate template histogram
       f"{nmbBins}, "
       "50000"  # number of bins used to calculate normalization
     ")"
@@ -208,11 +211,12 @@ def defineSigPdf(
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
 
   pdfTypeArgs = pdfType.split("_")
+  protonMass  = 0.9383  # [GeV/c^2]
   if pdfTypeArgs[0] == "Gaussian":
     defineGaussianPdf(
       fitManager, fitVariable, pdfName,
       {
-        "mean"  : f"{0.9383**2}, 0, 2",
+        "mean"  : f"{protonMass**2}, 0, 2",
         "width" : "0.3, 0.01, 2",
       },
     )
@@ -221,9 +225,9 @@ def defineSigPdf(
       fitManager, fitVariable, pdfName,
       {
         "r"      : "0.5, 0, 1",  # fraction of Gaussian 1
-        "mean"   : f"{0.9383**2}, 0, 2",  # common-mean case
-        "mean1"  :  "1.0,         0, 2",  # separate-means case
-        "mean2"  : f"{0.9383**2}, 0, 2",
+        "mean"   : f"{protonMass**2}, 0, 2",  # common-mean case
+        "mean1"  :  "1.0,             0, 2",  # separate-means case
+        "mean2"  : f"{protonMass**2}, 0, 2",
         "width1" : "1.0, 0.01, 2",  # wide Gaussian
         "width2" : "0.2, 0.01, 2",  # narrow Gaussian
       },
@@ -233,17 +237,18 @@ def defineSigPdf(
     defineHistogramPdf(
       fitManager, fitVariable, pdfName,
       {
-        "smear" : "0" if "smear" in fixPars else "0,  0,    0.5",
-        "shift" : "0" if "shift" in fixPars else "0, -0.25, 0.25",
-        "scale" : "1" if "scale" in fixPars else "1,  0.5,  1.5",
+        "smear" : "0" if "smear" in fixPars else "0,  0,    0.1",
+        "shift" : "0" if "shift" in fixPars else "0, -0.05, 0.05",
+        "scale" : "1" if "scale" in fixPars else "1,  0.95, 1.05",
       },
       outputDirName,
       templateDataFileName,
       templateDataTreeName,
       weightBranchName,
       comboIdName,
-      cut = andCuts((cut, "(IsSignal == 1)")),
-      nmbBins = templateNmbBins,
+      cut                = andCuts((cut, "(IsSignal == 1)")),
+      nmbBins            = templateNmbBins,
+      useAdaptiveBinning = False,
     )
   else:
     raise ValueError(f"Unknown signal PDF type '{pdfTypeArgs[0]}'")
@@ -342,8 +347,9 @@ def defineBkgPdf(
       templateDataTreeName,
       weightBranchName,
       comboIdName,
-      cut =andCuts((cut, "(IsSignal == 0)")),
-      nmbBins = templateNmbBins,
+      cut                = andCuts((cut, "(IsSignal == 0)")),
+      nmbBins            = templateNmbBins,
+      useAdaptiveBinning = False,
     )
   else:
     raise ValueError(f"Unknown background PDF type '{pdfTypeArgs[0]}'")
@@ -417,7 +423,7 @@ def performFit(
   comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
   regenBinnedTrees:        bool          = False,                          # if set, force regeneration of files with binned trees
   nmbThreadsPerJob:        int           = 0,
-  nmbProofJobs:            int           = 20,  #TODO? automatically determine number of PROOF jobs
+  nmbProofJobs:            int           = 92,  #TODO? automatically determine number of PROOF jobs
 ) -> None:
   """Sets up and performs fit"""
   # create the fit manager and set the output directory for fit results, plots, and weights
