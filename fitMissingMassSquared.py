@@ -161,7 +161,7 @@ def defineHistogramPdf(
     ("BruEventsHistPeakPDF" if useAdaptiveBinning else "RooHSEventsHistPDF")
     + f"::{pdfName}"
     "("
-      f"{fitVariable}, "                        # variable to construct template histogram from
+      f"{fitVariable}, "  # variable to construct template histogram from
       f"smear_{pdfName}[{parDefs['smear']}], "  # convolute template histogram with Gaussian of width 'smear'
       f"shift_{pdfName}[{parDefs['shift']}], "  # shift template histogram in x-direction
       f"scale_{pdfName}[{parDefs['scale']}], "  # scale template histogram in x-direction
@@ -169,7 +169,7 @@ def defineHistogramPdf(
       "1, "  # smooth template histogram
       # "0, "  # do not interpolate template histogram
       "1, "  # interpolate template histogram
-      f"{nmbBins}, "
+      f"{nmbBins}, "  # number of bins of template histograms
       "50000"  # number of bins used to calculate normalization
     ")"
     f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
@@ -198,14 +198,14 @@ def defineSigPdf(
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
   pdfName:              str           = "SigPdf",
-  # arguments only needed for histogram PDF
-  outputDirName:        str           = "",  # name of directory where weight files are written
-  templateDataFileName: str           = "",  # name of file from which histogram is filled
-  templateDataTreeName: str           = "",  # name of tree from which histogram is filled
+  # arguments below are only needed for histogram PDF
+  outputDirName:        str           = "",   # name of directory where weight files are written
+  templateDataFileName: str           = "",   # name of file from which histogram is filled
+  templateDataTreeName: str           = "",   # name of tree from which histogram is filled
   templateNmbBins:      int           = 100,  # number of bins of template histograms
-  weightBranchName:     str           = "",  # name of branch from which to read weights
-  comboIdName:          str           = "",  # name of branch with unique combo ID
-  cut:                  str           = "",  # cut that is applied when filling histogram
+  weightBranchName:     str           = "",   # name of branch from which to read weights
+  comboIdName:          str           = "",   # name of branch with unique combo ID
+  cut:                  str           = "",   # cut that is applied when filling histogram
 ) -> None:
   """Defines signal PDFs of various types"""
   print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
@@ -248,7 +248,7 @@ def defineSigPdf(
       comboIdName,
       cut                = andCuts((cut, "(IsSignal == 1)")),
       nmbBins            = templateNmbBins,
-      useAdaptiveBinning = False,
+      useAdaptiveBinning = False,  #TODO fits of some bins crash when set to True
     )
   else:
     raise ValueError(f"Unknown signal PDF type '{pdfTypeArgs[0]}'")
@@ -263,7 +263,7 @@ def defineBkgPdf(
   pdfType:              str,  # selects type of PDF
   fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
   pdfName:              str           = "BkgPdf",
-  # arguments only needed for histogram PDF
+  # arguments below are only needed for histogram PDF
   outputDirName:        str           = "",   # name of directory where weight files are written
   templateDataFileName: str           = "",   # name of file from which histogram is filled
   templateDataTreeName: str           = "",   # name of tree from which histogram is filled
@@ -418,10 +418,11 @@ def performFit(
   templateDataBkgFileName: str           = "",                             # name of file from which background histogram is filled
   templateDataBkgTreeName: str           = "pippippimpimpmiss",            # name of tree from which background histogram is filled
   templateNmbBins:         int           = 100,                            # number of bins of template histograms
+                                                                           # for values < 100 the fit quality deteriorates significantly; for values > 100 the fit quality does not improve much and number of negative bins in template PDFs increases
   fitVariable:             str           = "MissingMassSquared_Measured",  # name of branch that holds data to fit and template-data for signal and background, respectively
   fitRange:                str           = "-0.25, 3.75",                  # [(GeV/c)^2]
   comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
-  regenBinnedTrees:        bool          = False,                          # if set, force regeneration of files with binned trees
+  regenBinnedTrees:        bool          = False,                           # if set, force regeneration of files with binned trees
   nmbThreadsPerJob:        int           = 0,
   nmbProofJobs:            int           = 92,  #TODO? automatically determine number of PROOF jobs
 ) -> None:
