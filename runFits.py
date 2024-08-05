@@ -28,6 +28,7 @@ if __name__ == "__main__":
     # "2018_01-ver02_goodToF",
     # "2018_08-ver02_goodToF",
   )
+  useTotal = False
 
   DataSamplesType = list[dict[str, str]]
   dataSamples: DataSamplesType = []
@@ -173,5 +174,5 @@ if __name__ == "__main__":
       print("Plotting fit results...")
       subprocess.run(f"./plotFitResults.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotFitResults.log\"", shell = True)
       print("Plotting efficiencies...")
-      subprocess.run(f"./plotEfficiencies.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotEfficiencies.log\"", shell = True)
+      subprocess.run(f"./plotEfficiencies.py {'--useTotal' if useTotal else ''} \"{fitDirectory}\"  &> \"{fitDirectory}/plotEfficiencies.log\"", shell = True)
   ROOT.gBenchmark.Show("Total processing time")

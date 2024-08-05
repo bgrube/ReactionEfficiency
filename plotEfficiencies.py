@@ -276,6 +276,7 @@ if __name__ == "__main__":
   # echo and parse command line
   print(f"Script was called using: '{' '.join(sys.argv)}'")
   parser = argparse.ArgumentParser(description="Plots efficiencies obtained from BruFit result in given directory.")
+  parser.add_argument("--useTotal",    action = "store_true", help = "If set, 'Total' distributions are used for efficiency calculation")
   parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
   args = parser.parse_args()
   dataSets    = ["Total", "Found", "Missing"]
@@ -298,7 +299,7 @@ if __name__ == "__main__":
         binVarNames = binVarNamesInDataSet
       else:
         assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} for dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous dataset"
-    effInfos = calculateEfficiencies(yieldInfos)
+    effInfos = calculateEfficiencies(yieldInfos, useMissing = not args.useTotal)
     if effInfos:
       if effInfos[0].binInfo.name == "Overall":
         print("Overall efficiency from " + ("data-histogram integrals" if readIntegrals else "fits") + f" is {effInfos[0].value}")

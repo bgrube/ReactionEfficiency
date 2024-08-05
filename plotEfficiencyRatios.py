@@ -217,6 +217,7 @@ if __name__ == "__main__":
   # pdfDirName = makeDirPath("./ratios.pionComparison")
   fitRootDir = "./fits.pionComparison2"
   pdfDirName = makeDirPath("./ratios.pionComparison2")
+  useMissing = True
 
   ratiosToPlot: dict[str, tuple[str, str]] = {
     # "2017_01-ver03" : (
@@ -266,7 +267,10 @@ if __name__ == "__main__":
   effInfos:    dict[str, dict[tuple[str, str], list[EffInfo]]] = {}
   binVarNames: dict[str, list[tuple[str, ...]] | None]         = {}
   for ratioLabel, fitResults in ratiosToPlot.items():
-    effInfos[ratioLabel], binVarNames[ratioLabel] = overlayEfficiencies.getEfficiencies(fitResultDirNames = tuple(fitResult for fitResult in fitResults))
+    effInfos[ratioLabel], binVarNames[ratioLabel] = overlayEfficiencies.getEfficiencies(
+      fitResultDirNames = tuple(fitResult for fitResult in fitResults),
+      useMissing = useMissing
+    )
   print("Plotting efficiency ratios")
   if effInfos and binVarNames:
     firstBinVarNames = next(iter(binVarNames.values()))  # get first entry

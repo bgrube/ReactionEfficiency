@@ -34,6 +34,7 @@ def getEfficiencies(
   fitResultDirNames: Sequence[str],
   fitLabels:         Sequence[str] = [],
   dataSets:          Iterable[str] = ["Total", "Found", "Missing"],
+  useMissing:        bool          = True,  # True: 'Missing' dataset is used for efficiency calculation; False: 'Total' dataset is used instead
 ) -> tuple[dict[tuple[str, str], list[EffInfo]], list[tuple[str, ...]] | None]:
   """Reads yields from given fit directories and calculates efficiencies for each directory"""
   assert len(fitResultDirNames) == len(set(fitResultDirNames)), f"List of fit-result directory names '{fitResultDirNames}' has duplicate elements"
@@ -56,7 +57,7 @@ def getEfficiencies(
       else:
         assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
     fitLabel = fitLabels[fitIndex] if fitLabels else fitResultDirName
-    effInfos[(fitResultDirName, fitLabel)] = plotEfficiencies.calculateEfficiencies(yieldInfos)
+    effInfos[(fitResultDirName, fitLabel)] = plotEfficiencies.calculateEfficiencies(yieldInfos, useMissing)
   return effInfos, binVarNames
 
 
@@ -71,8 +72,10 @@ def overlayEfficiencies1D(
 ) -> None:
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
-  graphs1D: list[tuple[str, ROOT.TGraphErrors]] = [(fitLabel, plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
-                                                   for (_, fitLabel), efficiencies in effInfos.items()]
+  graphs1D: list[tuple[str, ROOT.TGraphErrors]] = [
+    (fitLabel, plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
+    for (_, fitLabel), efficiencies in effInfos.items()
+  ]
   plotFitResults.plotGraphs1D(
     graphs1D,
     binningVar,
@@ -142,6 +145,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Overlays efficiency graphs obtained from BruFit results in given directories using given labels.")
   parser.add_argument("--fitResult",         type = str, nargs = 2, metavar = ("DIR_PATH", "LABEL"), action = "append", help = "The path to the BruFit output directory of the fit that should be added to the overlay and the corresponding legend label; can be specified multiple times")
   parser.add_argument("--pdfFileNameSuffix", type = str, default = "", help = "PDF file-name suffix; (default: '%(default)s')")
+  parser.add_argument("--useTotal",          action = "store_true", help = "If set, 'Total' distributions are used for efficiency calculation")
   args = parser.parse_args()
 
   # fitRootDir = "./fits"
@@ -188,7 +192,7 @@ if __name__ == "__main__":
   for pdfFileNameSuffix, fitResults in resultsToOverlay.items():
     fitResultDirNames = tuple(fitResult[0] for fitResult in fitResults)
     fitLabels         = tuple(fitResult[1] for fitResult in fitResults)
-    effInfos, binVarNames = getEfficiencies(fitResultDirNames, fitLabels)
+    effInfos, binVarNames = getEfficiencies(fitResultDirNames, fitLabels, useMissing = not args.useTotal)
     print("Overlaying efficiencies")
     if effInfos and binVarNames:
       for binningVars in binVarNames:
