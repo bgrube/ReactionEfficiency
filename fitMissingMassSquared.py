@@ -394,7 +394,7 @@ def setRooFitOptions(
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.TimingAnalysis(True))  # outputs the timings at the end of a run to json log files
 
   # uncertainty calculation
-  # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(False))     # do not run HESSE before MIGRAD; has no effect
+  # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(False))    # do not run HESSE before MIGRAD; has no effect
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.InitialHesse(True))     # run HESSE before MIGRAD; no effect; just triggers warning "RooMinimizer::hesse: Error, run Migrad before Hesse!"
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Hesse(False))           # do not run HESSE after MIGRAD; ca. 10% faster, only slightly different uncertainties
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.Minos(True))            # run MINOS after HESSE; crashes with "sum-of-weights and asymptotic error correction do not work with MINOS errors."
@@ -422,9 +422,10 @@ def performFit(
   fitVariable:             str           = "MissingMassSquared_Measured",  # name of branch that holds data to fit and template-data for signal and background, respectively
   fitRange:                str           = "-0.25, 3.75",                  # [(GeV/c)^2]
   comboIdName:             str           = "ComboID",                      # name of branch with unique combo ID
-  regenBinnedTrees:        bool          = False,                           # if set, force regeneration of files with binned trees
-  nmbThreadsPerJob:        int           = 0,
-  nmbProofJobs:            int           = 92,  #TODO? automatically determine number of PROOF jobs
+  regenBinnedTrees:        bool          = False,                          # if set, force regeneration of files with binned trees
+  nmbThreadsPerJob:        int           = 0,                              # number of threads to use in parallelization
+  nmbProofJobs:            int           = 92,                             # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
+  nmbBootstrapSamples:     int           = 0,                              # number of bootstrap samples to generate; 0 means no bootstrapping
 ) -> None:
   """Sets up and performs fit"""
   # create the fit manager and set the output directory for fit results, plots, and weights
@@ -457,6 +458,15 @@ def performFit(
   # !Note! binning needs to be defined before any data are loaded
   for binning in kinematicBinning:
     fitManager.Bins().LoadBinVar(*binning)
+
+  if nmbBootstrapSamples > 0:
+    # perform bootstrapping
+    print(f"Generating {nmbBootstrapSamples} bootstrap samples")
+    fitManager.Data().BootStrap(nmbBootstrapSamples)
+    fitManager.TurnOffPlotting()
+    # We want to run a standard fit first to
+    # bootstrap around. Give name of Results directory and minimiser here
+    fitManager.InitPrevResult("/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.smoothInt/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed/Total", "HSMinuit2")
 
   # define components of fit model
   if pdfTypeSig:
@@ -509,7 +519,6 @@ def performFit(
         print("Forcing regeneration of binned tree files")
       else:
         print("Could not find (all) binned tree files; regenerating binned tree files")
-    # fitManager.LoadData(dataTreeName, dataFileName, "Data")  # signature of HS::FIT::FitManager::LoadData() changed in b6e688a
     fitManager.LoadData(dataTreeName, dataFileName)
   else:
     print("Using existing binned tree files:")
@@ -527,8 +536,14 @@ def performFit(
     ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
-    print("Performing fit" + (f" running {nmbThreadsPerJob} threads in parallel" if nmbThreadsPerJob > 0 else ""))
-    ROOT.Here.Go(fitManager)
+    if nmbBootstrapSamples > 0:
+      # use PROOF for bootstrapping
+      fitManager.SetRedirectOutput()  # redirect console output to files
+      print(f"Running {nmbBootstrapSamples} PROOF jobs")
+      ROOT.Proof.Go(fitManager, nmbBootstrapSamples)
+    else:
+      print("Performing fit" + (f" running {nmbThreadsPerJob} threads in parallel" if nmbThreadsPerJob > 0 else ""))
+      ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
   ROOT.gBenchmark.Show(gBenchmarkLabel)
