@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import (
+  Generator,
   Mapping,
   Sequence,
 )
@@ -62,10 +63,11 @@ REMOVE_PARAM_BOX = False
 @dataclass
 class BinInfo:
   """Stores information about a single kinematic bin"""
-  name:    str               # bin name
-  centers: dict[str, float]  # bin centers { <binning var> : <bin center>, ... }
-  widths:  dict[str, float]  # bin widths  { <binning var> : <bin width>,  ... }
-  dirName: str               # directory name for bins
+  name:                str               # bin name
+  centers:             dict[str, float]  # bin centers { <binning var> : <bin center>, ... }
+  widths:              dict[str, float]  # bin widths  { <binning var> : <bin width>,  ... }
+  dirName:             str               # directory name for bins
+  nmbBootstrapSamples: int = 0           # number of bootstrap samples
 
   @property
   def varNames(self) -> tuple[str, ...]:
@@ -76,6 +78,11 @@ class BinInfo:
   def fitResultFileName(self) -> str:
     """Returns fit result file name for this bin"""
     return f"{self.dirName}/ResultsHSMinuit2.root"
+
+  @property
+  def bootstrapFileNames(self) -> Generator[tuple[int, str], None, None]:
+    """Returns generator for file names with the bootstrap results for this bin"""
+    return ((index, f"{self.dirName}/ResultsBoot{index}HSMinuit2.root") for index in range(self.nmbBootstrapSamples))
 
   def isSameBinAs(self, other: 'BinInfo') -> bool:
     """Returns whether 2 BinInfo objects represent the same kinematic bin"""
@@ -212,7 +219,6 @@ def readParInfoForBin(
     if sigYield.getVal() < 100 or sigYield.getError() / sigYield.getVal() > 1:
       print(f"Disregarding fit result because the signal yield {sigYield.getVal()} +- {sigYield.getError()} is too small or its uncertainty too large")
       return None
-  # parValuesInBin[fitParKey] = ufloat(fitPar.getVal(), fitPar.getError())
   # print(f"{fitResult.numInvalidNLL()=}")
   fitResult.Print()
   # get fit parameters
