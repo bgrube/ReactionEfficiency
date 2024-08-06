@@ -464,9 +464,6 @@ def performFit(
     print(f"Generating {nmbBootstrapSamples} bootstrap samples")
     fitManager.Data().BootStrap(nmbBootstrapSamples)
     fitManager.TurnOffPlotting()
-    # We want to run a standard fit first to
-    # bootstrap around. Give name of Results directory and minimiser here
-    fitManager.InitPrevResult("/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.smoothInt/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed/Total", "HSMinuit2")
 
   # define components of fit model
   if pdfTypeSig:
