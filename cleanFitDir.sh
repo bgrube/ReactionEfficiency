@@ -3,5 +3,7 @@
 
 FIT_DIR=${1:-"./BruFitOutput"}
 
-find "${FIT_DIR}" -iname '*tree*.root' -exec rm -vf {} \;
-find "${FIT_DIR}" -iname '*weights*.root' -exec rm -vf {} \;
+for PATTERN in '*tree*.root' '*weights*.root' 'boot*.root'
+do
+  find "${FIT_DIR}" -iname "${PATTERN}" -exec rm -vf {} \;
+done
