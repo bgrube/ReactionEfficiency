@@ -256,10 +256,10 @@ def getResolutionGraph(
     canv.SaveAs(histPdfFileName)
   # construct resolution graph
   resBinningAxis = hist.GetYaxis()
-  xVals = np.array([resBinningAxis.GetBinCenter(resBinIndex)       for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = "d")
-  xErrs = np.array([resBinningAxis.GetBinWidth (resBinIndex) / 2.0 for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = "d")
-  yVals = np.array([], dtype = "d")
-  yErrs = np.array([], dtype = "d")
+  xVals = np.array([resBinningAxis.GetBinCenter(resBinIndex)       for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = np.float64)
+  xErrs = np.array([resBinningAxis.GetBinWidth (resBinIndex) / 2.0 for resBinIndex in range(1, resBinningAxis.GetNbins() + 1)], dtype = np.float64)
+  yVals = np.array([], dtype = np.float64)
+  yErrs = np.array([], dtype = np.float64)
   for resBinIndex in range(1, resBinningAxis.GetNbins() + 1):
     proj = hist.ProjectionX("_px", resBinIndex, resBinIndex, "E")
     yVals = np.append(yVals, (proj.GetStdDev(),))

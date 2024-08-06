@@ -13,9 +13,9 @@ if __name__ == "__main__":
   frame.Draw()
 
   # create TGraph2D and draw it into TH3 frame
-  xVals = np.array([1, 3, 5, 7, 9], dtype = "d")
-  yVals = np.array([1, 9, 1, 9, 1], dtype = "d")
-  zVals = np.array([3, 7, 3, 7, 3], dtype = "d")
+  xVals = np.array([1, 3, 5, 7, 9], dtype = np.float64)
+  yVals = np.array([1, 9, 1, 9, 1], dtype = np.float64)
+  zVals = np.array([3, 7, 3, 7, 3], dtype = np.float64)
   graph = ROOT.TGraph2D(len(xVals), xVals, yVals, zVals)
   graph.SetMarkerStyle(20)
   graph.Draw("P0 SAME")

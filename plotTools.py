@@ -301,10 +301,10 @@ def getGraph1DFromValues(
   if not graphValues:
     print("No data to plot")
     return None
-  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
-  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
-  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
-  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
+  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = np.float64)
+  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = np.float64)
+  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = np.float64)
+  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = np.float64)
   # shift x values by fraction of total x range
   if shiftByFraction != 0:
     xRange = max(xVals) - min(xVals)
@@ -321,12 +321,12 @@ def getGraph2DFromValues(graphValues: Sequence[tuple[UFloat, UFloat, UFloat]]) -
   if not graphValues:
     print("No data to plot")
     return None
-  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = "d")
-  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = "d")
-  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = "d")
-  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = "d")
-  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = "d")
-  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = "d")
+  xVals = np.array([graphVal[0].nominal_value for graphVal in graphValues], dtype = np.float64)
+  xErrs = np.array([graphVal[0].std_dev       for graphVal in graphValues], dtype = np.float64)
+  yVals = np.array([graphVal[1].nominal_value for graphVal in graphValues], dtype = np.float64)
+  yErrs = np.array([graphVal[1].std_dev       for graphVal in graphValues], dtype = np.float64)
+  zVals = np.array([graphVal[2].nominal_value for graphVal in graphValues], dtype = np.float64)
+  zErrs = np.array([graphVal[2].std_dev       for graphVal in graphValues], dtype = np.float64)
   # report weighted average
   meanVal = np.average(zVals, weights = [1 / (zErr**2) for zErr in zErrs])
   print(f"    weighted mean = {meanVal}")
@@ -357,10 +357,10 @@ def slice2DGraph(
   # construct 1D graph for each bin of stepping variable
   graphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = {}
   for steppingVarBinCenter in sorted(steppingVarBinCenters):
-    xVals = np.array([value for i, value in enumerate(values[plottingVar.name])         if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
-    xErrs = np.array([value for i, value in enumerate(values[plottingVar.name + "Err"]) if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
-    yVals = np.array([value for i, value in enumerate(values["z"])                      if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
-    yErrs = np.array([value for i, value in enumerate(values["zErr"])                   if values[steppingVar.name][i] == steppingVarBinCenter], dtype = "d")
+    xVals = np.array([value for i, value in enumerate(values[plottingVar.name])         if values[steppingVar.name][i] == steppingVarBinCenter], dtype = np.float64)
+    xErrs = np.array([value for i, value in enumerate(values[plottingVar.name + "Err"]) if values[steppingVar.name][i] == steppingVarBinCenter], dtype = np.float64)
+    yVals = np.array([value for i, value in enumerate(values["z"])                      if values[steppingVar.name][i] == steppingVarBinCenter], dtype = np.float64)
+    yErrs = np.array([value for i, value in enumerate(values["zErr"])                   if values[steppingVar.name][i] == steppingVarBinCenter], dtype = np.float64)
     assert len(xVals) > 0, f"Could not find any values in graph '{graph2D.GetName()}' for bin center {steppingVar} == {steppingVarBinCenter}"
     steppingVarBinRange = (round(steppingVarBinCenter - steppingVarHalfBinWidth, 6), round(steppingVarBinCenter + steppingVarHalfBinWidth, 6))
     graphs1D[steppingVarBinRange] = ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
