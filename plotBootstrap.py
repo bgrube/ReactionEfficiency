@@ -36,6 +36,7 @@ def plotBootstrapDistribution(
   outputDirName: str,  # directory where pdf is written to
   nmbBins:       int = 20,  # number of histogram bins
 ):
+  """Plots bootstrap distribution of a fit parameter"""
   print(f"Plotting '{dataSet}' bootstrap distribution for parameter '{parName}'")
   min = np.min(parValues)
   max = np.max(parValues)
@@ -79,20 +80,17 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gStyle.SetOptStat(False)
 
-  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.bak/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
-  nmbBootstrapSamples = 100
-  # dataSets = ["Total", "Found", "Missing"]
-  dataSets = ["Total"]
+  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.new/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
+  nmbBootstrapSamples = 10
+  dataSets = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
     # plot fits and read parameter values from fit results
-  binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
+  parInfos: defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bootstrap index>]
   for dataSet in dataSets:
     fitResultDirName  = f"{outputDirName}/{dataSet}"
-    print(f"Plotting bootstrap distribution for overall fit result for '{dataSet}' dataset")
+    print(f"Reading bootstrap distribution for overall fit result for '{dataSet}' dataset")
     binInfo = BinInfo("", {}, {}, fitResultDirName, nmbBootstrapSamples)
-    parInfos: defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bootstrap index>]
-    parNames: tuple[str, ...] | None          = None
     for bootstrapIndex, fitResultFileName in binInfo.bootstrapFileNames:
       if not os.path.isfile(fitResultFileName):
         print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
