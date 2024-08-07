@@ -37,13 +37,13 @@ def plotBootstrapDistribution(
   nmbBins:       int = 20,  # number of histogram bins
 ):
   """Plots bootstrap distribution of a fit parameter"""
-  print(f"Plotting '{dataSet}' bootstrap distribution for parameter '{parName}'")
+  print(f"Plotting bootstrap distribution for parameter '{parName}' and dataset '{dataSet}'")
   min = np.min(parValues)
   max = np.max(parValues)
   halfRange = (max - min) * 1.1 / 2.0
   center = (min + max) / 2.0
   histBs = ROOT.TH1D(f"bootstrap_{dataSet}_{parName}", f"{dataSet};{parName};Count",
-                      nmbBins, center - halfRange, center + halfRange)
+                     nmbBins, center - halfRange, center + halfRange)
   # fill histogram
   np.vectorize(histBs.Fill, otypes = [int])(parValues)
   # draw histogram
@@ -86,11 +86,11 @@ if __name__ == "__main__":
   fitVariable = "MissingMassSquared_Measured"
 
     # plot fits and read parameter values from fit results
-  parInfos: defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bootstrap index>]
   for dataSet in dataSets:
     fitResultDirName  = f"{outputDirName}/{dataSet}"
     print(f"Reading bootstrap distribution for overall fit result for '{dataSet}' dataset")
     binInfo = BinInfo("", {}, {}, fitResultDirName, nmbBootstrapSamples)
+    parInfos: list[ParInfo] = []  # parameter values for all bootstrap samples
     for bootstrapIndex, fitResultFileName in binInfo.bootstrapFileNames:
       if not os.path.isfile(fitResultFileName):
         print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
@@ -104,15 +104,14 @@ if __name__ == "__main__":
       parInfo = ParInfo(binInfo, fitVariable, parValuesInBin)
       if parInfo is not None and parInfo.values:
         print(f"Parameter values for bootstrap index {bootstrapIndex}: {parInfo}")
-        parInfos[dataSet].append(parInfo)
-  # plot bootstrap distributions
-  for dataSet, parInfosInDataSet in parInfos.items():
-    if not parInfosInDataSet:
-      print(f"No parameter values found for dataset '{dataSet}'")
-      continue
-    parNames = tuple(parInfosInDataSet[0].values.keys())
+        parInfos.append(parInfo)
+      if not parInfos:
+        print(f"No parameter values found for dataset '{dataSet}'")
+        continue
+    # plot bootstrap distributions
+    parNames = tuple(parInfos[0].values.keys())
     for parName in parNames:
-      parValues = np.array([parInfo.values[parName].nominal_value for parInfo in parInfosInDataSet], dtype = np.float64)
+      parValues = np.array([parInfo.values[parName].nominal_value for parInfo in parInfos], dtype = np.float64)
       plotBootstrapDistribution(
         parName,
         parValues,
