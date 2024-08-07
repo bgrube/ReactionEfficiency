@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections import defaultdict
 import functools
 import numpy as np
+import nptyping as npt
 import os
 
 from uncertainties import UFloat, ufloat
@@ -20,8 +21,7 @@ from plotFitResults import (
 )
 from plotTools import (
   printGitInfo,
-  # setCbFriendlyStyle,
-  # setupPlotStyle,
+  setupPlotStyle,
 )
 
 
@@ -29,12 +29,57 @@ from plotTools import (
 print = functools.partial(print, flush = True)
 
 
+def plotBootstrapDistribution(
+  parName:       str,  # name of fit parameter
+  parValues:     npt.NDArray[npt.Shape["*, *"], npt.Float64],  # array with bootstrap samples of fit parameter
+  dataSet:       str,  # name of dataset
+  outputDirName: str,  # directory where pdf is written to
+  nmbBins:       int = 20,  # number of histogram bins
+):
+  print(f"Plotting '{dataSet}' bootstrap distribution for parameter '{parName}'")
+  min = np.min(parValues)
+  max = np.max(parValues)
+  halfRange = (max - min) * 1.1 / 2.0
+  center = (min + max) / 2.0
+  histBs = ROOT.TH1D(f"bootstrap_{dataSet}_{parName}", f"{dataSet};{parName};Count",
+                      nmbBins, center - halfRange, center + halfRange)
+  # fill histogram
+  np.vectorize(histBs.Fill, otypes = [int])(parValues)
+  # draw histogram
+  canv = ROOT.TCanvas()
+  histBs.SetMinimum(0)
+  histBs.SetLineColor(ROOT.kBlue + 1)
+  histBs.Draw("E")
+  # indicate bootstrap estimate
+  meanBs   = np.mean(parValues)
+  stdDevBs = np.std(parValues, ddof = 1)
+  yCoord = histBs.GetMaximum() / 4
+  markerBs = ROOT.TMarker(meanBs, yCoord, ROOT.kFullCircle)
+  markerBs.SetMarkerColor(ROOT.kBlue + 1)
+  markerBs.SetMarkerSize(0.75)
+  markerBs.Draw()
+  lineBs = ROOT.TLine(meanBs - stdDevBs, yCoord, meanBs + stdDevBs, yCoord)
+  lineBs.SetLineColor(ROOT.kBlue + 1)
+  lineBs.Draw()
+  # add legend
+  legend = ROOT.TLegend(0.7, 0.8, 0.99, 0.99)
+  legend.AddEntry(histBs, "Bootstrap samples", "LE")
+  entry = legend.AddEntry(markerBs, "Bootstrap estimate", "LP")
+  entry.SetLineColor(ROOT.kBlue + 1)
+  legend.AddEntry(0, f"Mean = {meanBs}",      "")
+  legend.AddEntry(0, f"Uncert. = {stdDevBs}", "")
+  legend.Draw()
+  canv.SaveAs(f"{outputDirName}/{dataSet}/{histBs.GetName()}.pdf")
+
+
 if __name__ == "__main__":
   printGitInfo()
   ROOT.gROOT.SetBatch(True)
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
+  setupPlotStyle()
+  ROOT.gStyle.SetOptStat(False)
 
-  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
+  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.bak/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
   nmbBootstrapSamples = 100
   # dataSets = ["Total", "Found", "Missing"]
   dataSets = ["Total"]
@@ -63,7 +108,6 @@ if __name__ == "__main__":
         print(f"Parameter values for bootstrap index {bootstrapIndex}: {parInfo}")
         parInfos[dataSet].append(parInfo)
   # plot bootstrap distributions
-  nmbBins = 20
   for dataSet, parInfosInDataSet in parInfos.items():
     if not parInfosInDataSet:
       print(f"No parameter values found for dataset '{dataSet}'")
@@ -71,35 +115,9 @@ if __name__ == "__main__":
     parNames = tuple(parInfosInDataSet[0].values.keys())
     for parName in parNames:
       parValues = np.array([parInfo.values[parName].nominal_value for parInfo in parInfosInDataSet], dtype = np.float64)
-      print(f"Plotting bootstrap distribution for parameter '{parName}' for dataset '{dataSet}'")
-      min = np.min(parValues)
-      max = np.max(parValues)
-      halfRange = (max - min) * 1.1 / 2.0
-      center = (min + max) / 2.0
-      histBs = ROOT.TH1D(f"bootstrap_{dataSet}_{parName}", f"{dataSet};{parName};Count",
-                        nmbBins, center - halfRange, center + halfRange)
-      # fill histogram
-      np.vectorize(histBs.Fill, otypes = [int])(parValues)
-      # draw histogram
-      canv = ROOT.TCanvas()
-      histBs.SetMinimum(0)
-      histBs.SetLineColor(ROOT.kBlue + 1)
-      histBs.Draw("E")
-      # indicate bootstrap estimate
-      meanBs   = np.mean(parValues)
-      stdDevBs = np.std(parValues, ddof = 1)
-      yCoord = histBs.GetMaximum() / 4
-      markerBs = ROOT.TMarker(meanBs, yCoord, ROOT.kFullCircle)
-      markerBs.SetMarkerColor(ROOT.kBlue + 1)
-      markerBs.SetMarkerSize(0.75)
-      markerBs.Draw()
-      lineBs = ROOT.TLine(meanBs - stdDevBs, yCoord, meanBs + stdDevBs, yCoord)
-      lineBs.SetLineColor(ROOT.kBlue + 1)
-      lineBs.Draw()
-      # add legend
-      legend = ROOT.TLegend(0.7, 0.85, 0.99, 0.99)
-      legend.AddEntry(histBs, "Bootstrap samples", "LE")
-      entry = legend.AddEntry(markerBs, "Bootstrap estimate", "LP")
-      entry.SetLineColor(ROOT.kBlue + 1)
-      legend.Draw()
-      canv.SaveAs(f"{outputDirName}/{dataSet}/{histBs.GetName()}.pdf")
+      plotBootstrapDistribution(
+        parName,
+        parValues,
+        dataSet,
+        outputDirName,
+      )
