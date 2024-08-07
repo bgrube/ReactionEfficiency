@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections.abc import Sequence
 import functools
 import numpy as np
 import nptyping as npt
@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
 from plotFitResults import (
   BinInfo,
+  getBinningInfosFromDir,
   ParInfo,
 )
 from plotTools import (
@@ -30,19 +31,23 @@ print = functools.partial(print, flush = True)
 
 
 def plotBootstrapDistribution(
-  parName:       str,  # name of fit parameter
-  parValues:     npt.NDArray[npt.Shape["*, *"], npt.Float64],  # array with bootstrap samples of fit parameter
-  dataSet:       str,  # name of dataset
-  outputDirName: str,  # directory where pdf is written to
-  nmbBins:       int = 20,  # number of histogram bins
+  parName:  str,  # name of fit parameter
+  parInfos: Sequence[ParInfo],  # bootstrap samples of fit parameters
+  dataSet:  str,  # name of dataset
+  nmbBins:  int = 20,  # number of histogram bins
 ):
   """Plots bootstrap distribution of a fit parameter"""
   print(f"Plotting bootstrap distribution for parameter '{parName}' and dataset '{dataSet}'")
+  parValues = np.array([parInfo.values[parName].nominal_value for parInfo in parInfos], dtype = np.float64)
   min = np.min(parValues)
   max = np.max(parValues)
   halfRange = (max - min) * 1.1 / 2.0
   center = (min + max) / 2.0
-  histBs = ROOT.TH1D(f"bootstrap_{dataSet}_{parName}", f"{dataSet};{parName};Count",
+  histBs = ROOT.TH1D(f"bootstrap_{dataSet}_"
+                     + (("_".join((str(item) for center in parInfos[0].binInfo.centers.items() for item in center)) + "_")
+                        if parInfos[0].binInfo.centers else "")
+                     + f"{parName}",
+                     f"{dataSet}, {parInfos[0].binInfo.centers};{parName};Count",
                      nmbBins, center - halfRange, center + halfRange)
   # fill histogram
   np.vectorize(histBs.Fill, otypes = [int])(parValues)
@@ -70,7 +75,7 @@ def plotBootstrapDistribution(
   legend.AddEntry(0, f"Mean = {meanBs}",      "")
   legend.AddEntry(0, f"Uncert. = {stdDevBs}", "")
   legend.Draw()
-  canv.SaveAs(f"{outputDirName}/{dataSet}/{histBs.GetName()}.pdf")
+  canv.SaveAs(f"{parInfos[0].binInfo.dirName}/{histBs.GetName()}.pdf")
 
 
 if __name__ == "__main__":
@@ -80,41 +85,38 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gStyle.SetOptStat(False)
 
-  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.new/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
+  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
   nmbBootstrapSamples = 10
   dataSets = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
-    # plot fits and read parameter values from fit results
-  for dataSet in dataSets:
+  for dataSet in dataSets:  # loop over datasets
     fitResultDirName  = f"{outputDirName}/{dataSet}"
-    print(f"Reading bootstrap distribution for overall fit result for '{dataSet}' dataset")
-    binInfo = BinInfo("", {}, {}, fitResultDirName, nmbBootstrapSamples)
-    parInfos: list[ParInfo] = []  # parameter values for all bootstrap samples
-    for bootstrapIndex, fitResultFileName in binInfo.bootstrapFileNames:
-      if not os.path.isfile(fitResultFileName):
-        print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
-        continue
-      print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
-      fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
-      fitResult     = fitResultFile.Get("MinuitResult")
-      # read all parameters
-      parValuesInBin: dict[str, UFloat] = {fitPar.GetName() : ufloat(fitPar.getVal(), fitPar.getError()) for fitPar in fitResult.floatParsFinal()}
-      fitResultFile.Close()
-      parInfo = ParInfo(binInfo, fitVariable, parValuesInBin)
-      if parInfo is not None and parInfo.values:
-        print(f"Parameter values for bootstrap index {bootstrapIndex}: {parInfo}")
-        parInfos.append(parInfo)
-      if not parInfos:
-        print(f"No parameter values found for dataset '{dataSet}'")
-        continue
-    # plot bootstrap distributions
-    parNames = tuple(parInfos[0].values.keys())
-    for parName in parNames:
-      parValues = np.array([parInfo.values[parName].nominal_value for parInfo in parInfos], dtype = np.float64)
-      plotBootstrapDistribution(
-        parName,
-        parValues,
-        dataSet,
-        outputDirName,
-      )
+    # binInfoOverall = BinInfo("", {}, {}, fitResultDirName, nmbBootstrapSamples)
+    for binningInfo in getBinningInfosFromDir(fitResultDirName):  # loop over kinematic binnings
+      if binningInfo:
+        print(f"Reading bootstrap distribution for '{dataSet}' dataset and binning {binningInfo}")
+        for binInfo in binningInfo:  # loop over kinematic bins
+          binInfo.nmbBootstrapSamples = nmbBootstrapSamples
+          parInfos: list[ParInfo] = []  # parameter values for all bootstrap samples
+          for bootstrapIndex, fitResultFileName in binInfo.bootstrapFileNames:  # loop over bootstrap samples
+            if not os.path.isfile(fitResultFileName):
+              print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
+              continue
+            print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
+            fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
+            fitResult     = fitResultFile.Get("MinuitResult")
+            # read all parameters
+            parValuesInBin: dict[str, UFloat] = {fitPar.GetName() : ufloat(fitPar.getVal(), fitPar.getError()) for fitPar in fitResult.floatParsFinal()}
+            fitResultFile.Close()
+            parInfo = ParInfo(binInfo, fitVariable, parValuesInBin)
+            if parInfo is not None and parInfo.values:
+              print(f"Parameter values for '{dataSet}' dataset, bin {binInfo}, and bootstrap index {bootstrapIndex}: {parInfo}")
+              parInfos.append(parInfo)
+          if not parInfos:
+            print(f"No parameter values found for dataset '{dataSet}' and bin {binInfo}")
+            continue
+          # plot bootstrap distributions
+          parNames = tuple(parInfos[0].values.keys())
+          for parName in parNames:
+            plotBootstrapDistribution(parName, parInfos, dataSet)
