@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import (
   Generator,
+  Iterator,
   Mapping,
   Sequence,
 )
@@ -92,8 +93,24 @@ class BinInfo:
 @dataclass
 class BinningInfo:
   """Stores information about one particular kinematic binning"""
-  infos:   list[BinInfo]  # info for all bins of the kinematic binning
+  infos:   list[BinInfo]  # infos for all bins of the kinematic binning
   dirName: str            # directory that contains all bins of the kinematic binning
+
+  # make BinningInfo behave like a list of BinInfos
+  def __len__(self) -> int:
+    """Returns number of BinInfos"""
+    return len(self.infos)
+
+  def __getitem__(
+    self,
+    subscript: int
+  ) -> BinInfo:
+    """Returns BinInfo that correspond to given bin index"""
+    return self.infos[subscript]
+
+  def __iter__(self) -> Iterator[BinInfo]:
+    """Iterates over BinInfos"""
+    return iter(self.infos)
 
   @property
   def names(self) -> tuple[str, ...]:
@@ -532,7 +549,7 @@ if __name__ == "__main__":
         if binningInfo.dirNames:
           print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}' for '{dataSet}' dataset")
           plotFitResults(binningInfo, fitVariable)
-          if not dataSet in parInfos:
+          if not dataSet in parInfos:  #TODO use defaultdict
             parInfos[dataSet] = []
           parInfos[dataSet].extend(readParInfosForBinning(binningInfo, fitVariable))
           parNamesInBinning = parInfos[dataSet][-1].names  # readParInfosForBinning() ensures that parameter names are identical within a binning
