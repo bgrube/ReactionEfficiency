@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict
 from collections.abc import (
   Generator,
   Iterator,
@@ -537,9 +538,9 @@ if __name__ == "__main__":
   fitVariable = "MissingMassSquared_Measured"
 
   # plot fits and read parameter values from fit results
-  parInfos:    dict[str, list[ParInfo]]     = {}    # parInfos[<dataset>][<bin>]
-  parNames:    tuple[str, ...] | None       = None
-  binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
+  parInfos:    defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bin>]
+  parNames:    tuple[str, ...] | None          = None
+  binVarNames: list[tuple[str, ...]] | None    = None  # binning variables for each binning
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
@@ -551,8 +552,6 @@ if __name__ == "__main__":
         if binningInfo.dirNames:
           print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}' for '{dataSet}' dataset")
           plotFitResults(binningInfo, fitVariable)
-          if not dataSet in parInfos:  #TODO use defaultdict
-            parInfos[dataSet] = []
           parInfos[dataSet].extend(readParInfosForBinning(binningInfo, fitVariable))
           parNamesInBinning = parInfos[dataSet][-1].names  # readParInfosForBinning() ensures that parameter names are identical within a binning
           if parNames is not None:
