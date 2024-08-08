@@ -198,6 +198,8 @@ class ParInfo:
     """Reads reduced chi^2 value from given fit-result file"""
     # BruFit (mis)uses TPad::SetTheta() to store the reduced chi^2
     # value in the canvas used to plot the fit result
+    # see https://root.cern/doc/master/rf109__chi2residpull_8py.html
+    # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
     canvName = (self.binInfo.name if self.binInfo.name and self.binInfo.name != "Overall" else "") + f"_{self.fitVariable}"
     canv = fitResultFile.Get(canvName)
     self.values["redChi2"] = ufloat(canv.GetTheta(), 0)

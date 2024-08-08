@@ -561,37 +561,21 @@ def runDu(
   print(f"{message}: {output.stdout.decode().strip()}")
 
 
-if __name__ == "__main__":
-  plotTools.printGitInfo()
-  os.nice(18)  # run all processes with second highest niceness level
-  ROOT.gROOT.SetBatch(True)
-  plotTools.setupPlotStyle()
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
-  ROOT.gBenchmark.Start("Total execution time")
-
-  # echo and parse command line
-  # bggenFileName = f"./data/MCbggen/2017_01-ver03/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
-  bggenFileName = f"./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
-  # dataFileName  = bggenFileName
-  # dataFileName  = f"./data/RD/2017_01-ver03/pippippimpimpmiss_flatTree.RD_2017_01-ver03.root.brufit"
-  dataFileName  = f"./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root.brufit"
-  print(f"Script was called using: '{' '.join(sys.argv)}'")
-  parser = argparse.ArgumentParser(description="Plots BruFit results.")
-  parser.add_argument("outputDirName", nargs = "?", type = str, default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
-  parser.add_argument("dataFileName",  nargs = "?", type = str, default = dataFileName,     help = "The path to the input data tree in BruFit format; (default: '%(default)s')")
-  parser.add_argument("bggenFileName", nargs = "?", type = str, default = bggenFileName,    help = "The path to the input bggen MC tree in BruFit format; (default: '%(default)s')")
-  parser.add_argument("--pdfTypeSig",               type = str, default = "Histogram",      help = "Type of signal PDF to use in fit; (default: '%(default)s')")
-  parser.add_argument("--fixParsSig",  nargs = "*", type = str, default = [],               help = "Names of parameters of signal PDF to fix in fit; (default: none)")
-  parser.add_argument("--pdfTypeBkg",               type = str, default = "Histogram",      help = "Type of background PDF to use in fit; (default: '%(default)s')")
-  parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
-  args = parser.parse_args()
-  cleanupRootFiles  = False
-  dataCut           = ""
-  # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
-  # dataCut           = "(IsSignal == 0)"  # fit bggen background data
-  # additionalCut     = ""
-  # additionalCut     = "(NmbUnusedShowers == 0)"
-  additionalCut     = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"
+def fitMissingMassSquared(
+  dataFileName:     str,
+  bggenFileName:    str,
+  outputDirName:    str,
+  pdfTypeSig:       str           = "Histogram",  # type of signal PDF
+  fixParsSig:       Sequence[str] = (),           # fit-parameter names of signal function to fix
+  pdfTypeBkg:       str           = "Histogram",  # type of background PDF
+  fixParsBkg:       Sequence[str] = (),           # fit-parameter names of background
+  cleanupRootFiles: bool          = False,
+  dataCut:          str           = "",
+  # dataCut:          str           = "(IsSignal == 1)",  # fit bggen signal data
+  # dataCut:          str           = "(IsSignal == 0)",  # fit bggen background data
+  # additionalCut:    str           = "",
+  # additionalCut:    str           = "(NmbUnusedShowers == 0)",
+  additionalCut:    str           = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)",
   kinematicBinnings: list[list[tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # # 1D binnings
@@ -612,44 +596,75 @@ if __name__ == "__main__":
     #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
     #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
     # ],
-  ]
-
-  dataSets = {
+  ],
+  dataSets: dict[str, str] = {
     "Total"   : "",
     "Found"   : "(TrackFound == 1)",
     "Missing" : "(TrackFound == 0)",
-  }
+  },
+):
+  plotTools.printGitInfo()
+  os.nice(18)  # run all processes with second highest niceness level
+  ROOT.gROOT.SetBatch(True)
+  plotTools.setupPlotStyle()
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
-  #TODO calculate chi^2
-  # see https://root.cern/doc/master/rf109__chi2residpull_8py.html
-  # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
   # fit all datasets and bins
+  ROOT.gBenchmark.Start("Total execution time")
   for dataSetName, dataSetCut in dataSets.items():
-    outputDirName = f"{args.outputDirName}/{dataSetName}"
+    outputDirNameDataSet = f"{outputDirName}/{dataSetName}"
     if kinematicBinnings:
       for kinematicBinning in kinematicBinnings:
         performFit(
-          args.dataFileName,
-          outputDirName,
+          dataFileName,
+          outputDirNameDataSet,
           kinematicBinning,
-          pdfTypeSig              = args.pdfTypeSig,
-          fixParsSig              = args.fixParsSig,
-          pdfTypeBkg              = args.pdfTypeBkg,
-          fixParsBkg              = args.fixParsBkg,
+          pdfTypeSig              = pdfTypeSig,
+          fixParsSig              = fixParsSig,
+          pdfTypeBkg              = pdfTypeBkg,
+          fixParsBkg              = fixParsBkg,
           commonCut               = andCuts((dataSetCut, additionalCut)),
           dataCut                 = dataCut,
-          templateDataSigFileName = args.bggenFileName,
-          templateDataBkgFileName = args.bggenFileName,
+          templateDataSigFileName = bggenFileName,
+          templateDataBkgFileName = bggenFileName,
         )
         if cleanupRootFiles:
-          runDu(args.outputDirName, "Disk usage of output directory before cleaning")
+          runDu(outputDirName, "Disk usage of output directory before cleaning")
           # recursively remove useless root files to save disk space
           patterns = ("*Tree*.root", "*Weights*.root", "Boot*.root")
           for pattern in patterns:
-            for file in glob.glob(f"{outputDirName}/**/{pattern}", recursive = True):
+            for file in glob.glob(f"{outputDirNameDataSet}/**/{pattern}", recursive = True):
               print(f"Removing '{file}'")
               os.remove(file)
-          runDu(args.outputDirName, "Disk usage of output directory after cleaning")
-
-
+          runDu(outputDirName, "Disk usage of output directory after cleaning")
   ROOT.gBenchmark.Show("Total execution time")
+
+
+if __name__ == "__main__":
+
+  # echo and parse command line
+  # bggenFileName = f"./data/MCbggen/2017_01-ver03/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
+  bggenFileName = f"./data/MCbggen/2018_01-ver02/pippippimpimpmiss_flatTree.MCbggen_2018_01-ver02.root.brufit"
+  # dataFileName  = bggenFileName
+  # dataFileName  = f"./data/RD/2017_01-ver03/pippippimpimpmiss_flatTree.RD_2017_01-ver03.root.brufit"
+  dataFileName  = f"./data/RD/2018_01-ver02/pippippimpimpmiss_flatTree.RD_2018_01-ver02.root.brufit"
+  print(f"Script was called using: '{' '.join(sys.argv)}'")
+  parser = argparse.ArgumentParser(description="Plots BruFit results.")
+  parser.add_argument("outputDirName", nargs = "?", type = str, default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  parser.add_argument("dataFileName",  nargs = "?", type = str, default = dataFileName,     help = "The path to the input data tree in BruFit format; (default: '%(default)s')")
+  parser.add_argument("bggenFileName", nargs = "?", type = str, default = bggenFileName,    help = "The path to the input bggen MC tree in BruFit format; (default: '%(default)s')")
+  parser.add_argument("--pdfTypeSig",               type = str, default = "Histogram",      help = "Type of signal PDF to use in fit; (default: '%(default)s')")
+  parser.add_argument("--fixParsSig",  nargs = "*", type = str, default = [],               help = "Names of parameters of signal PDF to fix in fit; (default: none)")
+  parser.add_argument("--pdfTypeBkg",               type = str, default = "Histogram",      help = "Type of background PDF to use in fit; (default: '%(default)s')")
+  parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
+  args = parser.parse_args()
+
+  fitMissingMassSquared(
+    dataFileName  = args.dataFileName,
+    bggenFileName = args.bggenFileName,
+    outputDirName = args.outputDirName,
+    pdfTypeSig    = args.pdfTypeSig,
+    fixParsSig    = args.fixParsSig,
+    pdfTypeBkg    = args.pdfTypeBkg,
+    fixParsBkg    = args.fixParsBkg,
+  )
