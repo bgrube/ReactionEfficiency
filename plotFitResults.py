@@ -492,8 +492,8 @@ def plotParValue2D(
     return
   canv = ROOT.TCanvas()
   # construct dummy histogram that ensures same axes for all graphs
-  binningVarLabels: list[str] = [] * len(binningVars)
-  binningVarUnits:  list[str] = [] * len(binningVars)
+  binningVarLabels: list[str] = [""] * len(binningVars)
+  binningVarUnits:  list[str] = [""] * len(binningVars)
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   hist = ROOT.TH3F(

@@ -207,8 +207,8 @@ def plotEfficiencies2DPerspective(
   efficiencyGraph.SetTitle("")
   efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
   efficiencyGraph.SetMarkerSize(markerSize)
-  binningVarLabels: list[str] = [] * len(binningVars)
-  binningVarUnits:  list[str] = [] * len(binningVars)
+  binningVarLabels: list[str] = [""] * len(binningVars)
+  binningVarUnits:  list[str] = [""] * len(binningVars)
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   axisTitles = (
@@ -249,8 +249,8 @@ def plotEfficiencies2DColzText(
   xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
   yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
-  binningVarLabels: list[str] = [] * len(binningVars)
-  binningVarUnits:  list[str] = [] * len(binningVars)
+  binningVarLabels: list[str] = [""] * len(binningVars)
+  binningVarUnits:  list[str] = [""] * len(binningVars)
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   efficiencyHist = ROOT.TH2D(
