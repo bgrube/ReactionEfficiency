@@ -11,7 +11,9 @@ from collections.abc import (
   Sequence,
 )
 import functools
+import glob
 import os
+import subprocess
 import sys
 
 import ROOT
@@ -527,10 +529,10 @@ def performFit(
   setRooFitOptions(fitManager, nmbThreadsPerJob if kinematicBinning else 5 * nmbThreadsPerJob)
   print("Using the following global fit options:")
   fitManager.SetUp().FitOptions().Print("")
+  ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
   if kinematicBinning:
     fitManager.SetRedirectOutput()  # redirect console output to files
     print(f"Running {nmbProofJobs} PROOF jobs")
-    ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
     ROOT.Proof.Go(fitManager, nmbProofJobs)
   else:
     if nmbBootstrapSamples > 0:
@@ -544,6 +546,19 @@ def performFit(
 
   fitManager.WriteThis()  # write to disk
   ROOT.gBenchmark.Show(gBenchmarkLabel)
+
+
+def runDu(
+  dirName: str,
+  message: str,
+) -> None:
+  output = subprocess.run(
+      f'du -hs "{dirName}"',
+      stdout = subprocess.PIPE,
+      stderr = subprocess.STDOUT,
+      shell  = True,
+    )
+  print(f"{message}: {output.stdout.decode().strip()}")
 
 
 if __name__ == "__main__":
@@ -570,6 +585,7 @@ if __name__ == "__main__":
   parser.add_argument("--pdfTypeBkg",               type = str, default = "Histogram",      help = "Type of background PDF to use in fit; (default: '%(default)s')")
   parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
   args = parser.parse_args()
+  cleanupRootFiles  = False
   dataCut           = ""
   # dataCut           = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut           = "(IsSignal == 0)"  # fit bggen background data
@@ -609,11 +625,12 @@ if __name__ == "__main__":
   # and https://root-forum.cern.ch/t/how-to-correctly-extract-the-chi2-ndf-p-value-of-a-roofitresult/45956
   # fit all datasets and bins
   for dataSetName, dataSetCut in dataSets.items():
+    outputDirName = f"{args.outputDirName}/{dataSetName}"
     if kinematicBinnings:
       for kinematicBinning in kinematicBinnings:
         performFit(
           args.dataFileName,
-          f"{args.outputDirName}/{dataSetName}",
+          outputDirName,
           kinematicBinning,
           pdfTypeSig              = args.pdfTypeSig,
           fixParsSig              = args.fixParsSig,
@@ -624,5 +641,15 @@ if __name__ == "__main__":
           templateDataSigFileName = args.bggenFileName,
           templateDataBkgFileName = args.bggenFileName,
         )
+        if cleanupRootFiles:
+          runDu(args.outputDirName, "Disk usage of output directory before cleaning")
+          # recursively remove useless root files to save disk space
+          patterns = ("*Tree*.root", "*Weights*.root", "Boot*.root")
+          for pattern in patterns:
+            for file in glob.glob(f"{outputDirName}/**/{pattern}", recursive = True):
+              print(f"Removing '{file}'")
+              os.remove(file)
+          runDu(args.outputDirName, "Disk usage of output directory after cleaning")
+
 
   ROOT.gBenchmark.Show("Total execution time")
