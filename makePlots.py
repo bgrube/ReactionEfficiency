@@ -474,7 +474,7 @@ def plotTopologyHist(
   # overlay distributions for cases
   hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
   topoLabels = topoNames["Total"]
-  hists = {}  # memorize plots to print
+  hists: dict[str, ROOT.TH1] = {}  # memorize plots to print
   for case in FILTER_CASES.keys():
     # ensure that bin labels in all histograms have same order as defined by the "Total" histogram
     hist = ROOT.TH1F(f"{pdfFileNamePrefix}topologies_{case}{'_norm' if normalize else ''}{pdfFileNameSuffix}", case, len(topoLabels), 0, len(topoLabels))

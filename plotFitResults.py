@@ -241,7 +241,7 @@ def readParInfoForBin(
   # print(f"{fitResult.numInvalidNLL()=}")
   fitResult.Print()
   # get fit parameters
-  parValuesInBin = {}
+  parValuesInBin: dict[str, UFloat] = {}
   if isinstance(fitParNamesToRead, Mapping):
     # fitParNamesToRead is some kind of dict
     # read only selected fit parameters; and use new key names for them
