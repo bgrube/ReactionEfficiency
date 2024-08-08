@@ -22,7 +22,10 @@ from plotEfficiencies import (
   getEffValuesForGraph1D,
   getEffValuesForGraph2D,
 )
-from plotFitResults import BINNING_VAR_PLOT_INFO, plotGraphs1D
+from plotFitResults import (
+  getAxisInfoForBinningVar,
+  plotGraphs1D,
+)
 from plotTools import (
   calcRatioOfGraphs1D,
   calcRatioOfGraphs2D,
@@ -93,7 +96,7 @@ def overlayEfficiencyRatios2DSlices(
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
-  assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
+  _, steppingVarLabel, steppingVarUnit = getAxisInfoForBinningVar(steppingVar)
   binningVarIndex  = 0 if steppingVar == binningVars[1] else 1
   graphsToOverlay: dict[tuple[float, float], list[tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
   for ratioLabel, effInfosForLabel in effInfos.items():
@@ -114,9 +117,8 @@ def overlayEfficiencyRatios2DSlices(
       graphsToOverlay[steppingVarBinRange].append((ratioLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
-    steppingVarLabel = f"{steppingVarBinRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
-      f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
-      f"< {steppingVarBinRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
+    steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} " \
+                       f"< {steppingVarBinRange[1]} {steppingVarUnit}"
     plotGraphs1D(
       graphs,
       binningVars[binningVarIndex],
@@ -125,7 +127,7 @@ def overlayEfficiencyRatios2DSlices(
       pdfFileBaseName   = "mm2_effratio",
       pdfFileNamePrefix = pdfFileNamePrefix,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
-      graphTitle        = f"{graphTitle}, {steppingVarLabel}",
+      graphTitle        = f"{graphTitle}, {steppingVarTitle}",
       graphMinimum      = 0.5,
       graphMaximum      = 1.5,
       skipBlack         = True if len(graphs) > 1 else False,
@@ -158,11 +160,13 @@ def getHist2DFromEfficiencies(
   yCenters = sorted(set(effInfo.binInfo.centers[binningVars[1]] for effInfo in effInfos))
   xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
   yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
-  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
-  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  binningVarLabels: list[str] = [] * len(binningVars)
+  binningVarUnits:  list[str] = [] * len(binningVars)
+  for index, binningVar in enumerate(binningVars):
+    _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   efficiencyHist = ROOT.TH2D(
-    histName, f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
-              f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
+    histName, f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+              f";{binningVarLabels[1]} ({binningVarUnits[1]})",
     len(xCenters), *xRange, len(yCenters), *yRange)
   # fill histogram
   for effInfo in effInfos:

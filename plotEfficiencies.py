@@ -24,7 +24,7 @@ import plotFitResults
 from plotFitResults import (
   BinInfo,
   BinningInfo,
-  BINNING_VAR_PLOT_INFO,
+  getAxisInfoForBinningVar,
   ParInfo,
 )
 import plotTools
@@ -207,11 +207,13 @@ def plotEfficiencies2DPerspective(
   efficiencyGraph.SetTitle("")
   efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
   efficiencyGraph.SetMarkerSize(markerSize)
-  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
-  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  binningVarLabels: list[str] = [] * len(binningVars)
+  binningVarUnits:  list[str] = [] * len(binningVars)
+  for index, binningVar in enumerate(binningVars):
+    _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   axisTitles = (
-    f"{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})",
-    f"{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
+    f"{binningVarLabels[0]} ({binningVarUnits[0]})",
+    f"{binningVarLabels[1]} ({binningVarUnits[1]})",
     f"Track-Finding Efficiency",
   )
   titleOffsets = (2.0, 2.0, 1.5)
@@ -247,11 +249,13 @@ def plotEfficiencies2DColzText(
   xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
   yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
-  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
-  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  binningVarLabels: list[str] = [] * len(binningVars)
+  binningVarUnits:  list[str] = [] * len(binningVars)
+  for index, binningVar in enumerate(binningVars):
+    _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   efficiencyHist = ROOT.TH2D(
-    f"h{canv.GetName()}", f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
-                          f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})",
+    f"h{canv.GetName()}", f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+                          f";{binningVarLabels[1]} ({binningVarUnits[1]})",
     int((xRange[1] - xRange[0]) / xWidth), *xRange, int((yRange[1] - yRange[0]) / yWidth), *yRange)
   # fill histogram
   for effInfo in effInfos:

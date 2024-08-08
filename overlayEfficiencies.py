@@ -22,7 +22,10 @@ import ROOT
 import plotEfficiencies
 from plotEfficiencies import EffInfo
 import plotFitResults
-from plotFitResults import BINNING_VAR_PLOT_INFO, ParInfo
+from plotFitResults import (
+  getAxisInfoForBinningVar,
+  ParInfo,
+)
 import plotTools
 
 
@@ -103,7 +106,7 @@ def overlayEfficiencies2DSlices(
   """Overlays efficiencies as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
   print(f"Overlaying efficiencies for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
-  assert steppingVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{steppingVar}'"
+  _, steppingVarLabel, steppingVarUnit = getAxisInfoForBinningVar(steppingVar)
   binningVarIndex  = 0 if steppingVar == binningVars[1] else 1
   # read efficiency values and slice them into 1D graphs
   graphsToOverlay: dict[tuple[float, float], list[tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
@@ -115,9 +118,8 @@ def overlayEfficiencies2DSlices(
       graphsToOverlay[steppingVarBinRange].append((fitLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
-    steppingVarLabel = f"{steppingVarBinRange[0]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']} " \
-      f"< {BINNING_VAR_PLOT_INFO[steppingVar]['label']} " \
-      f"< {steppingVarBinRange[1]} {BINNING_VAR_PLOT_INFO[steppingVar]['unit']}"
+    steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} " \
+                       f"< {steppingVarBinRange[1]} {steppingVarUnit}"
     plotFitResults.plotGraphs1D(
       graphs,
       binningVars[binningVarIndex],
@@ -126,7 +128,7 @@ def overlayEfficiencies2DSlices(
       pdfFileBaseName   = "mm2_eff",
       pdfFileNamePrefix = pdfFileNamePrefix,
       pdfFileNameSuffix = f"_{steppingVar}_{steppingVarBinRange[0]}_{steppingVarBinRange[1]}{pdfFileNameSuffix}",
-      graphTitle        = steppingVarLabel,
+      graphTitle        = steppingVarTitle,
       graphMinimum      = 0.0,
       graphMaximum      = 1.0,
       skipBlack         = skipBlack,

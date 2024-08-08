@@ -47,6 +47,7 @@ BINNING_VAR_PLOT_INFO: dict[str, dict[str, str]] = {
 }
 
 def getAxisInfoForBinningVar(binningVar: str | tuple[str, str]) -> tuple[str, str, str]:
+  """Returns name, label, and unit of the binning variable given by binningVar or binningVar[0]"""
   varName = None
   if isinstance(binningVar, str):
     varName = binningVar
@@ -368,10 +369,9 @@ def plotGraphs1D(
     multiGraph.Add(graph)
   if graphTitle is not None:
     multiGraph.SetTitle(graphTitle)  # !Note! if this is executed after setting axis titles, no title is printed; seems like a ROOT bug
-  #TODO use getAxisInfoForBinningVar everywhere
   #TODO make this function more generic by moving this into a beautifier
-  assert binningVar in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVar}'"
-  multiGraph.GetXaxis().SetTitle(f"{BINNING_VAR_PLOT_INFO[binningVar]['label']} ({BINNING_VAR_PLOT_INFO[binningVar]['unit']})")
+  _, binningVarLabel, binningVarUnit = getAxisInfoForBinningVar(binningVar)
+  multiGraph.GetXaxis().SetTitle(f"{binningVarLabel} ({binningVarUnit})")
   multiGraph.GetYaxis().SetTitle(yAxisTitle)
   if graphMinimum is not None:
     multiGraph.SetMinimum(graphMinimum)
@@ -491,12 +491,14 @@ def plotParValue2D(
     return
   canv = ROOT.TCanvas()
   # construct dummy histogram that ensures same axes for all graphs
-  assert binningVars[0] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[0]}'"
-  assert binningVars[1] in BINNING_VAR_PLOT_INFO, f"No plot information for binning variable '{binningVars[1]}'"
+  binningVarLabels: list[str] = [] * len(binningVars)
+  binningVarUnits:  list[str] = [] * len(binningVars)
+  for index, binningVar in enumerate(binningVars):
+    _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   hist = ROOT.TH3F(
     f"{pdfFileNamePrefix}{parName}_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}",
-    (f";{BINNING_VAR_PLOT_INFO[binningVars[0]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[0]]['unit']})"
-     f";{BINNING_VAR_PLOT_INFO[binningVars[1]]['label']} ({BINNING_VAR_PLOT_INFO[binningVars[1]]['unit']})"
+    (f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+     f";{binningVarLabels[1]} ({binningVarUnits[1]})"
      f";{parName}"),
     1, xMin, xMax, 1, yMin, yMax, 1, zMin, zMax
   )
