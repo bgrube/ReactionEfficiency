@@ -11,8 +11,18 @@ from typing import Any
 
 import ROOT
 
-import plotFitResults
-import plotTools
+from plotFitResults import (
+  getAxisInfoForBinningVar,
+  plotGraphs1D,
+)
+from plotTools import (
+  callMemberFunctionsWithArgs,
+  drawZeroLine,
+  getCbFriendlyRootColor,
+  makeDirPath,
+  printGitInfo,
+  setupPlotStyle,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -80,7 +90,7 @@ def overlayDataSamples1D(
     else:
       raise KeyError(f"Data sample must contain either 'TFile' or 'RDataFrame' key: {dataSample}")
     assert hist is not None, "Could not create histogram"
-    plotTools.callMemberFunctionsWithArgs(hist, dataSample)
+    callMemberFunctionsWithArgs(hist, dataSample)
     if dataSample.get("normToThis", False):
       print(f"Normalizing all histograms to '{dataLabel}'")
       normIntegral = hist.Integral()
@@ -207,7 +217,7 @@ def plot1D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
-  plotTools.drawZeroLine(hist)
+  drawZeroLine(hist)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -283,7 +293,7 @@ def overlayResolutions(
   resPlotRange:          tuple[float | None, float | None] = (None, None),
 ) -> None:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
-  resBinningVariableName, resBinningVariableLabel, resBinningVariableUnit = plotFitResults.getAxisInfoForBinningVar(resBinningVariable)
+  resBinningVariableName, resBinningVariableLabel, resBinningVariableUnit = getAxisInfoForBinningVar(resBinningVariable)
   resGraphs: list[tuple[str, ROOT.TGraphErrors]] = []
   for label, data in inputData:
     resGraphs.append((label,
@@ -298,8 +308,8 @@ def overlayResolutions(
         histTitle           = f";{'' if diffVariableAxisTitle is None else diffVariableAxisTitle};{resBinningVariableLabel} ({resBinningVariableUnit})",
         histPdfFileName     = f"{pdfDirName}/{pdfFileNamePrefix}resolution2D_{diffVariable}_{resBinningVariable}_{label}{pdfFileNameSuffix}.pdf",
       )))
-  _, resVariableLabel, resVariableUnit = plotFitResults.getAxisInfoForBinningVar(resVariableName)
-  plotFitResults.plotGraphs1D(
+  _, resVariableLabel, resVariableUnit = getAxisInfoForBinningVar(resVariableName)
+  plotGraphs1D(
     graphOrGraphs     = resGraphs,
     binningVar        = resBinningVariableName,
     yAxisTitle        = f"#it{{#sigma}}_{{{resVariableLabel}}} ({resVariableUnit})",
@@ -342,7 +352,7 @@ def overlayCases(
   hStack.Draw("NOSTACK HIST")
   # add legend
   canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  plotTools.drawZeroLine(hStack)
+  drawZeroLine(hStack)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -536,7 +546,7 @@ def overlayTopologies(
     hStack.Draw("NOSTACK HIST")
     # add legend
     canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-    plotTools.drawZeroLine(hStack)
+    drawZeroLine(hStack)
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
@@ -736,11 +746,11 @@ def makeKinematicPlotsData(
 
 if __name__ == "__main__":
   #TODO add command-line interface
-  plotTools.printGitInfo()
+  printGitInfo()
   ROOT.gROOT.SetBatch(True)
   #TODO cannot change multithreading after data frame was instantiated
   # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
-  plotTools.setupPlotStyle()
+  setupPlotStyle()
 
   dataPeriods = [
     "2017_01-ver03",
@@ -761,7 +771,7 @@ if __name__ == "__main__":
       "TFile"        : ROOT.TFile.Open(inputFileName, "READ"),
       "normToThis"   : True if index == 0 else False,
       # define plot style
-      "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
+      "SetLineColor" : getCbFriendlyRootColor(index, skipBlack = True),
       "SetLineWidth" : 2,
     }
   # plot generated MC truth for signal process
@@ -782,7 +792,7 @@ if __name__ == "__main__":
   for histInfo in histInfos:
     kwargs = {
       "pdfFileNameSuffix" : "_SigMcTruth",
-      "pdfDirName"        : plotTools.makeDirPath(f"{pdfBaseDirName}/MCbggen"),
+      "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
       "histTitle"         : histInfo["histTitle"],
     }
     overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{histInfo  ['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
@@ -818,7 +828,7 @@ if __name__ == "__main__":
     for dataPeriod, data in inputData.items():
       dataToOverlay.append((dataPeriod, data["MCbggen"]))
     kwargs = {
-      "pdfDirName"            : plotTools.makeDirPath("./plots/MCbggen"),
+      "pdfDirName"            : makeDirPath("./plots/MCbggen"),
       "additionalFilter"      : '(NmbUnusedShowers == 0) && (NmbTruthTracks == 1) && (ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
       "diffVariableAxisTitle" : diffVariableAxisTitle,
     }
@@ -842,7 +852,7 @@ if __name__ == "__main__":
       for dataPeriod, data in inputData.items():
         dataToOverlay.append((dataPeriod, data[dataType]))
       kwargs = {
-        "pdfDirName"            : plotTools.makeDirPath(f"./plots/{dataType}"),
+        "pdfDirName"            : makeDirPath(f"./plots/{dataType}"),
         "additionalFilter"      : "(NmbUnusedShowers == 0) && (NmbUnusedTracks == 1)",
         "diffVariableAxisTitle" : diffVariableAxisTitle,
         "pdfFileNameSuffix"     : "_unused",
@@ -862,10 +872,10 @@ if __name__ == "__main__":
           "RDataFrame"   : inputData[dataPeriod][dataType],
           "normToThis"   : True if index == 0 else False,
           # define plot style
-          "SetLineColor" : plotTools.getCbFriendlyRootColor(index, skipBlack = True),
+          "SetLineColor" : getCbFriendlyRootColor(index, skipBlack = True),
           "SetLineWidth" : 2,
         }
-      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/{dataType}"))
+      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
   # overlay bggen MC and real data for each period
   for dataPeriod in inputData.keys():
     dataSamplesToOverlay = {
@@ -880,13 +890,13 @@ if __name__ == "__main__":
         "normToThis" : True,
       },
     }
-    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
 
   # make Monte Carlo plots for each period
   for dataPeriod in inputData.keys():
-    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
+    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
 
   # make general plots for each data type and period
   for dataType in ("MCbggen", "RD"):
     for dataPeriod in inputData.keys():
-      makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = plotTools.makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
+      makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
