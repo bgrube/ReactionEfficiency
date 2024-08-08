@@ -3,18 +3,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
-from contextlib import contextmanager
 import functools
 import os
 import shutil
 import subprocess
-from typing import (
-  Any,
-  IO,
-  TextIO,
-)
-import sys
+from wurlitzer import pipes, STDOUT
 
 import ROOT
 
@@ -23,70 +16,6 @@ from fitMissingMassSquared import fitMissingMassSquared
 
 # always flush print() to reduce garbling of log files due to buffering
 print = functools.partial(print, flush = True)
-
-
-def fileDescriptor(fileObjectOrDescriptor: IO[Any] | TextIO | int | None) -> int:
-  """Returns the file descriptor for the file-like object of file descriptor `fileObjectOrDescriptor`"""
-  # from https://stackoverflow.com/a/22434262
-  # check if fileObjectOrDescriptor is a file-like object else assume it is a file descriptor
-  fileDescriptor = getattr(fileObjectOrDescriptor, "fileno", lambda: fileObjectOrDescriptor)()
-  if not isinstance(fileDescriptor, int):
-    raise ValueError(f"Expected a file-like object with '.fileno()' method or a file descriptor, but got {fileObjectOrDescriptor}")
-  return fileDescriptor
-
-
-try:
-  import ctypes
-  from ctypes.util import find_library
-except ImportError:
-  libc = None
-else:
-  try:
-    libc = ctypes.cdll.msvcrt  # Windows
-  except OSError:
-    libc = ctypes.cdll.LoadLibrary(find_library("c"))
-def flush(stream: TextIO) -> None:
-  """Flushes all libc buffers and the buffer of the given text stream"""
-  # from https://stackoverflow.com/a/22434262
-  try:
-    libc.fflush(None)  # `fflush(NULL)` flushes all open output streams managed by libc
-    stream.flush()
-  except (AttributeError, ValueError, IOError):
-    pass  # unsupported
-
-
-@contextmanager
-def redirect(
-  destStream: TextIO | int | str = os.devnull,
-  srcStream:  TextIO             = sys.stdout,
-) -> Generator[TextIO | None, None, None]:
-  """Redirects the output of the text stream `fromStream` to the text stream, file descriptor, or file name `toStream`"""
-  # from https://stackoverflow.com/a/22434262
-  srcStreamFd = fileDescriptor(srcStream)
-  # save source-stream file object before it is overwritten
-  #NOTE: `srcStreamCopy` is inheritable on Windows when duplicating a standard stream
-  with os.fdopen(os.dup(srcStreamFd), "wb") as srcStreamCopy:
-    flush(srcStream)  # flush library buffers that dup2() knows nothing about
-    try:
-      os.dup2(fileDescriptor(destStream), srcStreamFd)  # set srcStream to destStream
-    except ValueError:  # destStream may be a file name
-      with open(destStream, "wb") as destFile:
-        os.dup2(destFile.fileno(), srcStreamFd)  # set srcStream to destStream
-    try:
-      yield srcStream  # run code with the redirected srcStream
-    finally:
-      flush(srcStream)
-      # restore srcStream to its previous value
-      #NOTE: dup2() makes stdout_fd inheritable unconditionally
-      os.dup2(srcStreamCopy.fileno(), srcStreamFd)  # set srcStream to srcStreamCopy
-
-
-@contextmanager
-def mergeStderrIntoStdout() -> Generator[TextIO | None, None, None]:
-  """Redirects stderr to stdout"""
-  # from https://stackoverflow.com/a/22434262
-  with redirect(destStream = sys.stdout, srcStream = sys.stderr):  # equivalent to $ exec 2>&1
-    yield
 
 
 if __name__ == "__main__":
@@ -239,23 +168,11 @@ if __name__ == "__main__":
       print(f"Created directory '{fitDirectory}'")
       # run fits
       print(f"Starting fits ...")
-      with mergeStderrIntoStdout():
-        with redirect(destStream = f"{fitDirectory}/fitMissingMassSquared.log"):
-          fitMissingMassSquared(
-            outputDirName = fitDirectory,
-            **fit["kwargs"],
-          )
-      # with open(f"{fitDirectory}/fitMissingMassSquared.log", "w") as logFile:  # write separate log file for each fit
-      #   with contextlib.redirect_stdout(logFile), contextlib.redirect_stderr(logFile):
-      #     fitMissingMassSquared(
-      #       outputDirName = fitDirectory,
-      #       **fit["kwargs"],
-      #     )
-      # cmdLineOptions = [(f"--{option} {fit[option]}" if option in fit else "") for option in ("pdfTypeSig", "fixParsSig", "pdfTypeBkg", "fixParsBkg")]
-      # result = subprocess.run(
-      #   f"./fitMissingMassSquared.py \"{fitDirectory}\" {fit['dataFileName']} {fit['bggenFileName']} {' '.join(cmdLineOptions)} &> \"{fitDirectory}/fitMissingMassSquared.log\"", shell = True)
-      # if result.returncode != 0:
-      #   raise RuntimeError(f"Fitting script failed with exit code '{result.returncode}'")
+      with open(f"{fitDirectory}/fitMissingMassSquared.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
+        fitMissingMassSquared(
+          outputDirName = fitDirectory,
+          **fit["kwargs"],
+        )
       # postprocess fit results
       subprocess.run(f"./cleanFitDir.sh \"{fitDirectory}\"", shell = True)
       print("Plotting fit results...")
