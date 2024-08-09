@@ -312,7 +312,7 @@ def readParInfosForBinning(
   return parInfos
 
 
-def plotFitResult(
+def plotFitResultForBin(
   binInfo:     BinInfo,
   fitVariable: str,
   pdfDirName:  str | None = None,  # overrides default PDF output path (i.e. same dir as fit result file) if set
@@ -345,13 +345,13 @@ def plotFitResult(
   fitResultFile.Close()
 
 
-def plotFitResults(
+def plotFitResultsForBinning(
   binningInfo: BinningInfo,
   fitVariable: str,
 ) -> None:
   """Plots fit results for all kinematic bins"""
   for binInfo in binningInfo.infos:
-    plotFitResult(binInfo, fitVariable, pdfDirName = binningInfo.dirName)
+    plotFitResultForBin(binInfo, fitVariable, pdfDirName = binningInfo.dirName)
 
 
 def getParValuesForGraph1D(
@@ -574,14 +574,14 @@ if __name__ == "__main__":
   for dataSet in dataSets:
     fitResultDirName  = f"{args.outputDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
-    plotFitResult(BinInfo("", {}, {}, fitResultDirName), fitVariable)
+    plotFitResultForBin(BinInfo("", {}, {}, fitResultDirName), fitVariable)
     binVarNamesInDataSet: list[tuple[str, ...]] = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:
         binVarNamesInDataSet.append(binningInfo.varNames)
         if binningInfo.dirNames:
           print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}' for '{dataSet}' dataset")
-          plotFitResults(binningInfo, fitVariable)
+          plotFitResultsForBinning(binningInfo, fitVariable)
           parInfos[dataSet].extend(readParInfosForBinning(binningInfo, fitVariable))
           parNamesInBinning = parInfos[dataSet][-1].names  # readParInfosForBinning() ensures that parameter names are identical within a binning
           if parNames is not None:
