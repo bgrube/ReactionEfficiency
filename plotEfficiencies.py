@@ -20,14 +20,22 @@ import ROOT
 if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
-import plotFitResults
 from plotFitResults import (
   BinInfo,
   BinningInfo,
   getAxisInfoForBinningVar,
+  getBinningInfosFromDir,
   ParInfo,
+  plotGraphs1D,
+  readParInfoForBin,
 )
-import plotTools
+from plotTools import (
+  getGraph1DFromValues,
+  getGraph2DFromValues,
+  printGitInfo,
+  redrawFrame,
+  setupPlotStyle,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -77,14 +85,14 @@ def readYieldInfosForBinning(
   overallBinInfo = BinInfo("Overall", {}, {}, binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
-      else plotFitResults.readParInfoForBin(overallBinInfo, fitVariable, YIELD_PAR_NAMES)
+      else readParInfoForBin(overallBinInfo, fitVariable, YIELD_PAR_NAMES)
     if yieldInfo is not None:
       print(f"Read overall yields: {yieldInfo}")
       yieldInfos.append(yieldInfo)  # first entry always contains overall yields
   # read yields for each bin
   for binInfo in binningInfo.infos:
     yieldInfo = readDataIntegralFromFitFile(binInfo, fitVariable) if readIntegrals \
-      else plotFitResults.readParInfoForBin(binInfo, fitVariable, YIELD_PAR_NAMES)
+      else readParInfoForBin(binInfo, fitVariable, YIELD_PAR_NAMES)
     if yieldInfo is not None:
       print(f"Read yields for kinematic bin: {yieldInfo}")
       yieldInfos.append(yieldInfo)
@@ -156,8 +164,8 @@ def plotEfficiencies1D(
 ) -> None:
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
-  plotFitResults.plotGraphs1D(
-    graphOrGraphs     = plotTools.getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
+  plotGraphs1D(
+    graphOrGraphs     = getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
     binningVar        = binningVar,
     yAxisTitle        = f"Track-Finding Efficiency",
     pdfDirName        = pdfDirName,
@@ -197,7 +205,7 @@ def plotEfficiencies2DPerspective(
 ) -> None:
   """Plots 3D view of efficiency as a function of given binning variables for 2-dimensional binning"""
   print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
-  efficiencyGraph = plotTools.getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
+  efficiencyGraph = getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
   if efficiencyGraph is None:  # nothing to plot
     return
   efficiencyGraph.SetMinimum(0)
@@ -267,14 +275,14 @@ def plotEfficiencies2DColzText(
   ROOT.gStyle.SetPaintTextFormat("1.3f")
   efficiencyHist.Draw("COLZ TEXT")
   efficiencyHist.SetStats(False)
-  plotTools.redrawFrame(canv)
+  redrawFrame(canv)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
 
 
 if __name__ == "__main__":
-  plotTools.printGitInfo()
+  printGitInfo()
   ROOT.gROOT.SetBatch(True)
-  plotTools.setupPlotStyle()
+  setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
@@ -295,7 +303,7 @@ if __name__ == "__main__":
       fitResultDirName = f"{args.outputDirName}/{dataSet}"
       yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName), readIntegrals, fitVariable)  # overall yield values
       binVarNamesInDataSet: list[tuple[str, ...]] = []
-      for binningInfo in plotFitResults.getBinningInfosFromDir(fitResultDirName):
+      for binningInfo in getBinningInfosFromDir(fitResultDirName):
         if binningInfo:
           binVarNamesInDataSet.append(binningInfo.varNames)
           yieldInfos[dataSet].extend(readYieldInfosForBinning(binningInfo, readIntegrals, fitVariable))

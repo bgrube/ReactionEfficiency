@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# !Note! Needs BruFit branch `spin1spin0_rw` hash eae4b6f5 or later
+#NOTE Needs BruFit branch `spin1spin0_rw` hash eae4b6f5 or later
 
 from __future__ import annotations
 
@@ -19,7 +19,10 @@ import sys
 import ROOT
 assert ROOT.gROOT.GetVersionInt() >= 62800, "ROOT version >= 6.28.0 is required"
 
-import plotTools
+from plotTools import (
+  printGitInfo,
+  setupPlotStyle,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -604,10 +607,10 @@ def fitMissingMassSquared(
   },
 ) -> None:
   """Fits missing mass squared distribution"""
-  plotTools.printGitInfo()
+  printGitInfo()
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
-  plotTools.setupPlotStyle()
+  setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # fit all datasets and bins

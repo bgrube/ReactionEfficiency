@@ -19,14 +19,28 @@ from uncertainties import UFloat, ufloat
 
 import ROOT
 
-import plotEfficiencies
-from plotEfficiencies import EffInfo
-import plotFitResults
+from plotEfficiencies import (
+  calculateEfficiencies,
+  EffInfo,
+  getEffValuesForGraph1D,
+  getEffValuesForGraph2D,
+  readYieldInfosForBinning,
+)
 from plotFitResults import (
   getAxisInfoForBinningVar,
+  getBinningInfosFromDir,
   ParInfo,
+  plotGraphs1D,
 )
-import plotTools
+from plotTools import (
+  getGraph1DFromValues,
+  getGraph2DFromValues,
+  Graph2DVar,
+  makeDirPath,
+  printGitInfo,
+  setupPlotStyle,
+  slice2DGraph,
+)
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -51,16 +65,16 @@ def getEfficiencies(
       print(f"Reading yields for '{dataSet}' dataset")
       yieldInfos[dataSet]  = []
       binVarNamesInDataSet = []
-      for binningInfo in plotFitResults.getBinningInfosFromDir(f"{fitResultDirName}/{dataSet}"):
+      for binningInfo in getBinningInfosFromDir(f"{fitResultDirName}/{dataSet}"):
         if binningInfo:
           binVarNamesInDataSet.append(binningInfo.varNames)
-          yieldInfos[dataSet][len(yieldInfos[dataSet]):] = plotEfficiencies.readYieldInfosForBinning(binningInfo)  # append yield values
+          yieldInfos[dataSet][len(yieldInfos[dataSet]):] = readYieldInfosForBinning(binningInfo)  # append yield values
       if binVarNames is None:
         binVarNames = binVarNamesInDataSet
       else:
         assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} of dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous one"
     fitLabel = fitLabels[fitIndex] if fitLabels else fitResultDirName
-    effInfos[(fitResultDirName, fitLabel)] = plotEfficiencies.calculateEfficiencies(yieldInfos, useMissing)
+    effInfos[(fitResultDirName, fitLabel)] = calculateEfficiencies(yieldInfos, useMissing)
   return effInfos, binVarNames
 
 
@@ -76,10 +90,10 @@ def overlayEfficiencies1D(
   """Overlays efficiencies as a function of `binningVar` for all given fits with 1D binning"""
   print(f"Overlaying efficiencies for binning variable '{binningVar}'")
   graphs1D: list[tuple[str, ROOT.TGraphErrors]] = [
-    (fitLabel, plotTools.getGraph1DFromValues(plotEfficiencies.getEffValuesForGraph1D(binningVar, efficiencies)))
+    (fitLabel, getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)))
     for (_, fitLabel), efficiencies in effInfos.items()
   ]
-  plotFitResults.plotGraphs1D(
+  plotGraphs1D(
     graphs1D,
     binningVar,
     yAxisTitle        = "Efficiency",
@@ -111,16 +125,16 @@ def overlayEfficiencies2DSlices(
   # read efficiency values and slice them into 1D graphs
   graphsToOverlay: dict[tuple[float, float], list[tuple[str, ROOT.TGraphErrors]]] = defaultdict(list)
   for (_, fitLabel), efficiencies in effInfos.items():
-    graphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = plotTools.slice2DGraph(
-      plotTools.getGraph2DFromValues(plotEfficiencies.getEffValuesForGraph2D(binningVars, efficiencies)),
-      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y)
+    graphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = slice2DGraph(
+      getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies)),
+      Graph2DVar.x if steppingVar == binningVars[0] else Graph2DVar.y)
     for steppingVarBinRange, graph in graphs1D.items():
       graphsToOverlay[steppingVarBinRange].append((fitLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
     steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} " \
                        f"< {steppingVarBinRange[1]} {steppingVarUnit}"
-    plotFitResults.plotGraphs1D(
+    plotGraphs1D(
       graphs,
       binningVars[binningVarIndex],
       yAxisTitle        = "Efficiency",
@@ -137,9 +151,9 @@ def overlayEfficiencies2DSlices(
 
 
 if __name__ == "__main__":
-  plotTools.printGitInfo()
+  printGitInfo()
   ROOT.gROOT.SetBatch(True)
-  plotTools.setupPlotStyle()
+  setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
@@ -151,9 +165,9 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   # fitRootDir = "./fits"
-  # pdfDirName = plotTools.makeDirPath("./overlays")
+  # pdfDirName = makeDirPath("./overlays")
   fitRootDir = "./fits.pionComparison"
-  pdfDirName = plotTools.makeDirPath("./overlays.pionComparison")
+  pdfDirName = makeDirPath("./overlays.pionComparison")
   skipBlack  = True
   # skipBlack  = False
 
