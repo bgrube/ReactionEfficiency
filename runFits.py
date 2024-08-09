@@ -13,13 +13,21 @@ from wurlitzer import pipes, STDOUT
 import ROOT
 
 from fitMissingMassSquared import fitMissingMassSquared
-
+from plotFitResults import plotFitResults
+from plotTools import (
+  printGitInfo,
+  setupPlotStyle,
+)
 
 # always flush print() to reduce garbling of log files due to buffering
 print = functools.partial(print, flush = True)
 
 
 if __name__ == "__main__":
+  printGitInfo()
+  ROOT.gROOT.SetBatch(True)
+  setupPlotStyle()
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   fitRootDir = "./fits"
   # fitRootDir = "./fits.pionComparison"

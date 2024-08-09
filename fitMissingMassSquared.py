@@ -607,12 +607,7 @@ def fitMissingMassSquared(
   },
 ) -> None:
   """Fits missing mass squared distribution"""
-  printGitInfo()
-  os.nice(18)  # run all processes with second highest niceness level
-  ROOT.gROOT.SetBatch(True)
-  setupPlotStyle()
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
-
+  os.nice(18)  # be nice and run all processes with second highest niceness level
   # fit all datasets and bins
   ROOT.gBenchmark.Start("Total execution time")
   for dataSetName, dataSetCut in dataSets.items():
@@ -645,6 +640,10 @@ def fitMissingMassSquared(
 
 
 if __name__ == "__main__":
+  printGitInfo()
+  ROOT.gROOT.SetBatch(True)
+  setupPlotStyle()
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
   # echo and parse command line
   # bggenFileName = f"./data/MCbggen/2017_01-ver03/pippippimpimpmiss_flatTree.MCbggen_2017_01-ver03.root.brufit"
