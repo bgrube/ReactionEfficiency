@@ -87,7 +87,10 @@ class BinInfo:
     """Returns generator for file names with the bootstrap results for this bin"""
     return ((index, f"{self.dirName}/ResultsBoot{index}HSMinuit2.root") for index in range(self.nmbBootstrapSamples))
 
-  def isSameBinAs(self, other: 'BinInfo') -> bool:
+  def isSameBinAs(
+    self,
+    other: BinInfo,
+  ) -> bool:
     """Returns whether 2 BinInfo objects represent the same kinematic bin"""
     return (self.name == other.name) and (self.centers == other.centers)
 
@@ -194,7 +197,10 @@ class ParInfo:
     """Returns parameter names"""
     return tuple(sorted(self.values.keys()))
 
-  def readChi2From(self, fitResultFile: ROOT.TFile) -> None:
+  def readChi2From(
+    self,
+    fitResultFile: ROOT.TFile
+  ) -> None:
     """Reads reduced chi^2 value from given fit-result file"""
     # BruFit (mis)uses TPad::SetTheta() to store the reduced chi^2
     # value in the canvas used to plot the fit result
@@ -203,6 +209,45 @@ class ParInfo:
     canvName = (self.binInfo.name if self.binInfo.name and self.binInfo.name != "Overall" else "") + f"_{self.fitVariable}"
     canv = fitResultFile.Get(canvName)
     self.values["redChi2"] = ufloat(canv.GetTheta(), 0)
+
+
+def acceptFitResult(fitResult: ROOT.RooFitResult) -> bool:
+  """Returns whether the fit result should be accepted"""
+  minimizerStatuses = [(i, fitResult.statusLabelHistory(i), fitResult.statusCodeHistory(i)) for i in range(fitResult.numStatusHistory())]
+  if not all(status[2] == 0 for status in minimizerStatuses):
+    print("Disregarding fit result because its status is " + ", ".join([f"[{status[0]}] {status[1]} = {status[2]}" for status in minimizerStatuses]))
+    return False
+  # if fitResult.covQual() != 3:  # this cut seems to be too aggressive, in particular when fudge parameters are freed
+  #   print("Disregarding fit result because covariance matrix was not positive definite")
+  #   return False
+  if fitResult.minNll() == 0:
+    print("Disregarding fit result because NLL at minimum = 0")
+    return False
+  if fitResult.edm() == 0:
+    print("Disregarding fit result because EDM = 0")
+    return False
+  # remove fits with suspicious signal yields
+  fitPars = fitResult.floatParsFinal()
+  sigYieldIndex = fitPars.index("Yld_SigPdf")
+  if sigYieldIndex < 0:
+    print(f"Disregarding fit result because it does not contain the signal yield")
+    return False
+  sigYield = fitPars[sigYieldIndex]
+  #TODO Use different thresholds for 'Found' and 'Missing' yields?
+  if sigYield.getVal() < 100 or sigYield.getError() / sigYield.getVal() > 1:
+    print(f"Disregarding fit result because the signal yield {sigYield.getVal()} +- {sigYield.getError()} is too small or its relative uncertainty too large")
+    return False
+  # remove fits with suspicious background yields
+  bkgYieldIndex = fitPars.index("Yld_BkgPdf")
+  if bkgYieldIndex < 0:
+    print(f"Disregarding fit result because it does not contain the background yield")
+    return False
+  bkgYield = fitPars[bkgYieldIndex]
+  if bkgYield.getVal() < 1:
+    print(f"Disregarding fit result because the background yield {bkgYield.getVal()} is too small")
+    return False
+  #TODO cut in fit chi^2? problem is that this is stored in the canvas, not in the fit result; see readChi2From()
+  return True
 
 
 def readParInfoForBin(
@@ -219,30 +264,13 @@ def readParInfoForBin(
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   fitResult     = fitResultFile.Get("MinuitResult")
   # filter out unsuccessful fits
-  minimizerStatuses = [(i, fitResult.statusLabelHistory(i), fitResult.statusCodeHistory(i)) for i in range(fitResult.numStatusHistory())]
-  if not all(status[2] == 0 for status in minimizerStatuses):
-    print("Disregarding fit result because its status is " + ", ".join([f"[{status[0]}] {status[1]} = {status[2]}" for status in minimizerStatuses]))
+  if not acceptFitResult(fitResult):
+    fitResultFile.Close()
     return None
-  # if fitResult.covQual() != 3:  # this cut seems to be too aggressive, in particular when fudge parameters are freed
-  #   print("Disregarding fit result because covariance matrix was not positive definite")
-  #   return None
-  if fitResult.minNll() == 0:
-    print("Disregarding fit result because NLL at minimum = 0")
-    return None
-  if fitResult.edm() == 0:
-    print("Disregarding fit result because EDM = 0")
-    return None
-  # remove fits with suspicious signal yields
-  fitPars       = fitResult.floatParsFinal()
-  sigYieldIndex = fitPars.index("Yld_SigPdf")
-  if sigYieldIndex >= 0:
-    sigYield = fitPars[sigYieldIndex]
-    if sigYield.getVal() < 100 or sigYield.getError() / sigYield.getVal() > 1:
-      print(f"Disregarding fit result because the signal yield {sigYield.getVal()} +- {sigYield.getError()} is too small or its uncertainty too large")
-      return None
   # print(f"{fitResult.numInvalidNLL()=}")
-  fitResult.Print()
   # get fit parameters
+  fitResult.Print()
+  fitPars = fitResult.floatParsFinal()
   parValuesInBin: dict[str, UFloat] = {}
   if isinstance(fitParNamesToRead, Mapping):
     # fitParNamesToRead is some kind of dict
