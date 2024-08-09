@@ -253,7 +253,7 @@ def acceptFitResult(fitResult: ROOT.RooFitResult) -> bool:
 def readParInfoForBin(
   binInfo:           BinInfo,
   fitVariable:       str,  # name of the fit variable
-  fitParNamesToRead: Mapping[str, str] | None = None,  # if dict { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
+  fitParNamesToRead: Mapping[str, str] | None = None,  # if { <new par name> : <par name>, ... } is set, only the given parameters are read, where `new par name` is the key used in the output
 ) -> ParInfo | None:
   """Reads parameter values from fit result for given kinematic bin; an optional mapping selects parameters to read and translates parameter names"""
   fitResultFileName = binInfo.fitResultFileName
@@ -554,26 +554,19 @@ def plotParValue2D(
   ROOT.gStyle.SetFrameFillColor(savedFrameFillColor)  # restore previous value
 
 
-if __name__ == "__main__":
-  printGitInfo()
-  ROOT.gROOT.SetBatch(True)
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
-
-  # echo and parse command line
-  print(f"Script was called using: '{' '.join(sys.argv)}'")
-  parser = argparse.ArgumentParser(description="Plots BruFit results in given directory.")
-  parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
-  args = parser.parse_args()
-  dataSets    = ["Total", "Found", "Missing"]
-  fitVariable = "MissingMassSquared_Measured"
-
-  # plot fits and read parameter values from fit results
+def plotFitResults(
+  dataSets:    Sequence[str] = ("Total", "Found", "Missing"),
+  fitDirName:  str           = "./BruFitOutput",  # path to the BruFit output directory
+  fitVariable: str           = "MissingMassSquared_Measured",  # name of the fit variable
+) -> None:
+  """Plots fit results and parameter values for given datasets in given directory"""
   parInfos:    defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bin>]
   parNames:    tuple[str, ...] | None          = None
   binVarNames: list[tuple[str, ...]] | None    = None  # binning variables for each binning
   for dataSet in dataSets:
-    fitResultDirName  = f"{args.outputDirName}/{dataSet}"
+    fitResultDirName  = f"{fitDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
+    #TODO cannot delay call to setupPlotStyle(); fix style of canvases loaded from fit result files
     plotFitResultForBin(BinInfo("", {}, {}, fitResultDirName), fitVariable)
     binVarNamesInDataSet: list[tuple[str, ...]] = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
@@ -594,11 +587,25 @@ if __name__ == "__main__":
       binVarNames = binVarNamesInDataSet
 
   # plot fit parameters as function of binning variable(s)
-  setupPlotStyle()
   if parNames and binVarNames:
     for parName in parNames:
       for binningVars in binVarNames:
         if len(binningVars) == 1:
-          plotParValue1D(parInfos, parName, binningVars[0],  args.outputDirName)
+          plotParValue1D(parInfos, parName, binningVars[0],  fitDirName)
         elif len(binningVars) == 2:
-          plotParValue2D(parInfos, parName, binningVars[:2], args.outputDirName)
+          plotParValue2D(parInfos, parName, binningVars[:2], fitDirName)
+
+
+if __name__ == "__main__":
+  printGitInfo()
+  ROOT.gROOT.SetBatch(True)
+  setupPlotStyle()
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
+
+  # echo and parse command line
+  print(f"Script was called using: '{' '.join(sys.argv)}'")
+  parser = argparse.ArgumentParser(description="Plots BruFit results in given directory.")
+  parser.add_argument("fitDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  args = parser.parse_args()
+
+  plotFitResults(fitDirName = args.fitDirName)

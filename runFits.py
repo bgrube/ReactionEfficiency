@@ -203,17 +203,13 @@ if __name__ == "__main__":
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
       print(f"Created directory '{fitDirectory}'")
-      # run fits
       print(f"Starting fits ...")
       with open(f"{fitDirectory}/fitMissingMassSquared.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
-        fitMissingMassSquared(
-          outputDirName = fitDirectory,
-          **fit["kwargs"],
-        )
-      # postprocess fit results
+        fitMissingMassSquared(outputDirName = fitDirectory, **fit["kwargs"])
       print("Plotting fit results...")
-      #TODO call python functions directly instead of making the detour via the command-line interface
-      subprocess.run(f"./plotFitResults.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotFitResults.log\"", shell = True)
+      with open(f"{fitDirectory}/plotFitResults.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
+        plotFitResults(fitDirName = fitDirectory)
       print("Plotting efficiencies...")
+      #TODO call python functions directly instead of making the detour via the command-line interface
       subprocess.run(f"./plotEfficiencies.py {'--useTotal' if useTotal else ''} \"{fitDirectory}\"  &> \"{fitDirectory}/plotEfficiencies.log\"", shell = True)
   ROOT.gBenchmark.Show("Total processing time")
