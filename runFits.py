@@ -203,7 +203,6 @@ if __name__ == "__main__":
           **fit["kwargs"],
         )
       # postprocess fit results
-      subprocess.run(f"./cleanFitDir.sh \"{fitDirectory}\"", shell = True)
       print("Plotting fit results...")
       #TODO call python functions directly instead of making the detour via the command-line interface
       subprocess.run(f"./plotFitResults.py \"{fitDirectory}\"  &> \"{fitDirectory}/plotFitResults.log\"", shell = True)

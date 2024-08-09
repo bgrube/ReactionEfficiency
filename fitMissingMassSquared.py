@@ -562,20 +562,20 @@ def runDu(
 
 
 def fitMissingMassSquared(
-  dataFileName:     str,
-  bggenFileName:    str,
-  outputDirName:    str,
-  pdfTypeSig:       str           = "Histogram",  # type of signal PDF
-  fixParsSig:       Sequence[str] = (),           # fit-parameter names of signal function to fix
-  pdfTypeBkg:       str           = "Histogram",  # type of background PDF
-  fixParsBkg:       Sequence[str] = (),           # fit-parameter names of background
-  cleanupRootFiles: bool          = False,
-  dataCut:          str           = "",
-  # dataCut:          str           = "(IsSignal == 1)",  # fit bggen signal data
-  # dataCut:          str           = "(IsSignal == 0)",  # fit bggen background data
-  # additionalCut:    str           = "",
-  # additionalCut:    str           = "(NmbUnusedShowers == 0)",
-  additionalCut:    str           = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)",
+  dataFileName:      str,
+  bggenFileName:     str,
+  outputDirName:     str,
+  pdfTypeSig:        str           = "Histogram",  # type of signal PDF
+  fixParsSig:        Sequence[str] = (),           # fit-parameter names of signal function to fix
+  pdfTypeBkg:        str           = "Histogram",  # type of background PDF
+  fixParsBkg:        Sequence[str] = (),           # fit-parameter names of background
+  cleanupRootFiles:  bool          = True,
+  dataCut:           str           = "",
+  # dataCut:           str           = "(IsSignal == 1)",  # fit bggen signal data
+  # dataCut:           str           = "(IsSignal == 0)",  # fit bggen background data
+  # additionalCut:     str           = "",
+  # additionalCut:     str           = "(NmbUnusedShowers == 0)",
+  additionalCut:     str           = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)",
   kinematicBinnings: list[list[tuple[str, int, float, float]]] = [
     [],  # no binning -> fit overall distribution
     # # 1D binnings
@@ -602,7 +602,8 @@ def fitMissingMassSquared(
     "Found"   : "(TrackFound == 1)",
     "Missing" : "(TrackFound == 0)",
   },
-):
+) -> None:
+  """Fits missing mass squared distribution"""
   plotTools.printGitInfo()
   os.nice(18)  # run all processes with second highest niceness level
   ROOT.gROOT.SetBatch(True)
