@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
 from plotFitResults import (
   BinInfo,
+  BinningInfo,
   getBinningInfosFromDir,
   ParInfo,
 )
@@ -43,11 +44,11 @@ def plotBootstrapDistribution(
   max = np.max(parValues)
   halfRange = (max - min) * 1.1 / 2.0
   center = (min + max) / 2.0
+  centers: dict[str, float] = parInfos[0].binInfo.centers
   histBs = ROOT.TH1D(f"bootstrap_{dataSet}_"
-                     + (("_".join((str(item) for center in parInfos[0].binInfo.centers.items() for item in center)) + "_")
-                        if parInfos[0].binInfo.centers else "")
+                     + (("_".join((str(item) for center in centers.items() for item in center)) + "_") if centers else "")
                      + f"{parName}",
-                     f"{dataSet}, {parInfos[0].binInfo.centers};{parName};Count",
+                     f"{dataSet}" + (f", {centers}" if centers else "") + f";{parName};Count",
                      nmbBins, center - halfRange, center + halfRange)
   # fill histogram
   np.vectorize(histBs.Fill, otypes = [int])(parValues)
@@ -85,23 +86,27 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gStyle.SetOptStat(False)
 
-  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
-  nmbBootstrapSamples = 10
+  outputDirName = "/home/bgrube/Analysis/ProtonTrackEfficiency/ReactionEfficiency/fits.Bs_10/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"
+  nmbBootstrapSamples = 10  #TODO determine from files
   dataSets = ["Total", "Found", "Missing"]
   fitVariable = "MissingMassSquared_Measured"
 
   for dataSet in dataSets:  # loop over datasets
     fitResultDirName  = f"{outputDirName}/{dataSet}"
-    # binInfoOverall = BinInfo("", {}, {}, fitResultDirName, nmbBootstrapSamples)
-    for binningInfo in getBinningInfosFromDir(fitResultDirName):  # loop over kinematic binnings
+    binningInfoOverall = BinningInfo(
+      infos   = [BinInfo(name = "", centers = {}, widths = {}, dirName = fitResultDirName)],
+      dirName = fitResultDirName,
+    )  # dummy binning info for overall distribution
+    for binningInfo in [binningInfoOverall] + getBinningInfosFromDir(fitResultDirName):  # loop over kinematic binnings
       if binningInfo:
         print(f"Reading bootstrap distribution for '{dataSet}' dataset and binning {binningInfo}")
         for binInfo in binningInfo:  # loop over kinematic bins
           binInfo.nmbBootstrapSamples = nmbBootstrapSamples
+          print(f"Reading bootstrap distribution for bin {binInfo}")
           parInfos: list[ParInfo] = []  # parameter values for all bootstrap samples
           for bootstrapIndex, fitResultFileName in binInfo.bootstrapFileNames:  # loop over bootstrap samples
             if not os.path.isfile(fitResultFileName):
-              print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
+              print(f"Cannot find file '{fitResultFileName}'. Skipping bootstrap sample {bootstrapIndex}.")
               continue
             print(f"Reading fit result object 'MinuitResult' from file '{fitResultFileName}'")
             fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
