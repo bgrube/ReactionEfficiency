@@ -279,28 +279,20 @@ def plotEfficiencies2DColzText(
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
 
 
-if __name__ == "__main__":
-  printGitInfo()
-  ROOT.gROOT.SetBatch(True)
-  setupPlotStyle()
-  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
-
-  # echo and parse command line
-  print(f"Script was called using: '{' '.join(sys.argv)}'")
-  parser = argparse.ArgumentParser(description="Plots efficiencies obtained from BruFit result in given directory.")
-  parser.add_argument("--useTotal",    action = "store_true", help = "If set, 'Total' distributions are used for efficiency calculation")
-  parser.add_argument("outputDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
-  args = parser.parse_args()
-  dataSets    = ["Total", "Found", "Missing"]
-  fitVariable = "MissingMassSquared_Measured"
-
+def plotEfficiencies(
+  dataSets:    Sequence[str] = ("Total", "Found", "Missing"),
+  fitDirName:  str           = "./BruFitOutput",               # path to the BruFit output directory
+  fitVariable: str           = "MissingMassSquared_Measured",  # name of the fit variable
+  useMissing:  bool          = True,                           # True: 'Missing' dataset is used for efficiency calculation; False: 'Total' dataset is used instead
+) -> None:
+  """Plots efficiencies obtained from BruFit result in given directory"""
   for readIntegrals in (True, False):
     print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
     yieldInfos:  dict[str, list[ParInfo]]     = {}    # [<dataset>][<bin>]
     binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
     for dataSet in dataSets:
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
-      fitResultDirName = f"{args.outputDirName}/{dataSet}"
+      fitResultDirName = f"{fitDirName}/{dataSet}"
       yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName), readIntegrals, fitVariable)  # overall yield values
       binVarNamesInDataSet: list[tuple[str, ...]] = []
       for binningInfo in getBinningInfosFromDir(fitResultDirName):
@@ -311,14 +303,30 @@ if __name__ == "__main__":
         binVarNames = binVarNamesInDataSet
       else:
         assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} for dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous dataset"
-    effInfos = calculateEfficiencies(yieldInfos, useMissing = not args.useTotal)
+    effInfos = calculateEfficiencies(yieldInfos, useMissing)
     if effInfos:
       if effInfos[0].binInfo.name == "Overall":
         print("Overall efficiency from " + ("data-histogram integrals" if readIntegrals else "fits") + f" is {effInfos[0].value}")
       if binVarNames:
         for binningVars in binVarNames:
           if len(binningVars) == 1:
-            plotEfficiencies1D(effInfos, binningVars[0],  args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies1D(effInfos, binningVars[0],  fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
           elif len(binningVars) == 2:
-            plotEfficiencies2DPerspective(effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
-            plotEfficiencies2DColzText   (effInfos, binningVars[:2], args.outputDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies2DPerspective(effInfos, binningVars[:2], fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies2DColzText   (effInfos, binningVars[:2], fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+
+
+if __name__ == "__main__":
+  printGitInfo()
+  ROOT.gROOT.SetBatch(True)
+  setupPlotStyle()
+  ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
+
+  # echo and parse command line
+  print(f"Script was called using: '{' '.join(sys.argv)}'")
+  parser = argparse.ArgumentParser(description="Plots efficiencies obtained from BruFit result in given directory.")
+  parser.add_argument("--useTotal", action = "store_true", help = "If set, 'Total' distributions are used for efficiency calculation")
+  parser.add_argument("fitDirName", type = str, nargs = "?", default = "./BruFitOutput", help = "The path to the BruFit output directory; (default: '%(default)s')")
+  args = parser.parse_args()
+
+  plotEfficiencies(fitDirName = args.fitDirName, useMissing = not args.useTotal)

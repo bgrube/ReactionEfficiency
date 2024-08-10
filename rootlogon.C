@@ -10,7 +10,7 @@
 	gStyle->SetTitleBorderSize (0);
 	gStyle->SetLegendBorderSize(0);
 	// all fill colors set to white + transparent pads and canvases
-	// note that png export does write alpha channel
+	//NOTE that png export does write alpha channel
 	// convert, for example, using
 	// mutool draw -A 8 -r <dpi, e.g. 600> -c rgba -o <out.png> <in.pdf>
 	TColor* newColor = new TColor(TColor::GetFreeColorIndex(), 1, 1, 1, "white_background", 1);

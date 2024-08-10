@@ -13,6 +13,7 @@ from wurlitzer import pipes, STDOUT
 import ROOT
 
 from fitMissingMassSquared import fitMissingMassSquared
+from plotEfficiencies import plotEfficiencies
 from plotFitResults import plotFitResults
 from plotTools import (
   printGitInfo,
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     # "2018_01-ver02_goodToF",
     # "2018_08-ver02_goodToF",
   )
-  useTotal = False
+  useMissing = True
 
   dataSamples: list[dict[str, str]] = []
   for dataPeriod in dataPeriods:
@@ -199,7 +200,7 @@ if __name__ == "__main__":
   for fitsForDataSample in fits:
     for fit in fitsForDataSample:
       fitDirectory = f"{fitRootDir}/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
-      # recreate directories if already existing
+      # recreate fit directories if already existing
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
       print(f"Created directory '{fitDirectory}'")
@@ -210,6 +211,6 @@ if __name__ == "__main__":
       with open(f"{fitDirectory}/plotFitResults.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
         plotFitResults(fitDirName = fitDirectory)
       print("Plotting efficiencies...")
-      #TODO call python functions directly instead of making the detour via the command-line interface
-      subprocess.run(f"./plotEfficiencies.py {'--useTotal' if useTotal else ''} \"{fitDirectory}\"  &> \"{fitDirectory}/plotEfficiencies.log\"", shell = True)
+      with open(f"{fitDirectory}/plotEfficiencies.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
+        plotEfficiencies(fitDirName = fitDirectory, useMissing = useMissing)
   ROOT.gBenchmark.Show("Total processing time")
