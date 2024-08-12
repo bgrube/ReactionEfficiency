@@ -27,6 +27,7 @@ if __name__ == "__main__":
 
 # import plotBeautifiers
 from plotTools import (
+  callMemberFunctionsWithArgs,
   drawZeroLine,
   getGraph1DFromValues,
   getGraph2DFromValues,
@@ -328,6 +329,22 @@ def plotFitResultForBin(
   canv = fitResultFile.Get(canvName)
   # improve TPaveText with fit parameters
   dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
+  # improve plot style
+  curveStyles = {
+    f"{binInfo.name or ''}TotalPDF_Norm[{fitVariable}]"              : {"SetLineColor" : ROOT.kRed   + 1, "SetLineWidth" : 2},
+    f"{binInfo.name or ''}TotalPDF_Norm[{fitVariable}]_Comp[SigPdf]" : {"SetLineColor" : ROOT.kGreen + 2, "SetLineWidth" : 2},
+    f"{binInfo.name or ''}TotalPDF_Norm[{fitVariable}]_Comp[BkgPdf]" : {"SetLineColor" : ROOT.kBlue  + 1, "SetLineWidth" : 2},
+  }
+  for curveName, style in curveStyles.items():
+    curve = dataFitPad.GetListOfPrimitives().FindObject(curveName)
+    callMemberFunctionsWithArgs(curve, style)
+  hist = dataFitPad.GetListOfPrimitives().FindObject("h_DataEvents")
+  global histClone
+  histClone = hist.DrawClone("PZ")  # for some reason modifying draw options of hist has no effect; use copy instead
+  histClone.SetLineColor(ROOT.kBlack)
+  histClone.SetLineWidth(2)
+  dataFitPad.GetListOfPrimitives().Remove(hist)
+  # improve TPaveText with fit parameters
   paramBox = dataFitPad.GetListOfPrimitives().FindObject(f"{binInfo.name or ''}TotalPDF_paramBox")
   if REMOVE_PARAM_BOX:
     # remove box completely
@@ -343,6 +360,7 @@ def plotFitResultForBin(
   else:
     canv.SaveAs(f"{binInfo.dirName}/{pdfFileName}")
   fitResultFile.Close()
+  del histClone
 
 
 def plotFitResultsForBinning(
@@ -556,7 +574,7 @@ def plotParValue2D(
 
 def plotFitResults(
   dataSets:    Sequence[str] = ("Total", "Found", "Missing"),
-  fitDirName:  str           = "./BruFitOutput",  # path to the BruFit output directory
+  fitDirName:  str           = "./BruFitOutput",               # path to the BruFit output directory
   fitVariable: str           = "MissingMassSquared_Measured",  # name of the fit variable
 ) -> None:
   """Plots fit results and parameter values for given datasets in given directory"""
@@ -566,7 +584,6 @@ def plotFitResults(
   for dataSet in dataSets:
     fitResultDirName  = f"{fitDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
-    #TODO cannot delay call to setupPlotStyle(); fix style of canvases loaded from fit result files
     plotFitResultForBin(BinInfo("", {}, {}, fitResultDirName), fitVariable)
     binVarNamesInDataSet: list[tuple[str, ...]] = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
