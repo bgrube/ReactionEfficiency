@@ -281,14 +281,14 @@ def calcRatioOfGraphs2D(
         break
     if zVal1 is None:
       continue
-    # calculate ratio of y values and add point to ratio graph
-    ratio = zVal0 / zVal1
-    if ratioRange[0] is not None and ratio.nominal_value < ratioRange[0]:
+    # calculate ratio of z values and add point to ratio graph
+    zRatio = zVal0 / zVal1
+    if ratioRange[0] is not None and zRatio.nominal_value < ratioRange[0]:
       continue
-    if ratioRange[1] is not None and ratio.nominal_value > ratioRange[1]:
+    if ratioRange[1] is not None and zRatio.nominal_value > ratioRange[1]:
       continue
-    ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, yVal0.nominal_value, ratio.nominal_value)
-    ratioGraph.SetPointError(countPoints, xVal0.std_dev,       yVal0.std_dev,       ratio.std_dev)
+    ratioGraph.SetPoint     (countPoints, xVal0.nominal_value, yVal0.nominal_value, zRatio.nominal_value)
+    ratioGraph.SetPointError(countPoints, xVal0.std_dev,       yVal0.std_dev,       zRatio.std_dev)
     countPoints += 1
   return ratioGraph
 
