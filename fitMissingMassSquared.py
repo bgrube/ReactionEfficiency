@@ -10,6 +10,7 @@ from collections.abc import (
   Mapping,
   Sequence,
 )
+from dataclasses import dataclass, field
 import functools
 import glob
 import os
@@ -27,6 +28,51 @@ from plotTools import (
 
 # always flush print() to reduce garbling of log files due to buffering
 print = functools.partial(print, flush = True)
+
+
+@dataclass
+class FitConfig:
+  """Stores information to run a fit"""
+  dataFileName:      str                                        # path to file that contains data to fit
+  bggenFileName:     str                                        # path to file that contains MC data to extract template histograms from
+  outputDirName:     str                                        # path to directory to write all output files to
+  pdfTypeSig:        str       = "Histogram"                    # type of signal PDF
+  fixParsSig:        list[str] = field(default_factory = list)  # fit-parameter names of signal function to fix
+  pdfTypeBkg:        str       = "Histogram"                    # type of background PDF
+  fixParsBkg:        list[str] = field(default_factory = list)  # fit-parameter names of background function to fix
+  cleanupRootFiles:  bool      = True                           # if True, intermediate ROOT files in output directory are deleted when not needed anymore
+  dataCut:           str       = ""                             # optional selection cut(s) applied to data only
+  # dataCut:           str       = "(IsSignal == 1)"  # fit bggen signal data
+  # dataCut:           str       = "(IsSignal == 0)"  # fit bggen background data
+  additionalCut:     str       = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"  # optional additional cut(s) applied to data and template histograms
+  # additionalCut:     str       = "(NmbUnusedShowers == 0)"
+  # additionalCut:     str       = ""
+  kinematicBinnings: list[list[tuple[str, int, float, float]]] = field(default_factory = lambda: [
+    [],  # no binning -> fit overall distribution
+    # # 1D binnings
+    # [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
+    # [("MissingProtonP",     100,    0,      5)],    # [GeV/c]
+    # [("MissingProtonTheta",  72,    0,     90)],    # [deg]
+    # [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
+    # 2D binnings
+    # [
+    #   ("MissingProtonTheta", 16, 0,   80),    # [deg]
+    #   ("MissingProtonP",     18, 0.5,  9.5),  # [GeV/c]
+    # ],  # nominal binning
+    [
+      ("MissingProtonTheta", 10, 0, 20),  # [deg]
+      ("MissingProtonP",      9, 0,  9),  # [GeV/c]  #NOTE first bin is affected by p > 0.5 GeV/c condition in `additionalCut``
+    ],  # binning for comparison with pi+- efficiencies
+    # [
+    #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
+    #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
+    # ],  # dummy 2D binning with minimal number of bins
+  ])  # list of kinematic binnings
+  dataSets: dict[str, str] = field(default_factory = lambda: {
+    "Total"   : "",
+    "Found"   : "(TrackFound == 1)",
+    "Missing" : "(TrackFound == 0)",
+  })  # data set labels and corresponding selection cuts
 
 
 def andCuts(cuts: Iterable[str | None]) -> str:
@@ -564,78 +610,37 @@ def runDu(
   print(f"{message}: {output.stdout.decode().strip()}")
 
 
-def fitMissingMassSquared(
-  dataFileName:      str,
-  bggenFileName:     str,
-  outputDirName:     str,
-  pdfTypeSig:        str           = "Histogram",  # type of signal PDF
-  fixParsSig:        Sequence[str] = (),           # fit-parameter names of signal function to fix
-  pdfTypeBkg:        str           = "Histogram",  # type of background PDF
-  fixParsBkg:        Sequence[str] = (),           # fit-parameter names of background
-  cleanupRootFiles:  bool          = True,
-  dataCut:           str           = "",
-  # dataCut:           str           = "(IsSignal == 1)",  # fit bggen signal data
-  # dataCut:           str           = "(IsSignal == 0)",  # fit bggen background data
-  # additionalCut:     str           = "",
-  # additionalCut:     str           = "(NmbUnusedShowers == 0)",
-  additionalCut:     str           = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)",
-  kinematicBinnings: list[list[tuple[str, int, float, float]]] = [
-    [],  # no binning -> fit overall distribution
-    # # 1D binnings
-    # [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
-    # [("MissingProtonP",     100,    0,      5)],    # [GeV/c]
-    # [("MissingProtonTheta",  72,    0,     90)],    # [deg]
-    # [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
-    # 2D binnings
-    # [
-    #   ("MissingProtonTheta", 9, 0, 90),  # [deg]
-    #   ("MissingProtonP",    25, 0,  5),  # [GeV/c]
-    # ],
-    [
-      ("MissingProtonTheta", 10, 0, 20),  # [deg]
-      ("MissingProtonP",      9, 0,  9),  # [GeV/c]
-    ],
-    # [
-    #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
-    #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
-    # ],
-  ],
-  dataSets: dict[str, str] = {
-    "Total"   : "",
-    "Found"   : "(TrackFound == 1)",
-    "Missing" : "(TrackFound == 0)",
-  },
-) -> None:
+def fitMissingMassSquared(cfg: FitConfig) -> None:
   """Fits missing mass squared distribution"""
   os.nice(18)  # be nice and run all processes with second highest niceness level
   # fit all datasets and bins
   ROOT.gBenchmark.Start("Total execution time")
-  for dataSetName, dataSetCut in dataSets.items():
-    outputDirNameDataSet = f"{outputDirName}/{dataSetName}"
-    if kinematicBinnings:
-      for kinematicBinning in kinematicBinnings:
+  for dataSetName, dataSetCut in cfg.dataSets.items():
+    outputDirNameDataSet = f"{cfg.outputDirName}/{dataSetName}"
+    if cfg.kinematicBinnings:
+      for kinematicBinning in cfg.kinematicBinnings:
         performFit(
-          dataFileName,
+          cfg.dataFileName,
           outputDirNameDataSet,
           kinematicBinning,
-          pdfTypeSig              = pdfTypeSig,
-          fixParsSig              = fixParsSig,
-          pdfTypeBkg              = pdfTypeBkg,
-          fixParsBkg              = fixParsBkg,
-          commonCut               = andCuts((dataSetCut, additionalCut)),
-          dataCut                 = dataCut,
-          templateDataSigFileName = bggenFileName,
-          templateDataBkgFileName = bggenFileName,
+          pdfTypeSig              = cfg.pdfTypeSig,
+          fixParsSig              = cfg.fixParsSig,
+          pdfTypeBkg              = cfg.pdfTypeBkg,
+          fixParsBkg              = cfg.fixParsBkg,
+          commonCut               = andCuts((dataSetCut, cfg.additionalCut)),
+          dataCut                 = cfg.dataCut,
+          templateDataSigFileName = cfg.bggenFileName,
+          templateDataBkgFileName = cfg.bggenFileName,
         )
-        if cleanupRootFiles:
-          runDu(outputDirName, "Disk usage of output directory before cleaning")
+        if cfg.cleanupRootFiles:
+          runDu(cfg.outputDirName, "Disk usage of output directory before cleaning")
           # recursively remove useless root files to save disk space
           patterns = ("*Tree*.root", "*Weights*.root", "Boot*.root")
           for pattern in patterns:
             for file in glob.glob(f"{outputDirNameDataSet}/**/{pattern}", recursive = True):
               print(f"Removing '{file}'")
               os.remove(file)
-          runDu(outputDirName, "Disk usage of output directory after cleaning")
+          runDu(cfg.outputDirName, "Disk usage of output directory after cleaning")
   ROOT.gBenchmark.Show("Total execution time")
 
 
@@ -662,7 +667,7 @@ if __name__ == "__main__":
   parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
   args = parser.parse_args()
 
-  fitMissingMassSquared(
+  fitconfig = FitConfig(
     dataFileName  = args.dataFileName,
     bggenFileName = args.bggenFileName,
     outputDirName = args.outputDirName,
@@ -671,3 +676,4 @@ if __name__ == "__main__":
     pdfTypeBkg    = args.pdfTypeBkg,
     fixParsBkg    = args.fixParsBkg,
   )
+  fitMissingMassSquared(fitConfig)

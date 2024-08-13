@@ -11,7 +11,10 @@ from wurlitzer import pipes, STDOUT
 
 import ROOT
 
-from fitMissingMassSquared import fitMissingMassSquared
+from fitMissingMassSquared import (
+  FitConfig,
+  fitMissingMassSquared,
+)
 from plotEfficiencies import plotEfficiencies
 from plotFitResults import plotFitResults
 from plotTools import (
@@ -205,7 +208,8 @@ if __name__ == "__main__":
       print(f"Created directory '{fitDirectory}'")
       print(f"Starting fits ...")
       with open(f"{fitDirectory}/fitMissingMassSquared.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
-        fitMissingMassSquared(outputDirName = fitDirectory, **fit["kwargs"])
+        fitConfig = FitConfig(outputDirName = fitDirectory, **fit["kwargs"])
+        fitMissingMassSquared(fitConfig)
       print("Plotting fit results...")
       with open(f"{fitDirectory}/plotFitResults.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
         plotFitResults(fitDirName = fitDirectory)
