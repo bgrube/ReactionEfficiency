@@ -78,14 +78,18 @@ class FitConfig:
     "Found"   : "(TrackFound == 1)",
     "Missing" : "(TrackFound == 0)",
   })  # data set labels and corresponding selection cuts
-  templateNmbBins:     int  = 100                            # number of bins of template histograms
-                                                             # for values < 100 the fit quality deteriorates significantly; for values > 100 the fit quality does not improve much and number of negative bins in template PDFs increases
-  fitVariable:         str  = "MissingMassSquared_Measured"  # name of branch that holds data to fit and template-data for signal and background, respectively
-  fitRange:            str  = "-0.25, 3.75"                  # [(GeV/c)^2]
-  regenBinnedTrees:    bool = False                          # if set, force regeneration of files with binned trees
-  nmbThreadsPerJob:    int  = 0                              # number of threads to use in parallelization
-  nmbProofJobs:        int  = 92                             # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
-  nmbBootstrapSamples: int  = 0                              # number of bootstrap samples to generate; 0 means no bootstrapping
+  templateNmbBins:         int  = 100                            # number of bins of template histograms
+                                                                 # for values < 100 the fit quality deteriorates significantly; for values > 100 the fit quality does not improve much and number of negative bins in template PDFs increases
+  fitVariable:             str  = "MissingMassSquared_Measured"  # name of branch that holds data to fit and template-data for signal and background, respectively
+  fitRange:                str  = "-0.25, 3.75"                  # [(GeV/c)^2]
+  regenBinnedTrees:        bool = False                          # if set, force regeneration of files with binned trees
+  nmbThreadsPerJob:        int  = 0                              # number of threads to use in parallelization
+  nmbProofJobs:            int  = 92                             # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
+  nmbBootstrapSamples:     int  = 0                              # number of bootstrap samples to generate; 0 means no bootstrapping
+  dataTreeName:            str  = "pippippimpimpmiss"            # name of tree that holds the data to fit
+  templateDataSigTreeName: str  = "pippippimpimpmiss"            # name of tree from which signal histogram is filled
+  templateDataBkgTreeName: str  = "pippippimpimpmiss"            # name of tree from which background histogram is filled
+  comboIdName:             str  = "ComboID"                      # name of branch with unique combo ID
 
 
 def andCuts(cuts: Iterable[str | None]) -> str:
@@ -466,40 +470,31 @@ def setRooFitOptions(
   # fitManager.SetUp().AddFitOption(ROOT.RooFit.AsymptoticError(True))  # use asymptotically correct uncertainty estimate for weighted events; crashes with "ERROR: Cannot compute both asymptotically correct and SumW2 errors."
 
 
-def performFit(
-  cfg:                     FitConfig,
-  dataTreeName:            str  = "pippippimpimpmiss",  # name of tree that holds the data to fit
-  templateDataSigTreeName: str  = "pippippimpimpmiss",  # name of tree from which signal histogram is filled
-  templateDataBkgTreeName: str  = "pippippimpimpmiss",  # name of tree from which background histogram is filled
-  comboIdName:             str  = "ComboID",            # name of branch with unique combo ID
-) -> None:
+def performFit(cfg: FitConfig) -> None:
   """Sets up and performs fit"""
   # create the fit manager and set the output directory for fit results, plots, and weights
-  fitDirName = None
-  if not cfg.kinematicBinnings:
-    fitDirName = cfg.outputDirName
-  else:
-    # create subdirectory for binning
+  if cfg.kinematicBinnings:
+    # write results into separate subdirectory for each binning
     #TODO check type of cfg.kinematicBinnings
     binningVars    = [binning[0] for binning in cfg.kinematicBinnings]
     binningDirName = "_".join(binningVars)
-    fitDirName     = f"{cfg.outputDirName}/{binningDirName}"
+    cfg = replace(cfg, outputDirName = f"{cfg.outputDirName}/{binningDirName}")
   print(f"Fitting data in '{cfg.dataFileName}'" + ("" if not cfg.commonCut else f" applying cut '{cfg.commonCut}' to data and template histograms")
     + ("" if not cfg.dataCut else f" and additional cut '{cfg.dataCut}' to data")
     + (" using no binning" if not cfg.kinematicBinnings else f" using binning '{cfg.kinematicBinnings}'")
-    + f" and writing output to '{fitDirName}'")
-  gBenchmarkLabel = f"Time for fit in '{fitDirName}'"
+    + f" and writing output to '{cfg.outputDirName}'")
+  gBenchmarkLabel = f"Time for fit in '{cfg.outputDirName}'"
   ROOT.gBenchmark.Start(gBenchmarkLabel)
   fitManager = ROOT.FitManager()
-  fitManager.SetUp().SetOutDir(fitDirName)
+  fitManager.SetUp().SetOutDir(cfg.outputDirName)
 
   # define fit variable and set fit range
-  print(f"Reading fit variable '{cfg.fitVariable}' from tree '{dataTreeName}' and using fit range {cfg.fitRange}")
+  print(f"Reading fit variable '{cfg.fitVariable}' from tree '{cfg.dataTreeName}' and using fit range {cfg.fitRange}")
   fitManager.SetUp().LoadVariable(f"{cfg.fitVariable}[{cfg.fitRange}]")
   fitManager.SetUp().GetVar(cfg.fitVariable).setBins(cfg.templateNmbBins)
   # define combo-ID variable
   # the data tree must have a double branch of the given name containing a unique combo-ID number
-  fitManager.SetUp().SetIDBranchName(comboIdName)
+  fitManager.SetUp().SetIDBranchName(cfg.comboIdName)
 
   # define kinematic bins
   # !Note! binning needs to be defined before any data are loaded
@@ -520,36 +515,36 @@ def performFit(
     defineSigPdf(
       fitManager, cfg.fitVariable, cfg.pdfTypeSig,
       fixPars              = cfg.fixParsSig,
-      outputDirName        = fitDirName,
+      outputDirName        = cfg.outputDirName,
       templateDataFileName = templateDataSigFileName,
-      templateDataTreeName = templateDataSigTreeName,
+      templateDataTreeName = cfg.templateDataSigTreeName,
       templateNmbBins      = cfg.templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
-      comboIdName          = comboIdName,
+      comboIdName          = cfg.comboIdName,
       cut                  = cfg.commonCut,
     )
   if cfg.pdfTypeBkg:
     defineBkgPdf(
       fitManager, cfg.fitVariable, cfg.pdfTypeBkg,
       fixPars              = cfg.fixParsBkg,
-      outputDirName        = fitDirName,
+      outputDirName        = cfg.outputDirName,
       templateDataFileName = templateDataBkgFileName,
-      templateDataTreeName = templateDataBkgTreeName,
+      templateDataTreeName = cfg.templateDataBkgTreeName,
       templateNmbBins      = cfg.templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
-      comboIdName          = comboIdName,
+      comboIdName          = cfg.comboIdName,
       cut                  = cfg.commonCut
     )
 
   # create RF-sideband weights for data to be fitted
   rfSWeightLabel      = "RfSidebandData"
   rfSWeightObjectName = f"{rfSWeightLabel}Weights"
-  rfSWeightFileName   = f"{fitDirName}/{rfSWeightObjectName}.root"
+  rfSWeightFileName   = f"{cfg.outputDirName}/{rfSWeightObjectName}.root"
   readWeights(
     inputFileName     = cfg.dataFileName,
-    inputTreeName     = dataTreeName,
+    inputTreeName     = cfg.dataTreeName,
     weightBranchName  = "AccidWeightFactor",
-    comboIdName       = comboIdName,
+    comboIdName       = cfg.comboIdName,
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
@@ -559,19 +554,19 @@ def performFit(
   fitManager.Data().LoadWeights(rfSWeightLabel, rfSWeightFileName, rfSWeightObjectName)
 
   # load and bin data to be fitted
-  binFileNames = binnedTreeFilesIn(fitDirName) if cfg.kinematicBinnings else []
+  binFileNames = binnedTreeFilesIn(cfg.outputDirName) if cfg.kinematicBinnings else []
   if not binFileNames or cfg.regenBinnedTrees:
     if cfg.kinematicBinnings:
       if cfg.regenBinnedTrees:
         print("Forcing regeneration of binned tree files")
       else:
         print("Could not find (all) binned tree files; regenerating binned tree files")
-    fitManager.LoadData(dataTreeName, cfg.dataFileName)
+    fitManager.LoadData(cfg.dataTreeName, cfg.dataFileName)
   else:
     print("Using existing binned tree files:")
     for binFileName in binFileNames:
       print(f"    {binFileName}")
-    fitManager.ReloadData(dataTreeName, cfg.dataFileName, "Data")
+    fitManager.ReloadData(cfg.dataTreeName, cfg.dataFileName, "Data")
 
   # perform fit and create fit-result plots
   setRooFitOptions(fitManager, cfg.nmbThreadsPerJob if cfg.kinematicBinnings else 5 * cfg.nmbThreadsPerJob)
@@ -628,8 +623,9 @@ def fitMissingMassSquared(cfg: FitConfig) -> None:
           runDu(cfg.outputDirName, "Disk usage of output directory before cleaning")
           # recursively remove useless root files to save disk space
           patterns = ("*Tree*.root", "*Weights*.root", "Boot*.root")
+          print(f"Recursively removing files in {outputDirNameForDataSet} matching patterns {patterns}")
           for pattern in patterns:
-            for file in glob.glob(f"{outputDirNameForDataSet}/**/{pattern}", recursive = True):
+            for file in sorted(glob.glob(f"{outputDirNameForDataSet}/**/{pattern}", recursive = True)):
               print(f"Removing '{file}'")
               os.remove(file)
           runDu(cfg.outputDirName, "Disk usage of output directory after cleaning")
