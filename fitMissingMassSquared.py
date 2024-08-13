@@ -88,8 +88,10 @@ class FitConfig:
   dataTreeName:            str  = "pippippimpimpmiss"            # name of tree that holds the data to fit
   pdfNameSig:              str  = "SigPdf"                       # name of signal PDF
   templateDataSigTreeName: str  = "pippippimpimpmiss"            # name of tree from which signal histogram is filled
+  useAdaptiveBinningSig:   bool = False                          # if set, use adaptive binning for signal template histograms  #TODO fits of some bins crash when set to True
   pdfNameBkg:              str  = "BkgPdf"                       # name of background PDF
   templateDataBkgTreeName: str  = "pippippimpimpmiss"            # name of tree from which background histogram is filled
+  useAdaptiveBinningBkg:   bool = False                          # if set, use adaptive binning for background template histograms
   comboIdName:             str  = "ComboID"                      # name of branch with unique combo ID
   weightBranchName:        str  = "AccidWeightFactor"            # name of branch from which to read weights
 
@@ -100,7 +102,6 @@ class FitConfig:
   @property
   def templateDataBkgFileName(self) -> str:
     return self.bggenFileName
-
 
 
 def andCuts(cuts: Iterable[str | None]) -> str:
@@ -205,29 +206,24 @@ def defineSkewedGaussianPdf(
 
 def defineHistogramPdf(
   fitManager:           ROOT.FitManager,
-  #TODO forward FitConfig instead of individual arguments?
-  fitVariable:          str,
+  cfg:                  FitConfig,
   pdfName:              str,
   parDefs:              Mapping[str, str],  # maps parameter names to their definition strings
-  outputDirName:        str,  # name of directory where weight files are written
   templateDataFileName: str,  # name of file from which histogram is filled
   templateDataTreeName: str,  # name of tree from which histogram is filled
-  weightBranchName:     str,  # name of branch from which to read weights
-  comboIdName:          str,  # name of branch with unique combo ID
   cut:                  str,  # cut that is applied when filling histogram
-  nmbBins:              int  = 100,  # number of bins of template histogram
   useAdaptiveBinning:   bool = False,
 ) -> None:
   """Defines histogram-based PDF"""
   # create RF-sideband weights for histogram PDF
   rfSWeightLabel      = f"RfSideband{pdfName}"
   rfSWeightObjectName = f"{rfSWeightLabel}Weights"
-  rfSWeightFileName   = f"{outputDirName}/{rfSWeightObjectName}.root"
+  rfSWeightFileName   = f"{cfg.outputDirName}/{rfSWeightObjectName}.root"
   readWeights(
     inputFileName     = templateDataFileName,
     inputTreeName     = templateDataTreeName,
-    weightBranchName  = weightBranchName,
-    comboIdName       = comboIdName,
+    weightBranchName  = cfg.weightBranchName,
+    comboIdName       = cfg.comboIdName,
     sWeightLabel      = rfSWeightLabel,
     sWeightFileName   = rfSWeightFileName,
     sWeightObjectName = rfSWeightObjectName,
@@ -241,7 +237,7 @@ def defineHistogramPdf(
     ("BruEventsHistPeakPDF" if useAdaptiveBinning else "RooHSEventsHistPDF")
     + f"::{pdfName}"
     "("
-      f"{fitVariable}, "  # variable to construct template histogram from
+      f"{cfg.fitVariable}, "  # variable to construct template histogram from
       f"smear_{pdfName}[{parDefs['smear']}], "  # convolute template histogram with Gaussian of width 'smear'
       f"shift_{pdfName}[{parDefs['shift']}], "  # shift template histogram in x-direction
       f"scale_{pdfName}[{parDefs['scale']}], "  # scale template histogram in x-direction
@@ -249,7 +245,7 @@ def defineHistogramPdf(
       "1, "  # smooth template histogram
       # "0, "  # do not interpolate template histogram
       "1, "  # interpolate template histogram
-      f"{nmbBins}, "  # number of bins of template histograms
+      f"{cfg.templateNmbBins}, "  # number of bins of template histograms
       "50000"  # number of bins used to calculate normalization
     ")"
     f"WEIGHTS@{rfSWeightLabel},{rfSWeightFileName},{rfSWeightObjectName}"  # apply sWeights created above; !Note! no whitespace allowed in this string
@@ -304,20 +300,18 @@ def defineSigPdf(
     )
   elif pdfTypeArgs[0] == "Histogram":
     defineHistogramPdf(
-      fitManager, cfg.fitVariable, cfg.pdfNameSig,
-      {
+      fitManager,
+      cfg,
+      pdfName = cfg.pdfNameSig,
+      parDefs = {
         "smear" : "0" if "smear" in cfg.fixParsSig else "0,  0,    0.1",
         "shift" : "0" if "shift" in cfg.fixParsSig else "0, -0.05, 0.05",
         "scale" : "1" if "scale" in cfg.fixParsSig else "1,  0.95, 1.05",
       },
-      cfg.outputDirName,
-      cfg.templateDataSigFileName,
-      cfg.templateDataSigTreeName,
-      cfg.weightBranchName,
-      cfg.comboIdName,
-      cut                = andCuts((cfg.commonCut, "(IsSignal == 1)")),
-      nmbBins            = cfg.templateNmbBins,
-      useAdaptiveBinning = False,  #TODO fits of some bins crash when set to True
+      templateDataFileName = cfg.templateDataSigFileName,
+      templateDataTreeName = cfg.templateDataSigTreeName,
+      cut                  = andCuts((cfg.commonCut, "(IsSignal == 1)")),
+      useAdaptiveBinning   = cfg.useAdaptiveBinningSig,
     )
   else:
     raise ValueError(f"Unknown signal PDF type '{pdfTypeArgs[0]}'")
@@ -394,20 +388,18 @@ def defineBkgPdf(
     )
   elif pdfTypeArgs[0] == "Histogram":
     defineHistogramPdf(
-      fitManager, cfg.fitVariable, cfg.pdfNameBkg,
-      {
+      fitManager,
+      cfg,
+      pdfName = cfg.pdfNameBkg,
+      parDefs = {
         "smear" : "0" if "smear" in cfg.fixParsBkg else "0,  0,    0.5",
         "shift" : "0" if "shift" in cfg.fixParsBkg else "0, -0.25, 0.25",
         "scale" : "1" if "scale" in cfg.fixParsBkg else "1,  0.5,  1.5",
       },
-      cfg.outputDirName,
-      cfg.templateDataBkgFileName,
-      cfg.templateDataBkgTreeName,
-      cfg.weightBranchName,
-      cfg.comboIdName,
-      cut                = andCuts((cfg.commonCut, "(IsSignal == 0)")),
-      nmbBins            = cfg.templateNmbBins,
-      useAdaptiveBinning = False,
+      templateDataFileName = cfg.templateDataBkgFileName,
+      templateDataTreeName = cfg.templateDataBkgTreeName,
+      cut                  = andCuts((cfg.commonCut, "(IsSignal == 0)")),
+      useAdaptiveBinning   = cfg.useAdaptiveBinningBkg,
     )
   else:
     raise ValueError(f"Unknown background PDF type '{pdfTypeArgs[0]}'")
