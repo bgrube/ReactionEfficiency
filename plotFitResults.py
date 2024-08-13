@@ -323,11 +323,12 @@ def plotFitResultForBin(
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping bin {binInfo}.")
     return
+  optStatSave = ROOT.gStyle.GetOptStat()
+  ROOT.gStyle.SetOptStat(False)
   print(f"Plotting fit result in file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
   canvName = f"{binInfo.name or ''}_{fitVariable}"
   canv = fitResultFile.Get(canvName)
-  # improve TPaveText with fit parameters
   dataFitPad = canv.GetListOfPrimitives().FindObject(f"{canvName}_1")
   # improve plot style
   curveStyles = {
@@ -361,6 +362,7 @@ def plotFitResultForBin(
     canv.SaveAs(f"{binInfo.dirName}/{pdfFileName}")
   fitResultFile.Close()
   del histClone
+  ROOT.gStyle.SetOptStat(optStatSave)  # revert to previous setting
 
 
 def plotFitResultsForBinning(
