@@ -6,7 +6,6 @@ from __future__ import annotations
 import functools
 import os
 import shutil
-import subprocess
 from typing import Any
 from wurlitzer import pipes, STDOUT
 
