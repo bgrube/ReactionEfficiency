@@ -194,6 +194,7 @@ def defineSkewedGaussianPdf(
 
 def defineHistogramPdf(
   fitManager:           ROOT.FitManager,
+  #TODO forward FitConfig instead of individual arguments?
   fitVariable:          str,
   pdfName:              str,
   parDefs:              Mapping[str, str],  # maps parameter names to their definition strings
@@ -262,27 +263,21 @@ def defineHistogramPdf(
 
 def defineSigPdf(
   fitManager:           ROOT.FitManager,
-  fitVariable:          str,
-  pdfType:              str,  # selects type of PDF
-  fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
-  pdfName:              str           = "SigPdf",
+  cfg:                  FitConfig,
+  #TODO move arguments below to `FitConfig`?
+  pdfName:              str  = "SigPdf",
   # arguments below are only needed for histogram PDF
-  outputDirName:        str           = "",   # name of directory where weight files are written
-  templateDataFileName: str           = "",   # name of file from which histogram is filled
-  templateDataTreeName: str           = "",   # name of tree from which histogram is filled
-  templateNmbBins:      int           = 100,  # number of bins of template histograms
-  weightBranchName:     str           = "",   # name of branch from which to read weights
-  comboIdName:          str           = "",   # name of branch with unique combo ID
-  cut:                  str           = "",   # cut that is applied when filling histogram
+  templateDataFileName: str  = "",   # name of file from which histogram is filled
+  weightBranchName:     str  = "",   # name of branch from which to read weights
 ) -> None:
   """Defines signal PDFs of various types"""
-  print(f"Defining signal PDF '{pdfName}' of type '{pdfType}'")
+  print(f"Defining signal PDF '{pdfName}' of type '{cfg.pdfTypeSig}'")
 
-  pdfTypeArgs = pdfType.split("_")
+  pdfTypeArgs = cfg.pdfTypeSig.split("_")
   protonMass  = 0.9383  # [GeV/c^2]
   if pdfTypeArgs[0] == "Gaussian":
     defineGaussianPdf(
-      fitManager, fitVariable, pdfName,
+      fitManager, cfg.fitVariable, pdfName,
       {
         "mean"  : f"{protonMass**2}, 0, 2",
         "width" : "0.3, 0.01, 2",
@@ -290,7 +285,7 @@ def defineSigPdf(
     )
   elif pdfTypeArgs[0] == "DoubleGaussian":
     defineDoubleGaussianPdf(
-      fitManager, fitVariable, pdfName,
+      fitManager, cfg.fitVariable, pdfName,
       {
         "r"      : "0.5, 0, 1",  # fraction of Gaussian 1
         "mean"   : f"{protonMass**2}, 0, 2",  # common-mean case
@@ -303,19 +298,19 @@ def defineSigPdf(
     )
   elif pdfTypeArgs[0] == "Histogram":
     defineHistogramPdf(
-      fitManager, fitVariable, pdfName,
+      fitManager, cfg.fitVariable, pdfName,
       {
-        "smear" : "0" if "smear" in fixPars else "0,  0,    0.1",
-        "shift" : "0" if "shift" in fixPars else "0, -0.05, 0.05",
-        "scale" : "1" if "scale" in fixPars else "1,  0.95, 1.05",
+        "smear" : "0" if "smear" in cfg.fixParsSig else "0,  0,    0.1",
+        "shift" : "0" if "shift" in cfg.fixParsSig else "0, -0.05, 0.05",
+        "scale" : "1" if "scale" in cfg.fixParsSig else "1,  0.95, 1.05",
       },
-      outputDirName,
+      cfg.outputDirName,
       templateDataFileName,
-      templateDataTreeName,
+      cfg.templateDataSigTreeName,
       weightBranchName,
-      comboIdName,
-      cut                = andCuts((cut, "(IsSignal == 1)")),
-      nmbBins            = templateNmbBins,
+      cfg.comboIdName,
+      cut                = andCuts((cfg.commonCut, "(IsSignal == 1)")),
+      nmbBins            = cfg.templateNmbBins,
       useAdaptiveBinning = False,  #TODO fits of some bins crash when set to True
     )
   else:
@@ -327,21 +322,15 @@ def defineSigPdf(
 
 def defineBkgPdf(
   fitManager:           ROOT.FitManager,
-  fitVariable:          str,
-  pdfType:              str,  # selects type of PDF
-  fixPars:              Sequence[str] = (),  # tuple with fit-parameter names to fix
-  pdfName:              str           = "BkgPdf",
+  cfg:                  FitConfig,
+  #TODO move arguments below to `FitConfig`?
+  pdfName:              str  = "BkgPdf",
   # arguments below are only needed for histogram PDF
-  outputDirName:        str           = "",   # name of directory where weight files are written
-  templateDataFileName: str           = "",   # name of file from which histogram is filled
-  templateDataTreeName: str           = "",   # name of tree from which histogram is filled
-  templateNmbBins:      int           = 100,  # number of bins of template histograms
-  weightBranchName:     str           = "",   # name of branch from which to read weights
-  comboIdName:          str           = "",   # name of branch with unique combo ID
-  cut:                  str           = "",   # cut that is applied when filling histogram
+  templateDataFileName: str  = "",   # name of file from which histogram is filled
+  weightBranchName:     str  = "",   # name of branch from which to read weights
 ):
   """Defines signal PDFs of various types"""
-  print(f"Defining background PDF '{pdfName}' of type '{pdfType}'")
+  print(f"Defining background PDF '{pdfName}' of type '{cfg.pdfTypeBkg}'")
 
   #TODO add polynomials
   # # 2nd-order positive-definite polynomial
@@ -359,10 +348,10 @@ def defineBkgPdf(
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1]}})")
   # fitManager.SetUp().FactoryPDF(f"Bernstein::BkgPdf({fitVariable}, {{p0_BkgPdf[0, 0, 1], p1_BkgPdf[0, 0, 1], p2_BkgPdf[0, 0, 1]}})")
-  pdfTypeArgs = pdfType.split("_")
+  pdfTypeArgs = cfg.pdfTypeBkg.split("_")
   if pdfTypeArgs[0] == "DoubleGaussian":
     defineDoubleGaussianPdf(
-      fitManager, fitVariable, pdfName,
+      fitManager, cfg.fitVariable, pdfName,
       {
         "r"      : "0.5, 0,    1",  # fraction of Gaussian 1
         "mean"   : "1.4, 0,    2",  # common-mean case
@@ -374,7 +363,7 @@ def defineBkgPdf(
       commonMean = len(pdfTypeArgs) == 2 and pdfTypeArgs[1] == "SameMean",
     )
   elif pdfTypeArgs[0] == "SkewedGaussian":
-    assert len(pdfTypeArgs) == 2, f"Skewed Gaussian PDF requires subtype, i.e. 'SkewedGaussian_<subType>', given PDF type is '{pdfType}'"
+    assert len(pdfTypeArgs) == 2, f"Skewed Gaussian PDF requires subtype, i.e. 'SkewedGaussian_<subType>', given PDF type is '{cfg.pdfTypeBkg}'"
     pdfSubType = pdfTypeArgs[1]
     parDefs = {}
     if pdfSubType == "SkewNormal":
@@ -398,25 +387,25 @@ def defineBkgPdf(
     else:
       raise ValueError(f"Unknown skewed Gaussian PDF subtype '{pdfSubType}'")
     defineSkewedGaussianPdf(
-      fitManager, fitVariable, pdfName,
+      fitManager, cfg.fitVariable, pdfName,
       parDefs,
       pdfSubType,
     )
   elif pdfTypeArgs[0] == "Histogram":
     defineHistogramPdf(
-      fitManager, fitVariable, pdfName,
+      fitManager, cfg.fitVariable, pdfName,
       {
-        "smear" : "0" if "smear" in fixPars else "0,  0,    0.5",
-        "shift" : "0" if "shift" in fixPars else "0, -0.25, 0.25",
-        "scale" : "1" if "scale" in fixPars else "1,  0.5,  1.5",
+        "smear" : "0" if "smear" in cfg.fixParsBkg else "0,  0,    0.5",
+        "shift" : "0" if "shift" in cfg.fixParsBkg else "0, -0.25, 0.25",
+        "scale" : "1" if "scale" in cfg.fixParsBkg else "1,  0.5,  1.5",
       },
-      outputDirName,
+      cfg.outputDirName,
       templateDataFileName,
-      templateDataTreeName,
+      cfg.templateDataBkgTreeName,
       weightBranchName,
-      comboIdName,
-      cut                = andCuts((cut, "(IsSignal == 0)")),
-      nmbBins            = templateNmbBins,
+      cfg.comboIdName,
+      cut                = andCuts((cfg.commonCut, "(IsSignal == 0)")),
+      nmbBins            = cfg.templateNmbBins,
       useAdaptiveBinning = False,
     )
   else:
@@ -512,28 +501,14 @@ def performFit(cfg: FitConfig) -> None:
   templateDataSigFileName: str = cfg.bggenFileName
   templateDataBkgFileName: str = cfg.bggenFileName
   if cfg.pdfTypeSig:
-    defineSigPdf(
-      fitManager, cfg.fitVariable, cfg.pdfTypeSig,
-      fixPars              = cfg.fixParsSig,
-      outputDirName        = cfg.outputDirName,
+    defineSigPdf(fitManager, cfg,
       templateDataFileName = templateDataSigFileName,
-      templateDataTreeName = cfg.templateDataSigTreeName,
-      templateNmbBins      = cfg.templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
-      comboIdName          = cfg.comboIdName,
-      cut                  = cfg.commonCut,
     )
   if cfg.pdfTypeBkg:
-    defineBkgPdf(
-      fitManager, cfg.fitVariable, cfg.pdfTypeBkg,
-      fixPars              = cfg.fixParsBkg,
-      outputDirName        = cfg.outputDirName,
+    defineBkgPdf(fitManager, cfg,
       templateDataFileName = templateDataBkgFileName,
-      templateDataTreeName = cfg.templateDataBkgTreeName,
-      templateNmbBins      = cfg.templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
-      comboIdName          = cfg.comboIdName,
-      cut                  = cfg.commonCut
     )
 
   # create RF-sideband weights for data to be fitted
@@ -620,8 +595,8 @@ def fitMissingMassSquared(cfg: FitConfig) -> None:
         )
         performFit(cfgForBinning)
         if cfg.cleanupRootFiles:
-          runDu(cfg.outputDirName, "Disk usage of output directory before cleaning")
           # recursively remove useless root files to save disk space
+          runDu(cfg.outputDirName, "Disk usage of output directory before cleaning")
           patterns = ("*Tree*.root", "*Weights*.root", "Boot*.root")
           print(f"Recursively removing files in {outputDirNameForDataSet} matching patterns {patterns}")
           for pattern in patterns:

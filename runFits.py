@@ -7,9 +7,9 @@ import functools
 import os
 import shutil
 from typing import Any
-from wurlitzer import pipes, STDOUT
 
 import ROOT
+from wurlitzer import pipes, STDOUT
 
 from fitMissingMassSquared import (
   FitConfig,
