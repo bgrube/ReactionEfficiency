@@ -667,7 +667,7 @@ if __name__ == "__main__":
   parser.add_argument("--fixParsBkg",  nargs = "*", type = str, default = [],               help = "Names of parameters of background PDF to fix in fit; (default: none)")
   args = parser.parse_args()
 
-  fitconfig = FitConfig(
+  fitConfig = FitConfig(
     dataFileName  = args.dataFileName,
     bggenFileName = args.bggenFileName,
     outputDirName = args.outputDirName,
