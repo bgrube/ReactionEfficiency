@@ -78,6 +78,14 @@ class FitConfig:
     "Found"   : "(TrackFound == 1)",
     "Missing" : "(TrackFound == 0)",
   })  # data set labels and corresponding selection cuts
+  templateNmbBins:     int  = 100                            # number of bins of template histograms
+                                                             # for values < 100 the fit quality deteriorates significantly; for values > 100 the fit quality does not improve much and number of negative bins in template PDFs increases
+  fitVariable:         str  = "MissingMassSquared_Measured"  # name of branch that holds data to fit and template-data for signal and background, respectively
+  fitRange:            str  = "-0.25, 3.75"                  # [(GeV/c)^2]
+  regenBinnedTrees:    bool = False                          # if set, force regeneration of files with binned trees
+  nmbThreadsPerJob:    int  = 0                              # number of threads to use in parallelization
+  nmbProofJobs:        int  = 92                             # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
+  nmbBootstrapSamples: int  = 0                              # number of bootstrap samples to generate; 0 means no bootstrapping
 
 
 def andCuts(cuts: Iterable[str | None]) -> str:
@@ -460,18 +468,10 @@ def setRooFitOptions(
 
 def performFit(
   cfg:                     FitConfig,
-  dataTreeName:            str  = "pippippimpimpmiss",            # name of tree that holds the data to fit
-  templateDataSigTreeName: str  = "pippippimpimpmiss",            # name of tree from which signal histogram is filled
-  templateDataBkgTreeName: str  = "pippippimpimpmiss",            # name of tree from which background histogram is filled
-  templateNmbBins:         int  = 100,                            # number of bins of template histograms
-                                                                  # for values < 100 the fit quality deteriorates significantly; for values > 100 the fit quality does not improve much and number of negative bins in template PDFs increases
-  fitVariable:             str  = "MissingMassSquared_Measured",  # name of branch that holds data to fit and template-data for signal and background, respectively
-  fitRange:                str  = "-0.25, 3.75",                  # [(GeV/c)^2]
-  comboIdName:             str  = "ComboID",                      # name of branch with unique combo ID
-  regenBinnedTrees:        bool = False,                          # if set, force regeneration of files with binned trees
-  nmbThreadsPerJob:        int  = 0,                              # number of threads to use in parallelization
-  nmbProofJobs:            int  = 92,                             # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
-  nmbBootstrapSamples:     int  = 0,                              # number of bootstrap samples to generate; 0 means no bootstrapping
+  dataTreeName:            str  = "pippippimpimpmiss",  # name of tree that holds the data to fit
+  templateDataSigTreeName: str  = "pippippimpimpmiss",  # name of tree from which signal histogram is filled
+  templateDataBkgTreeName: str  = "pippippimpimpmiss",  # name of tree from which background histogram is filled
+  comboIdName:             str  = "ComboID",            # name of branch with unique combo ID
 ) -> None:
   """Sets up and performs fit"""
   # create the fit manager and set the output directory for fit results, plots, and weights
@@ -494,9 +494,9 @@ def performFit(
   fitManager.SetUp().SetOutDir(fitDirName)
 
   # define fit variable and set fit range
-  print(f"Reading fit variable '{fitVariable}' from tree '{dataTreeName}' and using fit range {fitRange}")
-  fitManager.SetUp().LoadVariable(f"{fitVariable}[{fitRange}]")
-  fitManager.SetUp().GetVar(fitVariable).setBins(templateNmbBins)
+  print(f"Reading fit variable '{cfg.fitVariable}' from tree '{dataTreeName}' and using fit range {cfg.fitRange}")
+  fitManager.SetUp().LoadVariable(f"{cfg.fitVariable}[{cfg.fitRange}]")
+  fitManager.SetUp().GetVar(cfg.fitVariable).setBins(cfg.templateNmbBins)
   # define combo-ID variable
   # the data tree must have a double branch of the given name containing a unique combo-ID number
   fitManager.SetUp().SetIDBranchName(comboIdName)
@@ -506,36 +506,36 @@ def performFit(
   for binning in cfg.kinematicBinnings:
     fitManager.Bins().LoadBinVar(*binning)
 
-  if nmbBootstrapSamples > 0:
+  if cfg.nmbBootstrapSamples > 0:
     # perform bootstrapping
-    print(f"Generating {nmbBootstrapSamples} bootstrap samples")
-    fitManager.Data().BootStrap(nmbBootstrapSamples)
+    print(f"Generating {cfg.nmbBootstrapSamples} bootstrap samples")
+    fitManager.Data().BootStrap(cfg.nmbBootstrapSamples)
     fitManager.TurnOffPlotting()
 
   # define components of fit model
-  #TDOD handle this better
+  #TODO handle this better
   templateDataSigFileName: str = cfg.bggenFileName
   templateDataBkgFileName: str = cfg.bggenFileName
   if cfg.pdfTypeSig:
     defineSigPdf(
-      fitManager, fitVariable, cfg.pdfTypeSig,
+      fitManager, cfg.fitVariable, cfg.pdfTypeSig,
       fixPars              = cfg.fixParsSig,
       outputDirName        = fitDirName,
       templateDataFileName = templateDataSigFileName,
       templateDataTreeName = templateDataSigTreeName,
-      templateNmbBins      = templateNmbBins,
+      templateNmbBins      = cfg.templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
       comboIdName          = comboIdName,
       cut                  = cfg.commonCut,
     )
   if cfg.pdfTypeBkg:
     defineBkgPdf(
-      fitManager, fitVariable, cfg.pdfTypeBkg,
+      fitManager, cfg.fitVariable, cfg.pdfTypeBkg,
       fixPars              = cfg.fixParsBkg,
       outputDirName        = fitDirName,
       templateDataFileName = templateDataBkgFileName,
       templateDataTreeName = templateDataBkgTreeName,
-      templateNmbBins      = templateNmbBins,
+      templateNmbBins      = cfg.templateNmbBins,
       weightBranchName     = "AccidWeightFactor",
       comboIdName          = comboIdName,
       cut                  = cfg.commonCut
@@ -560,9 +560,9 @@ def performFit(
 
   # load and bin data to be fitted
   binFileNames = binnedTreeFilesIn(fitDirName) if cfg.kinematicBinnings else []
-  if not binFileNames or regenBinnedTrees:
+  if not binFileNames or cfg.regenBinnedTrees:
     if cfg.kinematicBinnings:
-      if regenBinnedTrees:
+      if cfg.regenBinnedTrees:
         print("Forcing regeneration of binned tree files")
       else:
         print("Could not find (all) binned tree files; regenerating binned tree files")
@@ -574,22 +574,22 @@ def performFit(
     fitManager.ReloadData(dataTreeName, cfg.dataFileName, "Data")
 
   # perform fit and create fit-result plots
-  setRooFitOptions(fitManager, nmbThreadsPerJob if cfg.kinematicBinnings else 5 * nmbThreadsPerJob)
+  setRooFitOptions(fitManager, cfg.nmbThreadsPerJob if cfg.kinematicBinnings else 5 * cfg.nmbThreadsPerJob)
   print("Using the following global fit options:")
   fitManager.SetUp().FitOptions().Print("")
   ROOT.gEnv.SetValue("ProofLite.Sandbox", "$PWD/.proof/")
   if cfg.kinematicBinnings:
     fitManager.SetRedirectOutput()  # redirect console output to files
-    print(f"Running {nmbProofJobs} PROOF jobs")
-    ROOT.Proof.Go(fitManager, nmbProofJobs)
+    print(f"Running {cfg.nmbProofJobs} PROOF jobs")
+    ROOT.Proof.Go(fitManager, cfg.nmbProofJobs)
   else:
-    if nmbBootstrapSamples > 0:
+    if cfg.nmbBootstrapSamples > 0:
       # use PROOF for bootstrapping
       fitManager.SetRedirectOutput()  # redirect console output to files
-      print(f"Running {nmbBootstrapSamples} PROOF jobs")
-      ROOT.Proof.Go(fitManager, nmbBootstrapSamples)
+      print(f"Running {cfg.nmbBootstrapSamples} PROOF jobs")
+      ROOT.Proof.Go(fitManager, cfg.nmbBootstrapSamples)
     else:
-      print("Performing fit" + (f" running {nmbThreadsPerJob} threads in parallel" if nmbThreadsPerJob > 0 else ""))
+      print("Performing fit" + (f" running {cfg.nmbThreadsPerJob} threads in parallel" if cfg.nmbThreadsPerJob > 0 else ""))
       ROOT.Here.Go(fitManager)
 
   fitManager.WriteThis()  # write to disk
