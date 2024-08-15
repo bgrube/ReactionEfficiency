@@ -8,6 +8,7 @@
 		"files.associations": {
 			".config": "Properties",
 			"*.config": "properties",
+			"*.C": "cpp",
 			"DSelector_pippippimpimpmiss.C": "cpp",
 			"*.tcc": "cpp",
 			"deque": "cpp",
@@ -23,7 +24,8 @@
 			"testTHStack.C": "cpp",
 			"ostream": "cpp",
 			"runSelector.C": "cpp",
-			"GraphParameters.C": "cpp"
+			"GraphParameters.C": "cpp",
+			"new": "cpp"
 		},
 		"files.watcherExclude": {
 			"**/.git/objects/**": true,
