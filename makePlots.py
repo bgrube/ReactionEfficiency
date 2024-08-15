@@ -750,7 +750,7 @@ if __name__ == "__main__":
   setupPlotStyle()
 
   dataPeriods = [
-    # "2017_01-ver03",
+    "2017_01-ver03",
     "2018_01-ver02",
     "2018_08-ver02",
     "2019_11-ver01",
@@ -865,7 +865,7 @@ if __name__ == "__main__":
 
   if True:
     dataSamplesToOverlay = {}
-    # overlay bggen MC and real data for each period
+    # overlay all periods for bggen MC and real data
     if len(inputData) > 1:
       for dataType in ("MCbggen", "RD"):
         dataSamplesToOverlay = {}
@@ -878,7 +878,7 @@ if __name__ == "__main__":
             "SetLineWidth" : 2,
           }
         makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
-    # overlay all periods for bggen MC and real data
+    # overlay bggen MC and real data for each period
     for dataPeriod in inputData.keys():
       dataSamplesToOverlay = {
         "bggen MC (scaled)" : {
