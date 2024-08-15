@@ -745,15 +745,12 @@ def makeKinematicPlotsData(
 
 
 if __name__ == "__main__":
-  #TODO add command-line interface
   printGitInfo()
   ROOT.gROOT.SetBatch(True)
-  #TODO cannot change multithreading after data frame was instantiated
-  # ROOT.EnableImplicitMT(20)  # activate implicit multi-threading for RDataFrame; disable using ROOT.DisableImplicitMT()
   setupPlotStyle()
 
   dataPeriods = [
-    "2017_01-ver03",
+    # "2017_01-ver03",
     "2018_01-ver02",
     "2018_08-ver02",
     "2019_11-ver01",
@@ -762,44 +759,45 @@ if __name__ == "__main__":
   pdfBaseDirName = "./plots"
   maxNmbTopologies = 10
 
-  # open input files with histograms
   dataSamplesToOverlay: dict[str, dict[str, Any]] = {}
-  for index, dataPeriod in enumerate(dataPeriods):
-    inputFileName = f"./data/MCbggen/{dataPeriod}/{treeName}.MCbggen_{dataPeriod}.root"
-    print(f"Reading generated MC histograms from file {inputFileName}")
-    dataSamplesToOverlay[dataPeriod] = {
-      "TFile"        : ROOT.TFile.Open(inputFileName, "READ"),
-      "normToThis"   : True if index == 0 else False,
-      # define plot style
-      "SetLineColor" : getCbFriendlyRootColor(index, skipBlack = True),
-      "SetLineWidth" : 2,
-    }
-  # plot generated MC truth for signal process
-  histInfos = (
-    {
-      "histNameSuffix" : "",
-      "histTitle"      : "",
-    },
-    {
-      "histNameSuffix" : "_BeamEnergyRange1",
-      "histTitle"      : "5.5 < #it{E}_{beam} < 11.0 GeV",
-    },
-    {
-      "histNameSuffix" : "_BeamEnergyRange2",
-      "histTitle"      : "7.5 < #it{E}_{beam} < 9.0 GeV",
-    },
-  )
-  for histInfo in histInfos:
-    kwargs = {
-      "pdfFileNameSuffix" : "_SigMcTruth",
-      "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
-      "histTitle"         : histInfo["histTitle"],
-    }
-    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{histInfo  ['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
-    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{histInfo     ['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
-    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{histInfo ['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
-    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{histInfo   ['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
-    overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthFourPionMass{histInfo['histNameSuffix']}", axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}^{truth} (GeV/#it{c}^{2})", **kwargs)
+  if False:
+    # plot generated MC truth for signal process
+    # open input files with histograms
+    for index, dataPeriod in enumerate(dataPeriods):
+      inputFileName = f"./data/MCbggen/{dataPeriod}/{treeName}.MCbggen_{dataPeriod}.root"
+      print(f"Reading generated MC histograms from file {inputFileName}")
+      dataSamplesToOverlay[dataPeriod] = {
+        "TFile"        : ROOT.TFile.Open(inputFileName, "READ"),
+        "normToThis"   : True if index == 0 else False,
+        # define plot style
+        "SetLineColor" : getCbFriendlyRootColor(index, skipBlack = True),
+        "SetLineWidth" : 2,
+      }
+    histInfos = (
+      {
+        "histNameSuffix" : "",
+        "histTitle"      : "",
+      },
+      {
+        "histNameSuffix" : "_BeamEnergyRange1",
+        "histTitle"      : "5.5 < #it{E}_{beam} < 11.0 GeV",
+      },
+      {
+        "histNameSuffix" : "_BeamEnergyRange2",
+        "histTitle"      : "7.5 < #it{E}_{beam} < 9.0 GeV",
+      },
+    )
+    for histInfo in histInfos:
+      kwargs = {
+        "pdfFileNameSuffix" : "_SigMcTruth",
+        "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
+        "histTitle"         : histInfo["histTitle"],
+      }
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{histInfo  ['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{histInfo     ['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{histInfo ['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{histInfo   ['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthFourPionMass{histInfo['histNameSuffix']}", axisTitles = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}^{truth} (GeV/#it{c}^{2})", **kwargs)
 
   # open input files with trees
   inputData: dict[str, dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # dict[<data period>][<data type>]
@@ -815,88 +813,94 @@ if __name__ == "__main__":
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
   # overlay resolutions of kinematic variables from MC truth
-  diffVariableInfos: tuple[tuple[str, str, tuple[int, float, float], tuple[float, float], str], ...] = (
-    ("MissingProtonP",     "TruthDeltaP",     (400,   -4,   +4), (0,  0.7), "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
-    ("MissingProtonTheta", "TruthDeltaTheta", (200,  -60,  +60), (0, 20  ), "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
-    ("MissingProtonPhi",   "TruthDeltaPhi",   (360, -180, +180), (0, 70  ), "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
-  )
-  for diffVariableInfo in diffVariableInfos:
-    args                  = diffVariableInfo[:3]
-    resPlotRange          = diffVariableInfo[3]
-    diffVariableAxisTitle = diffVariableInfo[4]
-    dataToOverlay: list[tuple[str, ROOT.RDataFrame]] = []
-    for dataPeriod, data in inputData.items():
-      dataToOverlay.append((dataPeriod, data["MCbggen"]))
-    kwargs = {
-      "pdfDirName"            : makeDirPath("./plots/MCbggen"),
-      "additionalFilter"      : '(NmbUnusedShowers == 0) && (NmbTruthTracks == 1) && (ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
-      "diffVariableAxisTitle" : diffVariableAxisTitle,
-    }
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), resPlotRange = resPlotRange, **kwargs)
-    overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), resPlotRange = resPlotRange, **kwargs)
-
-  # overlay resolutions of kinematic variables from unused tracks
-  diffVariableInfos = (
-    ("MissingProtonP",     "UnusedDeltaP",     (400,   -4,   +4), (0,   1), "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
-    ("MissingProtonTheta", "UnusedDeltaTheta", (200,  -60,  +60), (0,  30), "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
-    ("MissingProtonPhi",   "UnusedDeltaPhi",   (360, -180, +180), (0, 110), "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
-  )
-  for diffVariableInfo in diffVariableInfos:
-    args                  = diffVariableInfo[:3]
-    resPlotRange          = diffVariableInfo[3]
-    diffVariableAxisTitle = diffVariableInfo[4]
-    for dataType in ("MCbggen", "RD"):
-      dataToOverlay = []
+  diffVariableInfos: tuple[tuple[str, str, tuple[int, float, float], tuple[float, float], str], ...] = ()
+  if False:
+    diffVariableInfos = (
+      ("MissingProtonP",     "TruthDeltaP",     (400,   -4,   +4), (0,  0.7), "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
+      ("MissingProtonTheta", "TruthDeltaTheta", (200,  -60,  +60), (0, 20  ), "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
+      ("MissingProtonPhi",   "TruthDeltaPhi",   (360, -180, +180), (0, 70  ), "#it{#phi}_{miss}^{truth} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
+    )
+    for diffVariableInfo in diffVariableInfos:
+      args                  = diffVariableInfo[:3]
+      resPlotRange          = diffVariableInfo[3]
+      diffVariableAxisTitle = diffVariableInfo[4]
+      dataToOverlay: list[tuple[str, ROOT.RDataFrame]] = []
       for dataPeriod, data in inputData.items():
-        dataToOverlay.append((dataPeriod, data[dataType]))
+        dataToOverlay.append((dataPeriod, data["MCbggen"]))
       kwargs = {
-        "pdfDirName"            : makeDirPath(f"./plots/{dataType}"),
-        "additionalFilter"      : "(NmbUnusedShowers == 0) && (NmbUnusedTracks == 1)",
+        "pdfDirName"            : makeDirPath("./plots/MCbggen"),
+        "additionalFilter"      : '(NmbUnusedShowers == 0) && (NmbTruthTracks == 1) && (ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p")',
         "diffVariableAxisTitle" : diffVariableAxisTitle,
-        "pdfFileNameSuffix"     : "_unused",
       }
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), resPlotRange = resPlotRange, **kwargs)
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), resPlotRange = resPlotRange, **kwargs)
 
-  # overlay all periods for bggen MC and real data
-  dataSamplesToOverlay = {}
-  if len(inputData) > 1:
-    for dataType in ("MCbggen", "RD"):
-      dataSamplesToOverlay = {}
-      for index, dataPeriod in enumerate(inputData.keys()):
-        dataSamplesToOverlay[dataPeriod] = {
-          "RDataFrame"   : inputData[dataPeriod][dataType],
-          "normToThis"   : True if index == 0 else False,
-          # define plot style
-          "SetLineColor" : getCbFriendlyRootColor(index, skipBlack = True),
-          "SetLineWidth" : 2,
+  # overlay resolutions of kinematic variables from unused tracks
+  if False:
+    diffVariableInfos = (
+      ("MissingProtonP",     "UnusedDeltaP",     (400,   -4,   +4), (0,   1), "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
+      ("MissingProtonTheta", "UnusedDeltaTheta", (200,  -60,  +60), (0,  30), "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
+      ("MissingProtonPhi",   "UnusedDeltaPhi",   (360, -180, +180), (0, 110), "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)"),
+    )
+    for diffVariableInfo in diffVariableInfos:
+      args                  = diffVariableInfo[:3]
+      resPlotRange          = diffVariableInfo[3]
+      diffVariableAxisTitle = diffVariableInfo[4]
+      for dataType in ("MCbggen", "RD"):
+        dataToOverlay = []
+        for dataPeriod, data in inputData.items():
+          dataToOverlay.append((dataPeriod, data[dataType]))
+        kwargs = {
+          "pdfDirName"            : makeDirPath(f"./plots/{dataType}"),
+          "additionalFilter"      : "(NmbUnusedShowers == 0) && (NmbUnusedTracks == 1)",
+          "diffVariableAxisTitle" : diffVariableAxisTitle,
+          "pdfFileNameSuffix"     : "_unused",
         }
-      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
-  # overlay bggen MC and real data for each period
-  for dataPeriod in inputData.keys():
-    dataSamplesToOverlay = {
-      "bggen MC (scaled)" : {
-        "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
-        # define plot style
-        "SetLineColor" : ROOT.kGray,
-        "SetFillColor" : ROOT.kGray,
-      },
-      "Real Data" : {
-        "RDataFrame" : inputData[dataPeriod]["RD"],
-        "normToThis" : True,
-      },
-    }
-    makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+        overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
+        overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
+        overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonTheta", resBinning = ( 56,    0,   70  ), resPlotRange = resPlotRange, **kwargs)
+        overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), resPlotRange = resPlotRange, **kwargs)
 
-  # make Monte Carlo plots for each period
-  for dataPeriod in inputData.keys():
-    makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
-
-  # make general plots for each data type and period
-  for dataType in ("MCbggen", "RD"):
+  if True:
+    dataSamplesToOverlay = {}
+    # overlay bggen MC and real data for each period
+    if len(inputData) > 1:
+      for dataType in ("MCbggen", "RD"):
+        dataSamplesToOverlay = {}
+        for index, dataPeriod in enumerate(inputData.keys()):
+          dataSamplesToOverlay[dataPeriod] = {
+            "RDataFrame"   : inputData[dataPeriod][dataType],
+            "normToThis"   : True if index == 0 else False,
+            # define plot style
+            "SetLineColor" : getCbFriendlyRootColor(index, skipBlack = True),
+            "SetLineWidth" : 2,
+          }
+        makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}"))
+    # overlay all periods for bggen MC and real data
     for dataPeriod in inputData.keys():
-      makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
+      dataSamplesToOverlay = {
+        "bggen MC (scaled)" : {
+          "RDataFrame"   : inputData[dataPeriod]["MCbggen"],
+          # define plot style
+          "SetLineColor" : ROOT.kGray,
+          "SetFillColor" : ROOT.kGray,
+        },
+        "Real Data" : {
+          "RDataFrame" : inputData[dataPeriod]["RD"],
+          "normToThis" : True,
+        },
+      }
+      makeKinematicPlotsOverlays(dataSamplesToOverlay, pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"))
+
+  if False:
+    # make Monte Carlo plots for each period
+    for dataPeriod in inputData.keys():
+      makeKinematicPlotsMc(inputData[dataPeriod]["MCbggen"], isMcBggen = True, pdfDirName = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"))
+
+  if False:
+    # make general plots for each data type and period
+    for dataType in ("MCbggen", "RD"):
+      for dataPeriod in inputData.keys():
+        makeKinematicPlotsData(inputData[dataPeriod][dataType], pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"))
