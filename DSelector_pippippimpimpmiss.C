@@ -565,9 +565,9 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", (locUnusedTrackExists) ? 1 : 0);  // indicate whether there was an unused track in the event or not
 			// fill tree variables for truth track
 			int locNmbTruthTracks = 0;
-			for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
+			for (UInt_t locThrownIndex = 0; locThrownIndex < Get_NumThrown(); ++locThrownIndex) {
 				// Set branch array indices corresponding to this charged-track hypothesis
-				dThrownWrapper->Set_ArrayIndex(locTrackIndex);
+				dThrownWrapper->Set_ArrayIndex(locThrownIndex);
 				// Make sure it is the unused track
 				if (dThrownWrapper->Get_PID() != Proton) {
 					continue;
@@ -608,12 +608,12 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 			TLorentzVector         locProtonP4_Truth;
 			vector<TLorentzVector> locPionsP4_Truth;
 			// Loop over throwns
-			for (UInt_t locTrackIndex = 0; locTrackIndex < Get_NumThrown(); ++locTrackIndex) {
+			for (UInt_t locThrownIndex = 0; locThrownIndex < Get_NumThrown(); ++locThrownIndex) {
 				//Set branch array indices corresponding to this particle
-				dThrownWrapper->Set_ArrayIndex(locTrackIndex);
+				dThrownWrapper->Set_ArrayIndex(locThrownIndex);
 				switch (dThrownWrapper->Get_PID()) {
 					case Proton:
-						locProtonP4_Truth = dThrownWrapper->Get_P4_Measured();
+						locProtonP4_Truth = dThrownWrapper->Get_P4_Measured();  //TODO vs. Get_P4()?
 						break;
 					case PiPlus:
 					case PiMinus:
