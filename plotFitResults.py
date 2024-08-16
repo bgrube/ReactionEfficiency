@@ -247,6 +247,13 @@ class BinningInfo:
         raise ValueError("BinningInfo objects are not the same")
     return all(binInfo.isSameBinAs(otherBinInfo) for binInfo, otherBinInfo in zip(self.infos, other.infos))
 
+  def __eq__(
+    self,
+    other: BinningInfo,
+  ) -> bool:
+    """Equality operator that compares binning information"""
+    return self.isSameBinningAs(other)
+
 
 def getBinningFromDir(fitResultDirName: str) -> BinningInfo | None:
   """Reads binning info from given directory"""
