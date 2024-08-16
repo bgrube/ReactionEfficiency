@@ -201,7 +201,7 @@ if __name__ == "__main__":
   ROOT.gBenchmark.Start("Total processing time")
   for fitsForDataSample in fits:
     for fit in fitsForDataSample:
-      fitDirectory = f"{fitRootDir}/{fit['dataPeriod']}/noShowers/{fit['fitDirectory']}"
+      fitDirectory = f"{fitRootDir}/{fit['dataPeriod']}/{fit['fitDirectory']}"
       # recreate fit directories if already existing
       shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
