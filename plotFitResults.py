@@ -67,16 +67,53 @@ REMOVE_PARAM_BOX = False
 @dataclass
 class BinInfo:
   """Stores information about a single kinematic bin"""
-  name:                str               # bin name
-  centers:             dict[str, float]  # bin centers { <binning var> : <bin center>, ... }
-  widths:              dict[str, float]  # bin widths  { <binning var> : <bin width>,  ... }
-  dirName:             str               # directory name for bins
-  nmbBootstrapSamples: int = 0           # number of bootstrap samples
+  name:                str                             # bin name
+  binDefs:             dict[str, tuple[float, float]]  # bin definitions { <binning var> : (<bin center>, <bin width>), ... }
+  dirName:             str                             # directory name for bins
+  nmbBootstrapSamples: int = 0                         # number of bootstrap samples
+
+  def __len__(self) -> int:
+    """Returns number of binning variables"""
+    return len(self.binDefs)
+
+  def __iter__(self) -> Generator[tuple[str, tuple[float, float]], None, None]:
+    """Iterates over bin definitions"""
+    return ((binName, (binDef[0], binDef[1])) for binName, binDef in self.binDefs.items())
+
+  @property
+  def centers(self) -> Generator[tuple[str, float], None, None]:
+    """Returns generator for bin centers"""
+    return ((binName, binDef[0]) for binName, binDef in self.binDefs.items())
+
+  def center(
+    self,
+    varName: str,
+  ) -> float:
+    """Returns bin center for given binning variable"""
+    if varName in self.binDefs:
+      return self.binDefs[varName][0]
+    else:
+      raise KeyError(f"No bin center found for variable '{varName}'")
+
+  @property
+  def widths(self) -> Generator[tuple[str, float], None, None]:
+    """Returns generator for bin widths"""
+    return ((binName, binDef[1]) for binName, binDef in self.binDefs.items())
+
+  def width(
+    self,
+    varName: str,
+  ) -> float:
+    """Returns bin width for given binning variable"""
+    if varName in self.binDefs:
+      return self.binDefs[varName][1]
+    else:
+      raise KeyError(f"No bin width found for variable '{varName}'")
 
   @property
   def varNames(self) -> tuple[str, ...]:
     """Returns names of kinematic variables used for binning"""
-    return tuple(sorted(self.centers.keys()))
+    return tuple(sorted(self.binDefs.keys()))
 
   @property
   def fitResultFileName(self) -> str:
@@ -93,7 +130,7 @@ class BinInfo:
     other: BinInfo,
   ) -> bool:
     """Returns whether 2 BinInfo objects represent the same kinematic bin"""
-    return (self.name == other.name) and (self.centers == other.centers)
+    return (self.name == other.name) and (self.binDefs == other.binDefs)
 
 
 @dataclass
@@ -129,6 +166,11 @@ class BinningInfo:
     return tuple(binInfo.dirName for binInfo in self.infos)
 
   @property
+  def fitResultFileNames(self) -> tuple[str, ...]:
+    """Returns tuple with fit-result file names for all bin"""
+    return tuple(binInfo.fitResultFileName for binInfo in self.infos)
+
+  @property
   def varNames(self) -> tuple[str, ...]:
     """Returns names of kinematic variables used for binning"""
     varNames = None
@@ -140,10 +182,58 @@ class BinningInfo:
         assert varNamesInBin == varNames, f"Bins have inconsistent set of binning variables: bin '{binInfo.name}': {varNamesInBin} vs. {varNames} in previous bin"
     return varNames or tuple()
 
-  @property
-  def fitResultFileNames(self) -> tuple[str, ...]:
-    """Returns tuple with fit-result file names for all bin"""
-    return tuple(binInfo.fitResultFileName for binInfo in self.infos)
+  def varBinCenters(
+    self,
+    varName: str,
+  ) -> Generator[float, None, None]:
+    """Returns generator for bin centers for given binning variable"""
+    return (binInfo.center(varName) for binInfo in self.infos)
+
+  def varBinWidths(
+    self,
+    varName: str,
+  ) -> Generator[float, None, None]:
+    """Returns generator for bin centers for given binning variable"""
+    return (binInfo.width(varName) for binInfo in self.infos)
+
+  def varRange(
+    self,
+    varName: str,
+  ) -> tuple[float, float]:
+    """Returns tuple with range of given binning variable"""
+    # assumes non-overlapping bins
+    varCenters  = [binInfo.center(varName) for binInfo in self.infos]
+    minCenter   = min(varCenters)
+    maxCenter   = max(varCenters)
+    minIndex    = varCenters.index(minCenter)
+    maxIndex    = varCenters.index(maxCenter)
+    binWidthMin = self.infos[minIndex].width(varName)
+    binWidthMax = self.infos[maxIndex].width(varName)
+    return (minCenter - binWidthMin / 2.0, maxCenter + binWidthMax / 2.0)
+
+  def varNmbBins(
+    self,
+    varName: str,
+  ) -> int:
+    """Returns number of bins for given binning variable"""
+    # ensure equidistant bins
+    widths = set(self.varBinWidths(varName))
+    assert len(widths) == 1, f"Binning is not equidistant: '{varName}' bin widths = {widths}"
+    width = next(iter(widths))  # get the only element
+    varRange = self.varRange(varName)
+    return int((varRange[1] - varRange[0]) / width)
+
+  def isSameBinningAs(
+    self,
+    other: BinningInfo,
+  ) -> bool:
+    """Returns whether 2 BinningInfo objects represent the same kinematic binning"""
+    if len(self.infos) != len(other.infos):
+      return False
+    for binInfo, otherBinInfo in zip(self.infos, other.infos):
+      if not binInfo.isSameBinAs(otherBinInfo):
+        raise ValueError("BinningInfo objects are not the same")
+    return all(binInfo.isSameBinAs(otherBinInfo) for binInfo, otherBinInfo in zip(self.infos, other.infos))
 
 
 def getBinningFromDir(fitResultDirName: str) -> BinningInfo | None:
@@ -161,14 +251,15 @@ def getBinningFromDir(fitResultDirName: str) -> BinningInfo | None:
   axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
   binInfos: list[BinInfo] = []
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
+    #TODO simplify code by moving this into dict comprehension below
     axisBinCenters = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
     axisBinWidths  = tuple(axes[axisIndex].GetBinWidth (axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
     binIndex = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only for up to 6 binning dimensions
     binName = binNames[binIndex]
     binInfos.append(BinInfo(
       name    = binName,
-      centers = {binVarNames[axisIndex] : axisBinCenter for axisIndex, axisBinCenter in enumerate(axisBinCenters)},
-      widths  = {binVarNames[axisIndex] : axisBinWidth  for axisIndex, axisBinWidth  in enumerate(axisBinWidths )},
+      binDefs = {binVarNames[axisIndex] : (axisBinCenter, axisBinWidth)
+                 for axisIndex, (axisBinCenter, axisBinWidth) in enumerate(zip(axisBinCenters, axisBinWidths))},
       dirName = f"{fitResultDirName}/{str(binName)}",
     ))
   return BinningInfo(binInfos, fitResultDirName)
@@ -381,7 +472,7 @@ def getParValuesForGraph1D(
 ) -> tuple[tuple[UFloat, UFloat], ...]:
   """Extracts information needed to plot parameter with given name as a function of the given bin variable from list of ParInfos"""
   graphValues: tuple[tuple[UFloat, UFloat], ...] = tuple(
-    (ufloat(parInfo.binInfo.centers[binVarName], parInfo.binInfo.widths[binVarName] / 2.0), parInfo.values[parName])
+    (ufloat(parInfo.binInfo.center(binVarName), parInfo.binInfo.width(binVarName) / 2.0), parInfo.values[parName])
     for parInfo in parInfos
     if (binVarName in parInfo.binInfo.varNames) and (parName in parInfo.names) and (len(parInfo.binInfo.varNames) == 1)
   )
@@ -503,8 +594,8 @@ def getParValuesForGraph2D(
   """Extracts information needed to plot parameter with given name as a function of the given bin variables from list of ParInfos"""
   graphValues: tuple[tuple[UFloat, UFloat, UFloat], ...] = tuple(
     (
-      ufloat(parInfo.binInfo.centers[binVarNames[0]], parInfo.binInfo.widths[binVarNames[0]] / 2.0),
-      ufloat(parInfo.binInfo.centers[binVarNames[1]], parInfo.binInfo.widths[binVarNames[1]] / 2.0),
+      ufloat(parInfo.binInfo.center(binVarNames[0]), parInfo.binInfo.width(binVarNames[0]) / 2.0),
+      ufloat(parInfo.binInfo.center(binVarNames[1]), parInfo.binInfo.width(binVarNames[1]) / 2.0),
       parInfo.values[parName]
     )
     for parInfo in parInfos
@@ -586,7 +677,7 @@ def plotFitResults(
   for dataSet in dataSets:
     fitResultDirName  = f"{fitDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
-    plotFitResultForBin(BinInfo("", {}, {}, fitResultDirName), fitVariable)
+    plotFitResultForBin(BinInfo(name = "", binDefs = {}, dirName = fitResultDirName), fitVariable)
     binVarNamesInDataSet: list[tuple[str, ...]] = []
     for binningInfo in getBinningInfosFromDir(fitResultDirName):
       if binningInfo:

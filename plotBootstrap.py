@@ -65,7 +65,7 @@ def plotBootstrapDistribution(
   max = np.max(parValuesBs)
   halfRange = (max - min) * 1.1 / 2.0
   center = (min + max) / 2.0
-  centers: dict[str, float] = parInfosBs[0].binInfo.centers
+  centers: dict[str, float] = dict(parInfosBs[0].binInfo.centers)
   histBs = ROOT.TH1D(
     f"bootstrap_{dataSet}_"
     + (("_".join((str(item) for center in centers.items() for item in center)) + "_") if centers else "")
@@ -147,7 +147,7 @@ if __name__ == "__main__":
   for dataSet in dataSets:  # loop over datasets
     fitResultDirName  = f"{outputDirNameBs}/{dataSet}"
     binningInfoOverall = BinningInfo(
-      infos   = [BinInfo(name = "", centers = {}, widths = {}, dirName = fitResultDirName)],
+      infos   = [BinInfo(name = "", binDefs = {}, dirName = fitResultDirName)],
       dirName = fitResultDirName,
     )  # dummy binning info for overall distribution
     for binningInfo in [binningInfoOverall] + getBinningInfosFromDir(fitResultDirName):  # loop over kinematic binnings

@@ -82,7 +82,7 @@ def readYieldInfosForBinning(
   """Reads yields (or histogram integrals if readIntegrals is set) from fit-result files for given binning"""
   yieldInfos: list[ParInfo] = []
   # read overall yields
-  overallBinInfo = BinInfo("Overall", {}, {}, binningInfo.dirName)  # special bin for overall fit results
+  overallBinInfo = BinInfo(name = "Overall", binDefs = {}, dirName = binningInfo.dirName)  # special bin for overall fit results
   if os.path.isfile(overallBinInfo.fitResultFileName):
     yieldInfo = readDataIntegralFromFitFile(overallBinInfo, fitVariable) if readIntegrals \
       else readParInfoForBin(overallBinInfo, fitVariable, YIELD_PAR_NAMES)
@@ -149,7 +149,7 @@ def getEffValuesForGraph1D(
 ) -> list[tuple[UFloat, UFloat]]:
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
   graphValues: list[tuple[UFloat, UFloat]] = [
-    (ufloat(effInfo.binInfo.centers[binVarName], effInfo.binInfo.widths[binVarName] / 2.0), effInfo.value)
+    (ufloat(effInfo.binInfo.center(binVarName), effInfo.binInfo.width(binVarName) / 2.0), effInfo.value)
     for effInfo in effInfos
     if (binVarName in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 1)]
   return graphValues
@@ -185,8 +185,8 @@ def getEffValuesForGraph2D(
   """Extracts information needed to plot efficiency as a function of the given bin variable from list of EffInfos"""
   graphValues: tuple[tuple[UFloat, UFloat, UFloat], ...] = tuple(
     (
-      ufloat(effInfo.binInfo.centers[binVarNames[0]], effInfo.binInfo.widths[binVarNames[0]] / 2.0),
-      ufloat(effInfo.binInfo.centers[binVarNames[1]], effInfo.binInfo.widths[binVarNames[1]] / 2.0),
+      ufloat(effInfo.binInfo.center(binVarNames[0]), effInfo.binInfo.width(binVarNames[0]) / 2.0),
+      ufloat(effInfo.binInfo.center(binVarNames[1]), effInfo.binInfo.width(binVarNames[1]) / 2.0),
       effInfo.value
     )
     for effInfo in effInfos

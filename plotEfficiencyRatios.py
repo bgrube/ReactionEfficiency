@@ -151,13 +151,13 @@ def getHist2DFromEfficiencies(
   effInfos = tuple(effInfo for effInfo in efficiencies
                    if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2))
   # determine equidistant binning and create histogram
-  xWidths = set(effInfo.binInfo.widths[binningVars[0]] for effInfo in effInfos)
-  yWidths = set(effInfo.binInfo.widths[binningVars[1]] for effInfo in effInfos)
+  xWidths = set(effInfo.binInfo.width(binningVars[0]) for effInfo in effInfos)
+  yWidths = set(effInfo.binInfo.width(binningVars[1]) for effInfo in effInfos)
   assert (len(xWidths) == 1) and (len(yWidths) == 1), f"Binning is not equidistant: x bin widths = {xWidths}; y bin widths = {yWidths}"
   xWidth = tuple(xWidths)[0]
   yWidth = tuple(yWidths)[0]
-  xCenters = sorted(set(effInfo.binInfo.centers[binningVars[0]] for effInfo in effInfos))
-  yCenters = sorted(set(effInfo.binInfo.centers[binningVars[1]] for effInfo in effInfos))
+  xCenters = sorted(set(effInfo.binInfo.center(binningVars[0]) for effInfo in effInfos))
+  yCenters = sorted(set(effInfo.binInfo.center(binningVars[1]) for effInfo in effInfos))
   xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
   yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
   binningVarLabels: list[str] = [""] * len(binningVars)
@@ -170,7 +170,7 @@ def getHist2DFromEfficiencies(
     len(xCenters), *xRange, len(yCenters), *yRange)
   # fill histogram
   for effInfo in effInfos:
-    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.centers[binningVars[0]], effInfo.binInfo.centers[binningVars[1]]),
+    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])),
                                  effInfo.value.nominal_value)
   return efficiencyHist
 
