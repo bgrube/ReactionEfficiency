@@ -482,7 +482,7 @@ def getParValuesForGraph1D(
 #TODO add sequence of beautifier functors as optional argument
 def plotGraphs1D(
   graphOrGraphs:     ROOT.TGraph | Sequence[tuple[str, ROOT.TGraph]],
-  binningVar:        str,
+  binningInfo:       BinningInfo,  # 1D binning information
   yAxisTitle:        str,
   pdfDirName:        str,
   pdfFileBaseName:   str,
@@ -497,6 +497,8 @@ def plotGraphs1D(
   beautifiers:       Sequence[Any]              = [],  #TODO improve type hint by making a base class for beautifiers
 ) -> None:
   """Generic function that plots the given graph(s)"""
+  assert len(binningInfo.varNames) == 1, f"Need 1-dimensional binning, but got {binningInfo}"
+  binningVar = binningInfo.varNames[0]
   graphs: list[tuple[str, ROOT.TGraph]] = []
   if isinstance(graphOrGraphs, ROOT.TGraph):
     graphs.append(("", graphOrGraphs))
@@ -526,12 +528,13 @@ def plotGraphs1D(
                       + ("" if legendLabels is None else f"_{'_'.join(legendLabels)}") + pdfFileNameSuffix, "")
   multiGraph.Draw("APZ")
   if forceXRange is not None:
-    canv.Modified()
     multiGraph.GetXaxis().SetLimits(forceXRange[0], forceXRange[1])
+  else:
+    multiGraph.GetXaxis().SetLimits(*binningInfo.varRange(binningVar))
   for beautifier in beautifiers:
     beautifier.draw(multiGraph)
   if drawLegend == True or (drawLegend is None and legendLabels is not None):
-    legend = ROOT.TLegend(0.3, 0.21, 0.3, 0.21)
+    legend = ROOT.TLegend(0.3, 0.21, 0.3, 0.21)  #TODO check coords
     for graph in multiGraph.GetListOfGraphs():
       label = graph.GetTitle()
       if not label:
@@ -540,24 +543,28 @@ def plotGraphs1D(
     legend.SetFillStyle(0)
     legend.SetBorderSize(0)
     legend.Draw()
+  # canv.Modified()
+  # canv.Update()
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
 def plotParValue1D(
   parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
-  binningVar:        str,  # name of binning variable to plot
+  binningInfo:       BinningInfo,  # 1D binning information
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
   """Overlays values of given parameter for given datasets for 1-dimensional binning with given binning variables"""
+  assert len(binningInfo.varNames) == 1, f"Need 1-dimensional binning, but got {binningInfo}"
+  binningVar = binningInfo.varNames[0]
   print(f"Plotting parameter '{parName}' as a function of binning variable '{binningVar}'")
-  parValueGraphs: list[tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfos[dataSet])))
-                                                   for dataSet in parInfos]
+  parValueGraphs: list[tuple[str, ROOT.TGraph]] = [(dataSet, getGraph1DFromValues(getParValuesForGraph1D(binningVar, parName, parInfosDataSet)))
+                                                   for dataSet, parInfosDataSet in parInfos.items()]
   plotGraphs1D(
     graphOrGraphs     = parValueGraphs,
-    binningVar        = binningVar,
+    binningInfo       = binningInfo,
     yAxisTitle        = parName,
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = parName,
@@ -566,24 +573,6 @@ def plotParValue1D(
     graphTitle        = f"Fit parameter {parName})",
     skipBlack         = False,
   )
-  #TODO needed?
-  # hist = parValueMultiGraph.GetHistogram()
-  # plotRange = hist.GetMaximum() - hist.GetMinimum()
-  # minVal: float = min(tuple(ROOT.TMath.MinElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
-  # maxVal: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetY())  for graph in parValueMultiGraph.GetListOfGraphs()))
-  # maxErr: float = max(tuple(ROOT.TMath.MaxElement(graph.GetN(), graph.GetEY()) for graph in parValueMultiGraph.GetListOfGraphs()))
-  # if 2 * maxErr / plotRange > 0.9:  # one error bar dominates plot range
-  #   plotRange = 2 * (maxVal - minVal)  # new plot range = 2 * value range
-  #   plotRangeCenter = (maxVal + minVal) / 2
-  #   minVal = plotRangeCenter - plotRange / 2
-  #   maxVal = plotRangeCenter + plotRange / 2
-  #   print(f"Adjusting plot range to [{minVal}, {maxVal}]")
-  #   parValueMultiGraph.SetMinimum(minVal)
-  #   parValueMultiGraph.SetMaximum(maxVal)
-  #   canv.Modified()
-  #   canv.Update()
-  #TODO pass to plotGraphs1D()
-  # drawZeroLine(parValueMultiGraph)
 
 
 def getParValuesForGraph2D(
@@ -607,27 +596,25 @@ def getParValuesForGraph2D(
 def plotParValue2D(
   parInfos:          Mapping[str, Sequence[ParInfo]],
   parName:           str,  # name of parameter to plot
-  binningVars:       Sequence[str],  # names of binning variables to plot
+  binningInfo:       BinningInfo,  # 2D binning information
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
   """Overlays values of given parameter for given datasets for 2-dimensional binning with given binning variables"""
+  assert len(binningInfo.varNames) == 2, f"Need 2-dimensional binning, but got {binningInfo}"
+  binningVars = binningInfo.varNames[:2]
   savedFrameFillColor = ROOT.gStyle.GetFrameFillColor()
   ROOT.gStyle.SetFrameFillColor(0)  # switch back to default; otherwise graphs obstruct histogram frame
   print(f"Plotting parameter '{parName}' as a function of binning variables '{binningVars}'")
   parValueGraphs: dict[str, ROOT.TGraph2DErrors] = {}  # store graphs here to keep them in memory
-  xMin = yMin = zMin = +math.inf
-  xMax = yMax = zMax = -math.inf
+  zMin = +math.inf
+  zMax = -math.inf
   for dataSet in parInfos:
     graph = getGraph2DFromValues(getParValuesForGraph2D(binningVars, parName, parInfos[dataSet]))
     if graph is not None:
       parValueGraphs[dataSet] = graph
-      xMin = min(xMin, graph.GetXminE())
-      yMin = min(yMin, graph.GetYminE())
       zMin = min(zMin, graph.GetZmin())
-      xMax = max(xMax, graph.GetXmaxE())
-      yMax = max(yMax, graph.GetYmaxE())
       zMax = max(zMax, graph.GetZmax())
   if not parValueGraphs:  # nothing to plot
     return
@@ -639,10 +626,12 @@ def plotParValue2D(
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   hist = ROOT.TH3F(
     f"{pdfFileNamePrefix}{parName}_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}",
-    (f";{binningVarLabels[0]} ({binningVarUnits[0]})"
-     f";{binningVarLabels[1]} ({binningVarUnits[1]})"
-     f";{parName}"),
-    1, xMin, xMax, 1, yMin, yMax, 1, zMin, zMax
+    f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+    f";{binningVarLabels[1]} ({binningVarUnits[1]})"
+    f";{parName}",
+    1, *binningInfo.varRange(binningVars[0]),
+    1, *binningInfo.varRange(binningVars[1]),
+    1, zMin if zMin < 0 else 0, zMax,
   )
   hist.SetStats(False)
   titleOffsets = (2.0, 2.0, 1.5)
@@ -657,9 +646,12 @@ def plotParValue2D(
     graph.SetTitle("")
     setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
-  legend = canv.BuildLegend()
+  legend = ROOT.TLegend(0.3, 0.21, 0.3, 0.21)
+  for graph in parValueGraphs.values():
+    legend.AddEntry(graph, graph.GetName(), "LPF")
   legend.SetFillStyle(0)
   legend.SetBorderSize(0)
+  legend.Draw()
   canv.Update()  # needed to get rid of transient frame and axis objects
   canv.SaveAs(f"{pdfDirName}/{hist.GetName()}.pdf")
   ROOT.gStyle.SetFrameFillColor(savedFrameFillColor)  # restore previous value
@@ -671,17 +663,17 @@ def plotFitResults(
   fitVariable: str           = "MissingMassSquared_Measured",  # name of the fit variable
 ) -> None:
   """Plots fit results and parameter values for given datasets in given directory"""
-  parInfos:    defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bin>]
-  parNames:    tuple[str, ...] | None          = None
-  binVarNames: list[tuple[str, ...]] | None    = None  # binning variables for each binning
+  parInfos:     defaultdict[str, list[ParInfo]] = defaultdict(list)  # parInfos[<dataset>][<bin>]
+  parNames:     tuple[str, ...] | None          = None
+  binningInfos: list[BinningInfo | None]        = []
   for dataSet in dataSets:
     fitResultDirName  = f"{fitDirName}/{dataSet}"
     print(f"Plotting overall fit result for '{dataSet}' dataset")
     plotFitResultForBin(BinInfo(name = "", binDefs = {}, dirName = fitResultDirName), fitVariable)
-    binVarNamesInDataSet: list[tuple[str, ...]] = []
-    for binningInfo in getBinningInfosFromDir(fitResultDirName):
+    binningInfosForDataSet: list[BinningInfo | None] = getBinningInfosFromDir(fitResultDirName)
+    for binningInfo in binningInfosForDataSet:
       if binningInfo:
-        binVarNamesInDataSet.append(binningInfo.varNames)
+        # binningInfosForDataSet.append(binningInfo.varNames)
         if binningInfo.dirNames:
           print(f"Plotting fit results for binning variable(s) '{binningInfo.varNames}' for '{dataSet}' dataset")
           plotFitResultsForBinning(binningInfo, fitVariable)
@@ -691,19 +683,27 @@ def plotFitResults(
             assert parNamesInBinning == parNames, f"The parameter set {parNamesInBinning} for dataset '{dataSet}' and binning '{binningInfo.varNames}' is different from the parameter set {parNames} of the previous dataset"
           else:
             parNames = parNamesInBinning
-    if binVarNames is not None:
-      assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} for dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous dataset"
+    if binningInfos:
+      assert len(binningInfos) == len(binningInfosForDataSet), f"The number of binnings {len(binningInfosForDataSet)} for dataset '{dataSet}' is different from the number of binnings {len(binningInfos)} of the previous dataset"
+      for binningInfo, binningInfoDataSet in zip(binningInfos, binningInfosForDataSet):
+        assertMessage = f"The binning {binningInfoDataSet} for dataset '{dataSet}' is different from the binning {binningInfo} of the previous dataset"
+        if binningInfo is None:
+          assert binningInfoDataSet is None, assertMessage
+        if binningInfoDataSet is None:
+          assert binningInfo is None, assertMessage
+        assert (binningInfo is not None and binningInfoDataSet is not None) and binningInfo.isSameBinningAs(binningInfoDataSet), assertMessage
     else:
-      binVarNames = binVarNamesInDataSet
+      binningInfos = binningInfosForDataSet
 
   # plot fit parameters as function of binning variable(s)
-  if parNames and binVarNames:
+  if parNames and binningInfos:
     for parName in parNames:
-      for binningVars in binVarNames:
-        if len(binningVars) == 1:
-          plotParValue1D(parInfos, parName, binningVars[0],  fitDirName)
-        elif len(binningVars) == 2:
-          plotParValue2D(parInfos, parName, binningVars[:2], fitDirName)
+      for binningInfo in binningInfos:
+        if binningInfo:
+          if len(binningInfo.varNames) == 1:
+            plotParValue1D(parInfos, parName, binningInfo,  fitDirName)
+          elif len(binningInfo.varNames) == 2:
+            plotParValue2D(parInfos, parName, binningInfo, fitDirName)
 
 
 if __name__ == "__main__":
