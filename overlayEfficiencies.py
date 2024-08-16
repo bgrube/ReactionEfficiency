@@ -20,8 +20,6 @@ from uncertainties import UFloat, ufloat
 import ROOT
 
 from plotEfficiencies import (
-  # BinInfo,
-  BinningInfo,
   calculateEfficiencies,
   EffInfo,
   getEffValuesForGraph1D,
@@ -29,6 +27,7 @@ from plotEfficiencies import (
   readYieldInfosForBinning,
 )
 from plotFitResults import (
+  BinningInfo,
   getAxisInfoForBinningVar,
   getBinningInfosFromDir,
   ParInfo,
@@ -66,8 +65,7 @@ def getEfficiencies(
     yieldInfos: dict[str, list[ParInfo]] = {}  # yieldInfos[<dataset>][<bin>]
     for dataSet in dataSets:
       print(f"Reading yields for '{dataSet}' dataset")
-      yieldInfos[dataSet]  = []
-      binVarNamesInDataSet = []
+      yieldInfos[dataSet] = []
       binningInfosForDataSet: list[BinningInfo | None] = getBinningInfosFromDir(f"{fitResultDirName}/{dataSet}")
       for binningInfo in binningInfosForDataSet:
         if binningInfo:
@@ -75,12 +73,7 @@ def getEfficiencies(
       if binningInfos:
         assert len(binningInfos) == len(binningInfosForDataSet), f"The number of binnings {len(binningInfosForDataSet)} for dataset '{dataSet}' is different from the number of binnings {len(binningInfos)} of the previous dataset"
         for binningInfo, binningInfoDataSet in zip(binningInfos, binningInfosForDataSet):
-          assertMessage = f"The binning {binningInfoDataSet} for dataset '{dataSet}' is different from the binning {binningInfo} of the previous dataset"
-          if binningInfo is None:
-            assert binningInfoDataSet is None, assertMessage
-          if binningInfoDataSet is None:
-            assert binningInfo is None, assertMessage
-          assert (binningInfo is not None and binningInfoDataSet is not None) and binningInfo.isSameBinningAs(binningInfoDataSet), assertMessage
+          assert binningInfo == binningInfoDataSet, f"The binning {binningInfoDataSet} for dataset '{dataSet}' is different from the binning {binningInfo} of the previous dataset"
       else:
         binningInfos = binningInfosForDataSet
 

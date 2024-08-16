@@ -705,12 +705,7 @@ def plotFitResults(
     if binningInfos:
       assert len(binningInfos) == len(binningInfosForDataSet), f"The number of binnings {len(binningInfosForDataSet)} for dataset '{dataSet}' is different from the number of binnings {len(binningInfos)} of the previous dataset"
       for binningInfo, binningInfoDataSet in zip(binningInfos, binningInfosForDataSet):
-        assertMessage = f"The binning {binningInfoDataSet} for dataset '{dataSet}' is different from the binning {binningInfo} of the previous dataset"
-        if binningInfo is None:
-          assert binningInfoDataSet is None, assertMessage
-        if binningInfoDataSet is None:
-          assert binningInfo is None, assertMessage
-        assert (binningInfo is not None and binningInfoDataSet is not None) and binningInfo.isSameBinningAs(binningInfoDataSet), assertMessage
+        assert binningInfo == binningInfoDataSet, f"The binning {binningInfoDataSet} for dataset '{dataSet}' is different from the binning {binningInfo} of the previous dataset"
     else:
       binningInfos = binningInfosForDataSet
 
