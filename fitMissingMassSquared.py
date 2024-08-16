@@ -51,6 +51,7 @@ class FitConfig:
   # dataCut:           str       = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut:           str       = "(IsSignal == 0)"  # fit bggen background data
   kinematicBinnings: list[tuple[str, int, float, float]] | list[list[tuple[str, int, float, float]]] = field(default_factory = lambda: [
+    # a binning has one tuple per dimension: [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
     [],  # no binning -> fit overall distribution
     # # 1D binnings
     # [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
@@ -58,20 +59,19 @@ class FitConfig:
     # [("MissingProtonTheta",  72,    0,     90)],    # [deg]
     # [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
     # 2D binnings
-    # [
-    #   ("MissingProtonTheta", 16, 0,   80),    # [deg]
-    #   ("MissingProtonP",     18, 0.5,  9.5),  # [GeV/c]
-    # ],  # nominal binning
     [
-      ("MissingProtonTheta", 10, 0, 20),  # [deg]
-      ("MissingProtonP",      9, 0,  9),  # [GeV/c]  #NOTE first bin is affected by p > 0.5 GeV/c condition in `additionalCut``
-    ],  # binning for comparison with pi+- efficiencies
+      ("MissingProtonTheta", 16, 0,   80),    # [deg]
+      ("MissingProtonP",     12, 0.5,  6.5),  # [GeV/c]
+    ],  # nominal binning
+    # [
+    #   ("MissingProtonTheta", 10, 0, 20),  # [deg]
+    #   ("MissingProtonP",      9, 0,  9),  # [GeV/c]  #NOTE first bin is affected by p > 0.5 GeV/c condition in `additionalCut``
+    # ],  # binning for comparison with pi+- efficiencies
     # [
     #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
     #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
     # ],  # dummy 2D binning with minimal number of bins
   ])  # single kinematic binning or list of kinematic binnings
-      # a binning has one tuple per dimension: [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
   dataSets: dict[str, str] = field(default_factory = lambda: {
     "Total"   : "",
     "Found"   : "(TrackFound == 1)",
@@ -83,7 +83,7 @@ class FitConfig:
   fitRange:                str  = "-0.25, 3.75"                  # [(GeV/c)^2]
   regenBinnedTrees:        bool = False                          # if set, force regeneration of files with binned trees
   nmbThreadsPerJob:        int  = 0                              # number of threads to use in parallelization
-  nmbProofJobs:            int  = 92                             # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
+  nmbProofJobs:            int  = 100                            # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
   nmbBootstrapSamples:     int  = 0                              # number of bootstrap samples to generate; 0 means no bootstrapping
   dataTreeName:            str  = "pippippimpimpmiss"            # name of tree that holds the data to fit
   pdfNameSig:              str  = "SigPdf"                       # name of signal PDF

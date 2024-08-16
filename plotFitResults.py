@@ -534,7 +534,7 @@ def plotGraphs1D(
   for beautifier in beautifiers:
     beautifier.draw(multiGraph)
   if drawLegend == True or (drawLegend is None and legendLabels is not None):
-    legend = ROOT.TLegend(0.3, 0.21, 0.3, 0.21)  #TODO check coords
+    legend = ROOT.TLegend(0.3, 0.21)  # use automatic positioning
     for graph in multiGraph.GetListOfGraphs():
       label = graph.GetTitle()
       if not label:
@@ -646,7 +646,7 @@ def plotParValue2D(
     graph.SetTitle("")
     setCbFriendlyStyle(graph, styleIndex, skipBlack = False)
     styleIndex += 1
-  legend = ROOT.TLegend(0.3, 0.21, 0.3, 0.21)
+  legend = ROOT.TLegend(0.3, 0.21)  # use automatic positioning
   for graph in parValueGraphs.values():
     legend.AddEntry(graph, graph.GetName(), "LPF")
   legend.SetFillStyle(0)

@@ -36,11 +36,11 @@ if __name__ == "__main__":
   # fitRootDir = "./fits.pionComparison"
   # fitRootDir = "./fits.pionComparison.R6.28"
   dataPeriods = (
-    # "2017_01-ver03",
+    "2017_01-ver03",
     # "2018_01-ver02",
     # "2018_08-ver02",
     # "2019_11-ver01",
-    "2017_01-ver03_goodToF",
+    # "2017_01-ver03_goodToF",
     # "2018_01-ver02_goodToF",
     # "2018_08-ver02_goodToF",
   )
@@ -49,12 +49,12 @@ if __name__ == "__main__":
   dataSamples: list[dict[str, str]] = []
   for dataPeriod in dataPeriods:
     dataSamples += [
-      # { # bggen MC
-      #   **dict.fromkeys(["dataFileName", "bggenFileName"],
-      #                   f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # "dataFileName" and "bggenFileName" are set to identical values
-      #   "dataPeriod" : dataPeriod,
-      #   "dataLabel"  : f"bggen_{dataPeriod}",
-      # },
+      { # bggen MC
+        **dict.fromkeys(["dataFileName", "bggenFileName"],
+                        f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # "dataFileName" and "bggenFileName" are set to identical values
+        "dataPeriod" : dataPeriod,
+        "dataLabel"  : f"bggen_{dataPeriod}",
+      },
       { # real data
         "dataFileName"  : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root.brufit",
         "bggenFileName" : f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit",
