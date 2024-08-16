@@ -173,32 +173,32 @@ if __name__ == "__main__":
 
   resultsToOverlay: dict[str, tuple[tuple[str, str], ...]] = {  # dict key is PDF file-name suffix
     "bggen" : (
-      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
-      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
-      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
-      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
+      (f"{fitRootDir}/2017_01-ver03/BruFitOutput.bggen_2017_01-ver03_allFixed", "2017_01-ver03"),
+      (f"{fitRootDir}/2018_01-ver02/BruFitOutput.bggen_2018_01-ver02_allFixed", "2018_01-ver02"),
+      (f"{fitRootDir}/2018_08-ver02/BruFitOutput.bggen_2018_08-ver02_allFixed", "2018_08-ver02"),
+      (f"{fitRootDir}/2019_11-ver01/BruFitOutput.bggen_2019_11-ver01_allFixed", "2019_11-ver01"),
     ),
     "data" : (
-      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
-      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
-      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
-      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
+      (f"{fitRootDir}/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed",  "2017_01-ver03"),
+      (f"{fitRootDir}/2018_01-ver02/BruFitOutput.data_2018_01-ver02_allFixed",  "2018_01-ver02"),
+      (f"{fitRootDir}/2018_08-ver02/BruFitOutput.data_2018_08-ver02_allFixed",  "2018_08-ver02"),
+      (f"{fitRootDir}/2019_11-ver01/BruFitOutput.data_2019_11-ver01_allFixed",  "2019_11-ver01"),
     ),
     "2017_01-ver03" : (
-      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
-      (f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2017_01-ver03/BruFitOutput.bggen_2017_01-ver03_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed",  "Real Data"),
     ),
     "2018_01-ver02" : (
-      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
-      (f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2018_01-ver02/BruFitOutput.bggen_2018_01-ver02_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2018_01-ver02/BruFitOutput.data_2018_01-ver02_allFixed",  "Real Data"),
     ),
     "2018_08-ver02" : (
-      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
-      (f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2018_08-ver02/BruFitOutput.bggen_2018_08-ver02_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2018_08-ver02/BruFitOutput.data_2018_08-ver02_allFixed",  "Real Data"),
     ),
     "2019_11-ver01" : (
-      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
-      (f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
+      (f"{fitRootDir}/2019_11-ver01/BruFitOutput.bggen_2019_11-ver01_allFixed", "bggen MC"),
+      (f"{fitRootDir}/2019_11-ver01/BruFitOutput.data_2019_11-ver01_allFixed",  "Real Data"),
     ),
   }
   if args.fitResult:

@@ -215,59 +215,78 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
-  # fitRootDir = "./fits"
-  # pdfDirName = makeDirPath("./ratios")
+  fitRootDir = "./fits"
+  pdfDirName = makeDirPath("./ratios")
   # fitRootDir = "./fits.pionComparison"
   # pdfDirName = makeDirPath("./ratios.pionComparison")
-  fitRootDir = "./fits.pionComparison2"
-  pdfDirName = makeDirPath("./ratios.pionComparison2")
   useMissing = True
 
   ratiosToPlot: dict[str, tuple[str, str]] = {
+    # # all fixed vs. free parameters for data
     # "2017_01-ver03" : (
-    #   f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.data_2017_01-ver03_allFixed",
-    #   f"{fitRootDir}/2017_01-ver03/noShowers/BruFitOutput.bggen_2017_01-ver03_allFixed",
+    #   f"{fitRootDir}/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed",
+    #   f"{fitRootDir}/2017_01-ver03/BruFitOutput.data_2017_01-ver03_sigSmear",
     # ),
     # "2018_01-ver02" : (
-    #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",
-    #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed",
-    # ),
-    # "2018_01 good ToF" : (
-    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.data_2018_01-ver02_goodToF_allFixed",
-    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/BruFitOutput.data_2018_01-ver02_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/BruFitOutput.data_2018_01-ver02_sigSmear",
     # ),
     # "2018_08-ver02" : (
-    #   f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",
-    #   f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed",
-    # ),
-    # "2018_08 good ToF" : (
-    #   f"{fitRootDir}/2018_08-ver02_goodToF/noShowers/BruFitOutput.data_2018_08-ver02_goodToF_allFixed",
-    #   f"{fitRootDir}/2018_08-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_08-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_08-ver02/BruFitOutput.data_2018_08-ver02_allFixed",
+    #   f"{fitRootDir}/2018_08-ver02/BruFitOutput.data_2018_08-ver02_sigSmear",
     # ),
     # "2019_11-ver01" : (
-    #   f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.data_2019_11-ver01_allFixed",
-    #   f"{fitRootDir}/2019_11-ver01/noShowers/BruFitOutput.bggen_2019_11-ver01_allFixed",
+    #   f"{fitRootDir}/2019_11-ver01/BruFitOutput.data_2019_11-ver01_allFixed",
+    #   f"{fitRootDir}/2019_11-ver01/BruFitOutput.data_2019_11-ver01_sigSmear",
     # ),
+    # old data vs. MC
+    "2017_01-ver03" : (
+      f"{fitRootDir}/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed",
+      f"{fitRootDir}/2017_01-ver03/BruFitOutput.bggen_2017_01-ver03_allFixed",
+    ),
+    # "2018_01-ver02" : (
+    #   f"{fitRootDir}/2018_01-ver02/BruFitOutput.data_2018_01-ver02_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/BruFitOutput.bggen_2018_01-ver02_allFixed",
+    # ),
+    # "2018_08-ver02" : (
+    #   f"{fitRootDir}/2018_08-ver02/BruFitOutput.data_2018_08-ver02_allFixed",
+    #   f"{fitRootDir}/2018_08-ver02/BruFitOutput.bggen_2018_08-ver02_allFixed",
+    # ),
+    # "2019_11-ver01" : (
+    #   f"{fitRootDir}/2019_11-ver01/BruFitOutput.data_2019_11-ver01_allFixed",
+    #   f"{fitRootDir}/2019_11-ver01/BruFitOutput.bggen_2019_11-ver01_allFixed",
+    # ),
+    # # comparison old vs. good ToF
     # "2018_01 MC" : (
-    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_01-ver02_goodToF_allFixed",
-    #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.bggen_2018_01-ver02_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/BruFitOutput.bggen_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/BruFitOutput.bggen_2018_01-ver02_allFixed",
     # ),
     # "2018_01 Data" : (
-    #   f"{fitRootDir}/2018_01-ver02_goodToF/noShowers/BruFitOutput.data_2018_01-ver02_goodToF_allFixed",
-    #   f"{fitRootDir}/2018_01-ver02/noShowers/BruFitOutput.data_2018_01-ver02_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/BruFitOutput.data_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02/BruFitOutput.data_2018_01-ver02_allFixed",
     # ),
-    "2018_08 MC" : (
-      f"{fitRootDir}/2018_08-ver02_goodToF/noShowers/BruFitOutput.bggen_2018_08-ver02_goodToF_allFixed",
-      f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.bggen_2018_08-ver02_allFixed",
-    ),
-    "2018_08 Data" : (
-      f"{fitRootDir}/2018_08-ver02_goodToF/noShowers/BruFitOutput.data_2018_08-ver02_goodToF_allFixed",
-      f"{fitRootDir}/2018_08-ver02/noShowers/BruFitOutput.data_2018_08-ver02_allFixed",
-    ),
+    # "2018_08 MC" : (
+    #   f"{fitRootDir}/2018_08-ver02_goodToF/BruFitOutput.bggen_2018_08-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_08-ver02/BruFitOutput.bggen_2018_08-ver02_allFixed",
+    # ),
+    # "2018_08 Data" : (
+    #   f"{fitRootDir}/2018_08-ver02_goodToF/BruFitOutput.data_2018_08-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_08-ver02/BruFitOutput.data_2018_08-ver02_allFixed",
+    # ),
+    # # good ToF data vs. MC
+    # "2018_01 good ToF" : (
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/BruFitOutput.data_2018_01-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_01-ver02_goodToF/BruFitOutput.bggen_2018_01-ver02_goodToF_allFixed",
+    # ),
+    # "2018_08 good ToF" : (
+    #   f"{fitRootDir}/2018_08-ver02_goodToF/BruFitOutput.data_2018_08-ver02_goodToF_allFixed",
+    #   f"{fitRootDir}/2018_08-ver02_goodToF/BruFitOutput.bggen_2018_08-ver02_goodToF_allFixed",
+    # ),
   }
 
-  # title = "Real Data / MC"
-  title = "Good ToF / All Files"
+  # title = "Real Data all fixed / sig smear"
+  title = "Real Data / MC"
+  # title = "Good ToF / All Files"
   effInfos:    dict[str, dict[tuple[str, str], list[EffInfo]]] = {}
   binVarNames: dict[str, list[tuple[str, ...]] | None]         = {}
   for ratioLabel, fitResults in ratiosToPlot.items():

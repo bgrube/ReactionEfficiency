@@ -139,8 +139,8 @@ if __name__ == "__main__":
   ROOT.gStyle.SetOptStat(False)
 
   nmbBootstrapSamples  = 100  #TODO determine from files
-  outputDirNameBs      = "./fits.Bs_100/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"  # fit directory with bootstrap samples
-  outputDirNameNominal = "./fits.nominal/2017_01-ver03_goodToF/noShowers/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"  # fit directory with nominal fit results
+  outputDirNameBs      = "./fits.Bs_100/2017_01-ver03_goodToF/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"  # fit directory with bootstrap samples
+  outputDirNameNominal = "./fits.nominal/2017_01-ver03_goodToF/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"  # fit directory with nominal fit results
   dataSets             = ["Total", "Found", "Missing"]
   fitVariable          = "MissingMassSquared_Measured"
 
