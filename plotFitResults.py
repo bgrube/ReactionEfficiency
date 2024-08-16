@@ -223,6 +223,18 @@ class BinningInfo:
     varRange = self.varRange(varName)
     return int((varRange[1] - varRange[0]) / width)
 
+  def varBinningInfo(
+    self,
+    varName: str,
+  ) -> BinningInfo:
+    """Returns BinningInfo object for 1-dimensional binning of given binning variable"""
+    binInfos = [BinInfo(
+      name    = binInfo.name,
+      binDefs = {varName : (binInfo.center(varName), binInfo.width(varName))},
+      dirName = binInfo.dirName,
+    ) for binInfo in self.infos]
+    return BinningInfo(binInfos, self.dirName)
+
   def isSameBinningAs(
     self,
     other: BinningInfo,
@@ -406,7 +418,7 @@ def readParInfosForBinning(
 
 def plotFitResultForBin(
   binInfo:     BinInfo,
-  fitVariable: str,
+  fitVariable: str,  # name of the fit variable
   pdfDirName:  str | None = None,  # overrides default PDF output path (i.e. same dir as fit result file) if set
 ) -> None:
   """Plots fit result for given kinematic bin"""
@@ -457,8 +469,8 @@ def plotFitResultForBin(
 
 
 def plotFitResultsForBinning(
-  binningInfo: BinningInfo,
-  fitVariable: str,
+  binningInfo: BinningInfo,  # binning information
+  fitVariable: str,  # name of the fit variable
 ) -> None:
   """Plots fit results for all kinematic bins"""
   for binInfo in binningInfo.infos:
