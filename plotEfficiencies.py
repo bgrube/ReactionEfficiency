@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict
 from collections.abc import (
   MutableMapping,
   Sequence,
@@ -157,16 +158,18 @@ def getEffValuesForGraph1D(
 
 def plotEfficiencies1D(
   efficiencies:      Sequence[EffInfo],
-  binningVar:        str,  # name of binning variable to plot
+  binningInfo:       BinningInfo,  # 1D binning information
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str = "Proton_4pi_",
   pdfFileNameSuffix: str = "",
 ) -> None:
   """Plots efficiency as a function of given binning variable for 1-dimensional binning"""
+  assert len(binningInfo.varNames) == 1, f"Need 1-dimensional binning, but got {binningInfo}"
+  binningVar = binningInfo.varNames[0]
   print(f"Plotting efficiency as a function of binning variable '{binningVar}'")
   plotGraphs1D(
     graphOrGraphs     = getGraph1DFromValues(getEffValuesForGraph1D(binningVar, efficiencies)),
-    binningVar        = binningVar,
+    binningInfo       = binningInfo,
     yAxisTitle        = f"Track-Finding Efficiency",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = "mm2_eff",
@@ -197,65 +200,66 @@ def getEffValuesForGraph2D(
 
 def plotEfficiencies2DPerspective(
   efficiencies:      Sequence[EffInfo],
-  binningVars:       Sequence[str],  # names of binning variables to plot
+  binningInfo:       BinningInfo,  # 2D binning information
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str   = "Proton_4pi_",
   pdfFileNameSuffix: str   = "",
   markerSize:        float = 0.75,
 ) -> None:
   """Plots 3D view of efficiency as a function of given binning variables for 2-dimensional binning"""
+  assert len(binningInfo.varNames) == 2, f"Need 2-dimensional binning, but got {binningInfo}"
+  binningVars = binningInfo.varNames[:2]
   print(f"Plotting efficiency as a function of binning variables '{binningVars}'")
   efficiencyGraph = getGraph2DFromValues(getEffValuesForGraph2D(binningVars, efficiencies))
   if efficiencyGraph is None:  # nothing to plot
     return
-  efficiencyGraph.SetMinimum(0)
-  efficiencyGraph.SetMaximum(1)
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
-  efficiencyGraph.Draw("TRI2 P0 ERR")
-  efficiencyGraph.SetTitle("")
-  efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
-  efficiencyGraph.SetMarkerSize(markerSize)
+  # ensure correct axis ranges using dummy histogram
   binningVarLabels: list[str] = [""] * len(binningVars)
   binningVarUnits:  list[str] = [""] * len(binningVars)
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
-  axisTitles = (
-    f"{binningVarLabels[0]} ({binningVarUnits[0]})",
-    f"{binningVarLabels[1]} ({binningVarUnits[1]})",
-    f"Track-Finding Efficiency",
+  hist = ROOT.TH2F(
+    f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}",
+    f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+    f";{binningVarLabels[1]} ({binningVarUnits[1]})"
+    ";Track-Finding Efficiency",
+    1, *binningInfo.varRange(binningVars[0]),
+    1, *binningInfo.varRange(binningVars[1]),
   )
+  hist.SetStats(False)
+  efficiencyGraph.SetHistogram(hist)
+  efficiencyGraph.SetMinimum(0)
+  efficiencyGraph.SetMaximum(1)
+  canv = ROOT.TCanvas()
+  efficiencyGraph.Draw("TRI2 P0 ERR")
+  efficiencyGraph.SetTitle("")
+  efficiencyGraph.SetMarkerStyle(ROOT.kFullCircle)
+  efficiencyGraph.SetMarkerSize(markerSize)
   titleOffsets = (2.0, 2.0, 1.5)
   for index, axis in enumerate((efficiencyGraph.GetXaxis(), efficiencyGraph.GetYaxis(), efficiencyGraph.GetZaxis())):
-    axis.SetTitle(axisTitles[index])
     axis.CenterTitle(True)
     axis.SetTitleOffset(titleOffsets[index])
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+  # canv.Modified()
+  # canv.Update()
+  canv.SaveAs(f"{pdfDirName}/{hist.GetName()}.pdf")
 
 
 def plotEfficiencies2DColzText(
   efficiencies:      Sequence[EffInfo],
-  binningVarsIn:     Sequence[str],  # names of binning variables to plot
+  binningInfo:       BinningInfo,  # 2D binning information
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str   = "Proton_4pi_",
   pdfFileNameSuffix: str   = "",
 ) -> None:
   """Plots efficiency as a function of given binning variables for 2-dimensional binning using 'COLZ TEXT' option; works only for equidistant binning"""
-  binningVars = tuple(reversed(binningVarsIn))  # swap p and theta axes
+  assert len(binningInfo.varNames) == 2, f"Need 2-dimensional binning, but got {binningInfo}"
+  binningVars = tuple(reversed(binningInfo.varNames[:2]))  # swap p and theta axes
   print(f"Plotting efficiency as a function of binning variables '{binningVars}' assuming equidistant binning")
   # filter out relevant efficiencies
   effInfos = tuple(effInfo for effInfo in efficiencies
                    if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2))
   # TGraph2D always performs interpolation when drawn with COLZ -> construct TH2 with matching binning
-  # determine equidistant binning and create histogram
-  xWidths = set(effInfo.binInfo.widths[binningVars[0]] for effInfo in effInfos)
-  yWidths = set(effInfo.binInfo.widths[binningVars[1]] for effInfo in effInfos)
-  assert (len(xWidths) == 1) and (len(yWidths) == 1), f"Binning is not equidistant: x bin widths = {xWidths}; y bin widths = {yWidths}"
-  xWidth = tuple(xWidths)[0]
-  yWidth = tuple(yWidths)[0]
-  xCenters = sorted(set(effInfo.binInfo.centers[binningVars[0]] for effInfo in effInfos))
-  yCenters = sorted(set(effInfo.binInfo.centers[binningVars[1]] for effInfo in effInfos))
-  xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
-  yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
+  # create histogram
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
   binningVarLabels: list[str] = [""] * len(binningVars)
   binningVarUnits:  list[str] = [""] * len(binningVars)
@@ -264,10 +268,12 @@ def plotEfficiencies2DColzText(
   efficiencyHist = ROOT.TH2D(
     f"h{canv.GetName()}", f";{binningVarLabels[0]} ({binningVarUnits[0]})"
                           f";{binningVarLabels[1]} ({binningVarUnits[1]})",
-    int((xRange[1] - xRange[0]) / xWidth), *xRange, int((yRange[1] - yRange[0]) / yWidth), *yRange)
+    binningInfo.varNmbBins(binningVars[0]), *binningInfo.varRange(binningVars[0]),
+    binningInfo.varNmbBins(binningVars[1]), *binningInfo.varRange(binningVars[1]),
+  )
   # fill histogram
   for effInfo in effInfos:
-    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.centers[binningVars[0]], effInfo.binInfo.centers[binningVars[1]]),
+    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])),
                                  effInfo.value.nominal_value)
   # draw histogram
   efficiencyHist.SetMinimum(1e-9) # if set to exactly 0, zero entries are printed
@@ -288,32 +294,39 @@ def plotEfficiencies(
   """Plots efficiencies obtained from BruFit result in given directory"""
   for readIntegrals in (True, False):
     print("Calculating efficiencies from " + ("integrals of data histograms" if readIntegrals else "fit results"))
-    yieldInfos:  dict[str, list[ParInfo]]     = {}    # [<dataset>][<bin>]
-    binVarNames: list[tuple[str, ...]] | None = None  # binning variables for each binning
+    yieldInfos:  defaultdict[str, list[ParInfo]] = defaultdict(list)    # [<dataset>][<bin>]
+    binningInfos: list[BinningInfo | None]       = []
     for dataSet in dataSets:
       print("Reading " + ("integrals of data histograms" if readIntegrals else "yields") + f" for '{dataSet}' dataset")
       fitResultDirName = f"{fitDirName}/{dataSet}"
       yieldInfos[dataSet] = readYieldInfosForBinning(BinningInfo([], fitResultDirName), readIntegrals, fitVariable)  # overall yield values
-      binVarNamesInDataSet: list[tuple[str, ...]] = []
-      for binningInfo in getBinningInfosFromDir(fitResultDirName):
+      binningInfosForDataSet: list[BinningInfo | None] = getBinningInfosFromDir(fitResultDirName)
+      for binningInfo in binningInfosForDataSet:
         if binningInfo:
-          binVarNamesInDataSet.append(binningInfo.varNames)
           yieldInfos[dataSet].extend(readYieldInfosForBinning(binningInfo, readIntegrals, fitVariable))
-      if binVarNames is None:
-        binVarNames = binVarNamesInDataSet
+      if binningInfos:
+        assert len(binningInfos) == len(binningInfosForDataSet), f"The number of binnings {len(binningInfosForDataSet)} for dataset '{dataSet}' is different from the number of binnings {len(binningInfos)} of the previous dataset"
+        for binningInfo, binningInfoDataSet in zip(binningInfos, binningInfosForDataSet):
+          assertMessage = f"The binning {binningInfoDataSet} for dataset '{dataSet}' is different from the binning {binningInfo} of the previous dataset"
+          if binningInfo is None:
+            assert binningInfoDataSet is None, assertMessage
+          if binningInfoDataSet is None:
+            assert binningInfo is None, assertMessage
+          assert (binningInfo is not None and binningInfoDataSet is not None) and binningInfo.isSameBinningAs(binningInfoDataSet), assertMessage
       else:
-        assert binVarNamesInDataSet == binVarNames, f"The binning variables {binVarNamesInDataSet} for dataset '{dataSet}' are different from the binning variables {binVarNames} of the previous dataset"
+        binningInfos = binningInfosForDataSet
+
     effInfos = calculateEfficiencies(yieldInfos, useMissing)
     if effInfos:
       if effInfos[0].binInfo.name == "Overall":
         print("Overall efficiency from " + ("data-histogram integrals" if readIntegrals else "fits") + f" is {effInfos[0].value}")
-      if binVarNames:
-        for binningVars in binVarNames:
-          if len(binningVars) == 1:
-            plotEfficiencies1D(effInfos, binningVars[0],  fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
-          elif len(binningVars) == 2:
-            plotEfficiencies2DPerspective(effInfos, binningVars[:2], fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
-            plotEfficiencies2DColzText   (effInfos, binningVars[:2], fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+      for binningInfo in binningInfos:
+        if binningInfo:
+          if len(binningInfo.varNames) == 1:
+            plotEfficiencies1D(effInfos, binningInfo,  fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+          elif len(binningInfo.varNames) == 2:
+            plotEfficiencies2DPerspective(effInfos, binningInfo, fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
+            plotEfficiencies2DColzText   (effInfos, binningInfo, fitDirName, pdfFileNameSuffix = "_integral" if readIntegrals else "")
 
 
 if __name__ == "__main__":
