@@ -85,6 +85,7 @@ class FitConfig:
   nmbThreadsPerJob:        int  = 0                              # number of threads to use in parallelization
   nmbProofJobs:            int  = 100                            # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
   nmbBootstrapSamples:     int  = 0                              # number of bootstrap samples to generate; 0 means no bootstrapping
+  # nmbBootstrapSamples:     int  = 100                            # number of bootstrap samples to generate; 0 means no bootstrapping
   dataTreeName:            str  = "pippippimpimpmiss"            # name of tree that holds the data to fit
   pdfNameSig:              str  = "SigPdf"                       # name of signal PDF
   templateDataSigTreeName: str  = "pippippimpimpmiss"            # name of tree from which signal histogram is filled

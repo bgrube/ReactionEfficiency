@@ -503,7 +503,7 @@ def plotGraphs1D(
   graphOrGraphs:     ROOT.TGraph | Sequence[tuple[str, ROOT.TGraph]],
   binningInfo:       BinningInfo,  # 1D binning information
   yAxisTitle:        str,
-  pdfDirName:        str,
+  pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileBaseName:   str,
   pdfFileNamePrefix: str                        = "Proton_4pi_",
   pdfFileNameSuffix: str                        = "",

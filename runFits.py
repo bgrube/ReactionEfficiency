@@ -46,6 +46,7 @@ if __name__ == "__main__":
   )
   useMissing = True
 
+  #TODO construct FitConfig objects directly
   dataSamples: list[dict[str, str]] = []
   for dataPeriod in dataPeriods:
     dataSamples += [
@@ -211,6 +212,7 @@ if __name__ == "__main__":
         fitConfig = FitConfig(outputDirName = fitDirectory, **fit["kwargs"])
         fitMissingMassSquared(fitConfig)
       print("Plotting fit results...")
+      #TODO pass FitConfig object also to plotFitResults() and plotEfficiencies()
       with open(f"{fitDirectory}/plotFitResults.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
         plotFitResults(fitDirName = fitDirectory)
       print("Plotting efficiencies...")

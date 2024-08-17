@@ -337,7 +337,7 @@ Graph2DVar = Enum("Graph2DVar", ("x", "y"))
 
 def slice2DGraph(
   graph2D:     ROOT.TGraph2DErrors,
-  steppingVar: Graph2DVar,
+  steppingVar: Graph2DVar,  # each 1D graph corresponds to a slice in this variable
 ) -> dict[tuple[float, float], ROOT.TGraphErrors]:
   """Slices a 2D graph into 1D graphs assuming equidistant binning in stepping variable; returns dictionary with bin range of stepping variable and corresponding 1D graph"""
   # read values from 2D graph assuming equidistant binning

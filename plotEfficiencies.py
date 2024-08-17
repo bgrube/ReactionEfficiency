@@ -256,8 +256,10 @@ def plotEfficiencies2DColzText(
   binningVars = tuple(reversed(binningInfo.varNames[:2]))  # swap p and theta axes
   print(f"Plotting efficiency as a function of binning variables '{binningVars}' assuming equidistant binning")
   # filter out relevant efficiencies
-  effInfos = tuple(effInfo for effInfo in efficiencies
-                   if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2))
+  effInfos = tuple(
+    effInfo for effInfo in efficiencies
+    if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2)
+  )
   # TGraph2D always performs interpolation when drawn with COLZ -> construct TH2 with matching binning
   # create histogram
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
@@ -266,8 +268,9 @@ def plotEfficiencies2DColzText(
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   efficiencyHist = ROOT.TH2D(
-    f"h{canv.GetName()}", f";{binningVarLabels[0]} ({binningVarUnits[0]})"
-                          f";{binningVarLabels[1]} ({binningVarUnits[1]})",
+    f"h{canv.GetName()}",
+    f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+    f";{binningVarLabels[1]} ({binningVarUnits[1]})",
     binningInfo.varNmbBins(binningVars[0]), *binningInfo.varRange(binningVars[0]),
     binningInfo.varNmbBins(binningVars[1]), *binningInfo.varRange(binningVars[1]),
   )
