@@ -11,11 +11,9 @@ from collections.abc import (
 import functools
 import os
 
-from uncertainties import UFloat, ufloat
-
 import ROOT
 
-import overlayEfficiencies
+from overlayEfficiencies import getEfficiencies
 from plotBeautifiers import Lines
 from plotEfficiencies import (
   EffInfo,
@@ -23,16 +21,17 @@ from plotEfficiencies import (
   getEffValuesForGraph2D,
 )
 from plotFitResults import (
+  BinningInfo,
   getAxisInfoForBinningVar,
   plotGraphs1D,
 )
+import plotTools
 from plotTools import (
   calcRatioOfGraphs1D,
   calcRatioOfGraphs2D,
   getGraph1DFromValues,
   getGraph2DFromValues,
   getRangeOfGraph,
-  Graph2DVar,
   makeDirPath,
   printGitInfo,
   redrawFrame,
@@ -51,13 +50,15 @@ HLINES = Lines(defaultColor = ROOT.kGray + 1, orientation = Lines.Orientation.ho
 
 def overlayEfficiencyRatios1D(
   effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
-  binningVar:        str,
-  pdfDirName:        str,
+  binningInfo:       BinningInfo,  # 1D binning information
+  pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str        = "Proton_4pi_",
   pdfFileNameSuffix: str        = "",
   graphTitle:        str | None = None,
 ) -> None:
   """Plots efficiency ratios as a function of `binningVar` for all given fits with 1D binning"""
+  assert len(binningInfo.varNames) == 1, f"Need 1-dimensional binning, but got {binningInfo}"
+  binningVar = binningInfo.varNames[0]
   print(f"Plotting efficiency ratio for binning variable '{binningVar}'")
   ratioGraphs: list[tuple[str, ROOT.TGraphErrors]] = []
   for ratioLabel, effInfosForLabel in effInfos.items():
@@ -68,7 +69,7 @@ def overlayEfficiencyRatios1D(
     ratioGraphs.append((ratioLabel, calcRatioOfGraphs1D(graphs)))
   plotGraphs1D(
     graphOrGraphs     = ratioGraphs,
-    binningVar        = binningVar,
+    binningInfo       = binningInfo,
     yAxisTitle        = "Efficiency Ratio",
     pdfDirName        = pdfDirName,
     pdfFileBaseName   = "mm2_effratio",
@@ -85,15 +86,17 @@ def overlayEfficiencyRatios1D(
 
 def overlayEfficiencyRatios2DSlices(
   effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
-  binningVars:       Sequence[str],
-  steppingVar:       str,
-  pdfDirName:        str,
+  binningInfo:       BinningInfo,  # 2D binning information
+  steppingVar:       str,  # each 1D graph corresponds to a slice in this variable
+  pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str        = "Proton_4pi_",
   pdfFileNameSuffix: str        = "",
   graphTitle:        str | None = None,
   fitGraphs:         bool       = False,
 ) -> None:
   """Plots efficiency ratios as a function of one binning variable while stepping through the bins of another variable given by `steppingVar` for all fits with matching 2D binning"""
+  assert len(binningInfo.varNames) == 2, f"Need 2-dimensional binning, but got {binningInfo}"
+  binningVars = binningInfo.varNames[:2]
   print(f"Plotting efficiency ratios for binning variables '{binningVars}' stepping through bins in '{steppingVar}'")
   assert steppingVar in binningVars, f"Given stepping variable '{steppingVar}' must be in binning variables '{binningVars}'"
   _, steppingVarLabel, steppingVarUnit = getAxisInfoForBinningVar(steppingVar)
@@ -107,7 +110,7 @@ def overlayEfficiencyRatios2DSlices(
     # calculate 2D graph for efficiency ratios and slice it to 1D graphs
     ratioGraphs1D: dict[tuple[float, float], ROOT.TGraphErrors] = slice2DGraph(
       calcRatioOfGraphs2D(efficiencyGraphs2D, ratioRange = (None, 1.5)),
-      Graph2DVar.x if steppingVar == binningVars[0] else Graph2DVar.y
+      plotTools.Graph2DVar.x if steppingVar == binningVars[0] else plotTools.Graph2DVar.y
     )
     for steppingVarBinRange, graph in ratioGraphs1D.items():
       if fitGraphs:
@@ -117,11 +120,11 @@ def overlayEfficiencyRatios2DSlices(
       graphsToOverlay[steppingVarBinRange].append((ratioLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
-    steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} " \
-                       f"< {steppingVarBinRange[1]} {steppingVarUnit}"
+    steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} < " \
+                       f"{steppingVarBinRange[1]} {steppingVarUnit}"
     plotGraphs1D(
-      graphs,
-      binningVars[binningVarIndex],
+      graphOrGraphs     = graphs,
+      binningInfo       = binningInfo.varBinningInfo(binningVars[binningVarIndex]),
       yAxisTitle        = "Efficiency Ratio",
       pdfDirName        = pdfDirName,
       pdfFileBaseName   = "mm2_effratio",
@@ -140,56 +143,58 @@ def overlayEfficiencyRatios2DSlices(
 
 #TODO move to plotEfficiencies and also use in plotEfficiencies2DColzText()
 def getHist2DFromEfficiencies(
-  binningVarsIn: Sequence[str],  # names of binning variables to plot
+  binningInfo:   BinningInfo,  # 2D binning information
   efficiencies:  Sequence[EffInfo],
   histName:      str,
 ) -> ROOT.TH2D:
   """Constructs 2D histogram of efficiency as a function of given binning variables; works only for equidistant binning"""
+  assert len(binningInfo.varNames) == 2, f"Need 2-dimensional binning, but got {binningInfo}"
   # TGraph2D always performs interpolation when drawn with COLZ -> construct TH2 with matching binning
-  binningVars = tuple(reversed(binningVarsIn))  # swap p and theta axes
+  binningVars = tuple(reversed(binningInfo.varNames[:2]))  # swap p and theta axes
   # filter out relevant efficiencies
-  effInfos = tuple(effInfo for effInfo in efficiencies
-                   if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2))
-  # determine equidistant binning and create histogram
-  xWidths = set(effInfo.binInfo.width(binningVars[0]) for effInfo in effInfos)
-  yWidths = set(effInfo.binInfo.width(binningVars[1]) for effInfo in effInfos)
-  assert (len(xWidths) == 1) and (len(yWidths) == 1), f"Binning is not equidistant: x bin widths = {xWidths}; y bin widths = {yWidths}"
-  xWidth = tuple(xWidths)[0]
-  yWidth = tuple(yWidths)[0]
-  xCenters = sorted(set(effInfo.binInfo.center(binningVars[0]) for effInfo in effInfos))
-  yCenters = sorted(set(effInfo.binInfo.center(binningVars[1]) for effInfo in effInfos))
-  xRange = (xCenters[0] - xWidth / 2.0, xCenters[-1] + xWidth / 2.0)
-  yRange = (yCenters[0] - yWidth / 2.0, yCenters[-1] + yWidth / 2.0)
+  effInfos = tuple(
+    effInfo for effInfo in efficiencies
+    if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2)
+  )
   binningVarLabels: list[str] = [""] * len(binningVars)
   binningVarUnits:  list[str] = [""] * len(binningVars)
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
   efficiencyHist = ROOT.TH2D(
-    histName, f";{binningVarLabels[0]} ({binningVarUnits[0]})"
-              f";{binningVarLabels[1]} ({binningVarUnits[1]})",
-    len(xCenters), *xRange, len(yCenters), *yRange)
+    histName,
+    f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+    f";{binningVarLabels[1]} ({binningVarUnits[1]})",
+    binningInfo.varNmbBins(binningVars[0]), *binningInfo.varRange(binningVars[0]),
+    binningInfo.varNmbBins(binningVars[1]), *binningInfo.varRange(binningVars[1]),
+  )
   # fill histogram
   for effInfo in effInfos:
-    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])),
-                                 effInfo.value.nominal_value)
+    efficiencyHist.SetBinContent(
+      efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])),
+      effInfo.value.nominal_value
+    )
   return efficiencyHist
 
 
 def overlayEfficiencyRatios2DColzText(
   effInfos:          Mapping[str, Mapping[tuple[str, str], Sequence[EffInfo]]],  # [ratioLabel][(fitResultDirName, fitLabel)][bin index]
-  binningVars:       Sequence[str],
-  pdfDirName:        str,
+  binningInfo:       BinningInfo,  # 2D binning information
+  pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str        = "Proton_4pi_",
   pdfFileNameSuffix: str        = "",
   histTitle:         str | None = None,
 ) -> None:
   """Plots efficiency ratios as a function of given binning variables for 2-dimensional binning using 'COLZ TEXT' option; works only for equidistant binning"""
+  assert len(binningInfo.varNames) == 2, f"Need 2-dimensional binning, but got {binningInfo}"
+  binningVars = binningInfo.varNames[:2]
   print(f"Plotting efficiency ratios as a function of binning variables '{binningVars}' assuming equidistant binning")
   for ratioLabel, effInfosForLabel in effInfos.items():
     assert len(effInfosForLabel) == 2, f"Expect exactly 2 data samples to calculate ratio; but got {effInfosForLabel}"
     # get efficiencies as 2D histograms
-    effHists2D: tuple[ROOT.TH2D, ...] = tuple(getHist2DFromEfficiencies(binningVars, effs, histName = f"hEfficiency2D_{binningVars[0]}_{binningVars[1]}_fitLabel")
-                                              for (_, fitLabel), effs in effInfosForLabel.items())
+    effHists2D: tuple[ROOT.TH2D, ...] = tuple(
+      getHist2DFromEfficiencies(binningInfo, effs, histName = f"hEfficiency2D_{binningVars[0]}_{binningVars[1]}_{fitLabel}")
+      for (_, fitLabel), effs in effInfosForLabel.items()
+    )
     # calculate ratio histogram
     ratioHist2D = effHists2D[0].Clone()
     ratioHist2D.Divide(effHists2D[1])
@@ -215,7 +220,7 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
 
-  fitRootDir = "./fits"
+  fitRootDir = "./fits.nominal"
   pdfDirName = makeDirPath("./ratios")
   # fitRootDir = "./fits.pionComparison"
   # pdfDirName = makeDirPath("./ratios.pionComparison")
@@ -287,22 +292,23 @@ if __name__ == "__main__":
   # title = "Real Data all fixed / sig smear"
   title = "Real Data / MC"
   # title = "Good ToF / All Files"
-  effInfos:    dict[str, dict[tuple[str, str], list[EffInfo]]] = {}
-  binVarNames: dict[str, list[tuple[str, ...]] | None]         = {}
+  effInfos:     dict[str, dict[tuple[str, str], list[EffInfo]]] = {}
+  binningInfos: dict[str, list[BinningInfo | None]]             = {}
   for ratioLabel, fitResults in ratiosToPlot.items():
-    effInfos[ratioLabel], binVarNames[ratioLabel] = overlayEfficiencies.getEfficiencies(
+    effInfos[ratioLabel], binningInfos[ratioLabel] = getEfficiencies(
       fitResultDirNames = tuple(fitResult for fitResult in fitResults),
       useMissing = useMissing
     )
   print("Plotting efficiency ratios")
-  if effInfos and binVarNames:
-    firstBinVarNames = next(iter(binVarNames.values()))  # get first entry
-    for ratioLabel, binVarNamesForLabel in binVarNames.items():
-      assert binVarNamesForLabel == firstBinVarNames, f"Data samples have different binnings: '{ratioLabel}' = {binVarNamesForLabel} vs. '{next(iter(binVarNames.keys()))}' = {firstBinVarNames}"
-    if firstBinVarNames is not None:
-      for binningVars in firstBinVarNames:
-        if len(binningVars) == 1:
-          overlayEfficiencyRatios1D(effInfos, binningVars[0], pdfDirName, graphTitle = title)
-        elif len(binningVars) == 2:
-          overlayEfficiencyRatios2DSlices  (effInfos, binningVars[:2], steppingVar = binningVars[1], pdfDirName = pdfDirName, graphTitle = title)
-          overlayEfficiencyRatios2DColzText(effInfos, binningVars[:2], pdfDirName = pdfDirName, histTitle = title)
+  if effInfos and binningInfos:
+    firstBinningInfos = next(iter(binningInfos.values()))  # get first entry in binningInfos
+    for ratioLabel, binningInfosForLabel in binningInfos.items():
+      assert binningInfosForLabel == firstBinningInfos, f"Data samples have different binnings: '{ratioLabel}' = {binningInfosForLabel} vs. '{next(iter(binningInfos.keys()))}' = {firstBinningInfos}"
+    if firstBinningInfos:
+      for binningInfo in firstBinningInfos:
+        if binningInfo:
+          if len(binningInfo.varNames) == 1:
+            overlayEfficiencyRatios1D(effInfos, binningInfo, pdfDirName, graphTitle = title)
+          elif len(binningInfo.varNames) == 2:
+            overlayEfficiencyRatios2DSlices  (effInfos, binningInfo, steppingVar = binningInfo.varNames[1], pdfDirName = pdfDirName, graphTitle = title)
+            overlayEfficiencyRatios2DColzText(effInfos, binningInfo, pdfDirName = pdfDirName, histTitle = title)
