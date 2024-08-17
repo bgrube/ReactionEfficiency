@@ -10,12 +10,9 @@ from collections.abc import (
   Mapping,
   Sequence,
 )
-from dataclasses import dataclass
 import functools
 import os
 import sys
-
-from uncertainties import UFloat, ufloat
 
 import ROOT
 
@@ -117,7 +114,7 @@ def overlayEfficiencies1D(
 def overlayEfficiencies2DSlices(
   effInfos:          Mapping[tuple[str, str], Sequence[EffInfo]],
   binningInfo:       BinningInfo,  # 2D binning information
-  steppingVar:       str,
+  steppingVar:       str,  # each 1D graph corresponds to a slice in this variable
   pdfDirName:        str,  # directory name the PDF file will be written to
   pdfFileNamePrefix: str  = "Proton_4pi_",
   pdfFileNameSuffix: str  = "",
@@ -140,8 +137,8 @@ def overlayEfficiencies2DSlices(
       graphsToOverlay[steppingVarBinRange].append((fitLabel, graph))
   for steppingVarBinRange, graphs in graphsToOverlay.items():
     # overlay 1D graphs for current bin of stepping variable
-    steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} " \
-                       f"< {steppingVarBinRange[1]} {steppingVarUnit}"
+    steppingVarTitle = f"{steppingVarBinRange[0]} {steppingVarUnit} < {steppingVarLabel} < " \
+                       f"{steppingVarBinRange[1]} {steppingVarUnit}"
     plotGraphs1D(
       graphOrGraphs     = graphs,
       binningInfo       = binningInfo.varBinningInfo(binningVars[binningVarIndex]),
