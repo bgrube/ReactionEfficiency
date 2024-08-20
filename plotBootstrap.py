@@ -24,12 +24,11 @@ from plotFitResults import (
   BinningInfo,
   getAxisInfoForBinningVar,
   getBinningInfosFromDir,
-  getParValuesForGraph2D,
   ParInfo,
 )
 from plotTools import (
-  getGraph2DFromValues,
   printGitInfo,
+  redrawFrame,
   setupPlotStyle,
 )
 
@@ -155,13 +154,15 @@ if __name__ == "__main__":
   ROOT.gROOT.ProcessLine(f".x {os.environ['BRUFIT']}/macros/LoadBru.C")
   setupPlotStyle()
   ROOT.gStyle.SetOptStat(False)
+  ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
+
 
   nmbBootstrapSamples    = 100  #TODO determine from files
   outputDirNameBs        = "./fits.Bs_100/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed"  # fit directory with bootstrap samples
   outputDirNameNominal   = "./fits.nominal/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed"  # fit directory with nominal fit results
   dataSets               = ["Total", "Found", "Missing"]
   fitVariable            = "MissingMassSquared_Measured"
-  acceptedFitResultsOnly = True
+  acceptedFitResultsOnly = False
 
   for dataSet in dataSets:  # loop over datasets
     fitResultDirName  = f"{outputDirNameBs}/{dataSet}"
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     for binningInfo in [binningInfoOverall] + getBinningInfosFromDir(fitResultDirName):  # loop over kinematic binnings
       if binningInfo:
         print(f"Reading bootstrap distribution for '{dataSet}' dataset and binning {binningInfo}")
-        parInfoDeviations: defaultdict[str, list[ParInfo]] = defaultdict(list)  # parameter deviations for all bins [parName][binIndex]
+        deviations: defaultdict[str, list[ParInfo]] = defaultdict(list)  # parameter deviations for all bins [parName][binIndex]
         for binInfoBs in binningInfo:  # loop over kinematic bins
           # read nominal parameter estimates
           binInfoNominal = copy.deepcopy(binInfoBs)
@@ -199,27 +200,38 @@ if __name__ == "__main__":
           for parName in parNames:
             parInfoDeviation = plotBootstrapDistribution(parName, parInfosBs, parInfoNominal, dataSet)
             if parInfoDeviation is not None and not (acceptedFitResultsOnly and not acceptedFitResult):
-              parInfoDeviations[parName].append(parInfoDeviation)
+              deviations[parName].append(parInfoDeviation)
         # plot deviations of nominal estimates from bootstrap estimates for all parameters
         if len(binningInfo.varNames) == 2:
           binningVars = binningInfo.varNames[:2]
-          for parName, parInfos in parInfoDeviations.items():
+          for parName, deviationsForParName in deviations.items():  # loop over parameters
             for devName in ("mean", "uncertainty"):
-              graph = getGraph2DFromValues(getParValuesForGraph2D(binningVars, f"{parName}_{devName}Dev", parInfos))
-              if graph is None:
-                continue
               canv = ROOT.TCanvas()
-              canv.DrawFrame(*binningInfo.varRange(binningVars[0]), *binningInfo.varRange(binningVars[1]))
               binningVarLabels: list[str] = [""] * len(binningVars)
               binningVarUnits:  list[str] = [""] * len(binningVars)
               for index, binningVar in enumerate(binningVars):
                 _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
-              graph.SetTitle(
-                f"{parName} {devName} Relative Difference"
+              hist = ROOT.TH2D(
+                f"bootstrap_{dataSet}_{parName}_{devName}Dev",
+                f"{dataSet} {parName} {devName} Relative Difference"
                 f";{binningVarLabels[0]} ({binningVarUnits[0]})"
                 f";{binningVarLabels[1]} ({binningVarUnits[1]})"
-                f";({devName}_{{BS}} #minus {devName}_{{Fit}}) / #sigma_{{BS}}"
+                f";({devName}_{{BS}} #minus {devName}_{{Fit}}) / #sigma_{{BS}}",
+                binningInfo.varNmbBins(binningVars[0]), *binningInfo.varRange(binningVars[0]),
+                binningInfo.varNmbBins(binningVars[1]), *binningInfo.varRange(binningVars[1]),
               )
-              graph.Draw("P ERR")
-              canv.SaveAs(f"{binningInfo.dirName}/bootstrap_{dataSet}_{parName}_{devName}Dev.pdf")
-              # raise ValueError("Stop here")
+              # fill histogram
+              for deviation in deviationsForParName:
+                hist.SetBinContent(
+                  hist.FindBin(deviation.binInfo.center(binningVars[0]), deviation.binInfo.center(binningVars[1])),
+                  deviation.values[f"{parName}_{devName}Dev"].nominal_value,
+                )
+              # draw histogram
+              hist.SetMinimum(-0.5)
+              hist.SetMaximum(+0.5)
+              ROOT.gStyle.SetPaintTextFormat("1.3f")
+              hist.Draw("COLZ TEXT")
+              hist.SetStats(False)
+              canv.SetRightMargin(0.15)
+              redrawFrame(canv)
+              canv.SaveAs(f"{binningInfo.dirName}/{hist.GetName()}.pdf")
