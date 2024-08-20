@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Sequence
 import copy
+from dataclasses import replace
 import functools
 import numpy as np
-import nptyping as npt
 import os
 from scipy import stats
 
@@ -18,12 +19,16 @@ if __name__ == "__main__":
   ROOT.PyConfig.DisableRootLogon = True  # do not change style of canvases loaded from fit result files
 
 from plotFitResults import (
+  acceptFitResult,
   BinInfo,
   BinningInfo,
+  getAxisInfoForBinningVar,
   getBinningInfosFromDir,
+  getParValuesForGraph2D,
   ParInfo,
 )
 from plotTools import (
+  getGraph2DFromValues,
   printGitInfo,
   setupPlotStyle,
 )
@@ -37,10 +42,11 @@ print = functools.partial(print, flush = True)
 def readFitParameters(
   fitResultFileName: str,
   binInfo:           BinInfo,
-) -> ParInfo | None:
+) -> tuple[ParInfo | None, bool]:
+  """Reads fit parameter values from a fit-result file"""
   if not os.path.isfile(fitResultFileName):
     print(f"Cannot find file '{fitResultFileName}'. Skipping.")
-    return None
+    return None, False
   fitResultObjName = "MinuitResult"
   print(f"Reading fit result object '{fitResultObjName}' from file '{fitResultFileName}'")
   fitResultFile = ROOT.TFile.Open(fitResultFileName, "READ")
@@ -48,7 +54,7 @@ def readFitParameters(
   # read all parameters
   parValuesInBin: dict[str, UFloat] = {fitPar.GetName(): ufloat(fitPar.getVal(), fitPar.getError()) for fitPar in fitResult.floatParsFinal()}
   fitResultFile.Close()
-  return ParInfo(binInfo, fitVariable, parValuesInBin)
+  return ParInfo(binInfo, fitVariable, parValuesInBin), acceptFitResult(fitResult)
 
 
 def plotBootstrapDistribution(
@@ -57,7 +63,7 @@ def plotBootstrapDistribution(
   parInfoNominal: ParInfo | None,     # nominal parameter estimates
   dataSet:        str,                # name of dataset
   nmbBins:        int = 20,           # number of histogram bins
-):
+) -> ParInfo | None:  # ParInfo with deviation of bootstrap estimate from nominal estimate
   """Plots bootstrap distribution of a fit parameter"""
   print(f"Plotting bootstrap distribution for parameter '{parName}' and dataset '{dataSet}'")
   parValuesBs = np.array([parInfoBs.values[parName].nominal_value for parInfoBs in parInfosBs], dtype = np.float64)
@@ -91,6 +97,7 @@ def plotBootstrapDistribution(
   lineBs = ROOT.TLine(meanBs - stdDevBs, yCoord, meanBs + stdDevBs, yCoord)
   lineBs.SetLineColor(ROOT.kBlue + 1)
   lineBs.Draw()
+  meanEst = stdDevEst = None
   if parInfoNominal is not None and parInfoNominal.values:
     # indicate nominal estimate
     meanEst   = parInfoNominal.values[parName].nominal_value
@@ -129,6 +136,17 @@ def plotBootstrapDistribution(
     legend.AddEntry(gaussian, "Nominal estimate Gaussian", "LP")
   legend.Draw()
   canv.SaveAs(f"{parInfosBs[0].binInfo.dirName}/{histBs.GetName()}.pdf")
+  if parInfoNominal is None or meanEst is None or stdDevEst is None:
+    return None
+  # return relative difference of nominal estimate from bootstrap estimate
+  parInfoDeviation = replace(
+    parInfoNominal,
+    values = {
+      f"{parName}_meanDev"        : ufloat((meanBs   - meanEst  ) / stdDevBs, 0),
+      f"{parName}_uncertaintyDev" : ufloat((stdDevBs - stdDevEst) / stdDevBs, 0),
+    },
+  )
+  return parInfoDeviation
 
 
 if __name__ == "__main__":
@@ -138,11 +156,12 @@ if __name__ == "__main__":
   setupPlotStyle()
   ROOT.gStyle.SetOptStat(False)
 
-  nmbBootstrapSamples  = 100  #TODO determine from files
-  outputDirNameBs      = "./fits.Bs_100/2017_01-ver03_goodToF/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"  # fit directory with bootstrap samples
-  outputDirNameNominal = "./fits.nominal/2017_01-ver03_goodToF/BruFitOutput.data_2017_01-ver03_goodToF_allFixed"  # fit directory with nominal fit results
-  dataSets             = ["Total", "Found", "Missing"]
-  fitVariable          = "MissingMassSquared_Measured"
+  nmbBootstrapSamples    = 100  #TODO determine from files
+  outputDirNameBs        = "./fits.Bs_100/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed"  # fit directory with bootstrap samples
+  outputDirNameNominal   = "./fits.nominal/2017_01-ver03/BruFitOutput.data_2017_01-ver03_allFixed"  # fit directory with nominal fit results
+  dataSets               = ["Total", "Found", "Missing"]
+  fitVariable            = "MissingMassSquared_Measured"
+  acceptedFitResultsOnly = True
 
   for dataSet in dataSets:  # loop over datasets
     fitResultDirName  = f"{outputDirNameBs}/{dataSet}"
@@ -153,12 +172,13 @@ if __name__ == "__main__":
     for binningInfo in [binningInfoOverall] + getBinningInfosFromDir(fitResultDirName):  # loop over kinematic binnings
       if binningInfo:
         print(f"Reading bootstrap distribution for '{dataSet}' dataset and binning {binningInfo}")
+        parInfoDeviations: defaultdict[str, list[ParInfo]] = defaultdict(list)  # parameter deviations for all bins [parName][binIndex]
         for binInfoBs in binningInfo:  # loop over kinematic bins
           # read nominal parameter estimates
           binInfoNominal = copy.deepcopy(binInfoBs)
           binInfoNominal.dirName = binInfoBs.dirName.replace(outputDirNameBs, outputDirNameNominal, 1)
           print(f"Reading nominal estimate for bin {binInfoNominal}")
-          parInfoNominal = readFitParameters(binInfoNominal.fitResultFileName, binInfoNominal)
+          parInfoNominal, acceptedFitResult = readFitParameters(binInfoNominal.fitResultFileName, binInfoNominal)
           if parInfoNominal is None or not parInfoNominal.values:
             print(f"No nominal parameter estimates found for dataset '{dataSet}' and bin {binInfoBs}. Skipping.")
             continue
@@ -167,7 +187,7 @@ if __name__ == "__main__":
           print(f"Reading bootstrap distribution for bin {binInfoBs}")
           parInfosBs: list[ParInfo] = []  # parameter values for all bootstrap samples
           for bootstrapIndex, fitResultFileName in binInfoBs.bootstrapFileNames:  # loop over bootstrap samples
-            parInfoBs = readFitParameters(fitResultFileName, binInfoBs)
+            parInfoBs, _  = readFitParameters(fitResultFileName, binInfoBs)
             if parInfoBs is not None and parInfoBs.values:
               print(f"Parameter values for '{dataSet}' dataset, bin {binInfoBs}, and bootstrap index {bootstrapIndex}: {parInfoBs}")
               parInfosBs.append(parInfoBs)
@@ -177,4 +197,29 @@ if __name__ == "__main__":
           # plot bootstrap distribution
           parNames = tuple(parInfoNominal.values.keys())  # assume parInfoNominal and parInfosBs have the same parameters
           for parName in parNames:
-            plotBootstrapDistribution(parName, parInfosBs, parInfoNominal, dataSet)
+            parInfoDeviation = plotBootstrapDistribution(parName, parInfosBs, parInfoNominal, dataSet)
+            if parInfoDeviation is not None and not (acceptedFitResultsOnly and not acceptedFitResult):
+              parInfoDeviations[parName].append(parInfoDeviation)
+        # plot deviations of nominal estimates from bootstrap estimates for all parameters
+        if len(binningInfo.varNames) == 2:
+          binningVars = binningInfo.varNames[:2]
+          for parName, parInfos in parInfoDeviations.items():
+            for devName in ("mean", "uncertainty"):
+              graph = getGraph2DFromValues(getParValuesForGraph2D(binningVars, f"{parName}_{devName}Dev", parInfos))
+              if graph is None:
+                continue
+              canv = ROOT.TCanvas()
+              canv.DrawFrame(*binningInfo.varRange(binningVars[0]), *binningInfo.varRange(binningVars[1]))
+              binningVarLabels: list[str] = [""] * len(binningVars)
+              binningVarUnits:  list[str] = [""] * len(binningVars)
+              for index, binningVar in enumerate(binningVars):
+                _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
+              graph.SetTitle(
+                f"{parName} {devName} Relative Difference"
+                f";{binningVarLabels[0]} ({binningVarUnits[0]})"
+                f";{binningVarLabels[1]} ({binningVarUnits[1]})"
+                f";({devName}_{{BS}} #minus {devName}_{{Fit}}) / #sigma_{{BS}}"
+              )
+              graph.Draw("P ERR")
+              canv.SaveAs(f"{binningInfo.dirName}/bootstrap_{dataSet}_{parName}_{devName}Dev.pdf")
+              # raise ValueError("Stop here")
