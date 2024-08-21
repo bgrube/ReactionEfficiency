@@ -136,7 +136,6 @@ def overlayEfficiencyRatios2DSlices(
       skipBlack         = True if len(graphs) > 1 else False,
       drawLegend        = True if len(graphs) > 1 else False,
       # forceXRange       = (1, 6),
-      forceXRange       = (0, 9),
       beautifiers       = (HLINES,),
     )
 
