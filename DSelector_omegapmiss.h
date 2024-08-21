@@ -44,15 +44,18 @@ class DSelector_omegapmiss : public DSelector
 
 		//CREATE REACTION-SPECIFIC PARTICLE ARRAYS
 
-		//Step 0
+		//Step 0: gamma p -> omega (p)
 		DParticleComboStep* dStep0Wrapper;
 		DBeamParticle* dComboBeamWrapper;
-		DChargedTrackHypothesis* dPiPlusWrapper;
-		DChargedTrackHypothesis* dPiMinusWrapper;
 		DKinematicData* dMissingProtonWrapper;
 
-		//Step 1
+		//Step 1: omega -> pi0 pi+ pi-
 		DParticleComboStep* dStep1Wrapper;
+		DChargedTrackHypothesis* dPiPlusWrapper;
+		DChargedTrackHypothesis* dPiMinusWrapper;
+
+		//Step 2: pi0 -> gamma gamma
+		DParticleComboStep* dStep2Wrapper;
 		DKinematicData* dDecayingPi0Wrapper;
 		DNeutralParticleHypothesis* dPhoton1Wrapper;
 		DNeutralParticleHypothesis* dPhoton2Wrapper;
@@ -98,18 +101,21 @@ class DSelector_omegapmiss : public DSelector
 
 void DSelector_omegapmiss::Get_ComboWrappers(void)
 {
-	//Step 0
+	//Step 0: gamma p -> omega (p)
 	dStep0Wrapper = dComboWrapper->Get_ParticleComboStep(0);
 	dComboBeamWrapper = static_cast<DBeamParticle*>(dStep0Wrapper->Get_InitialParticle());
-	dPiPlusWrapper = static_cast<DChargedTrackHypothesis*>(dStep0Wrapper->Get_FinalParticle(0));  //TODO index starting at 1?
-	dPiMinusWrapper = static_cast<DChargedTrackHypothesis*>(dStep0Wrapper->Get_FinalParticle(1));
-	dMissingProtonWrapper = dStep0Wrapper->Get_FinalParticle(3);
+	dMissingProtonWrapper = dStep0Wrapper->Get_FinalParticle(1);  // index 0 is the omega
 
-	//Step 1
+	//Step 1: omega -> pi0 pi+ pi-
 	dStep1Wrapper = dComboWrapper->Get_ParticleComboStep(1);
-	dDecayingPi0Wrapper = dStep1Wrapper->Get_InitialParticle();
-	dPhoton1Wrapper = static_cast<DNeutralParticleHypothesis*>(dStep1Wrapper->Get_FinalParticle(0));
-	dPhoton2Wrapper = static_cast<DNeutralParticleHypothesis*>(dStep1Wrapper->Get_FinalParticle(1));
+	dPiPlusWrapper = static_cast<DChargedTrackHypothesis*>(dStep1Wrapper->Get_FinalParticle(1));  // index 0 is the pi0
+	dPiMinusWrapper = static_cast<DChargedTrackHypothesis*>(dStep1Wrapper->Get_FinalParticle(2));
+
+	//Step 2: pi0 -> gamma gamma
+	dStep2Wrapper = dComboWrapper->Get_ParticleComboStep(2);
+	dDecayingPi0Wrapper = dStep2Wrapper->Get_InitialParticle();
+	dPhoton1Wrapper = static_cast<DNeutralParticleHypothesis*>(dStep2Wrapper->Get_FinalParticle(0));
+	dPhoton2Wrapper = static_cast<DNeutralParticleHypothesis*>(dStep2Wrapper->Get_FinalParticle(1));
 }
 
 #endif // DSelector_omegapmiss_h

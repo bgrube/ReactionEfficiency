@@ -564,6 +564,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 
 			dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", (locUnusedTrackExists) ? 1 : 0);  // indicate whether there was an unused track in the event or not
 			// fill tree variables for truth track
+			//TODO check for correct signal topology
 			int locNmbTruthTracks = 0;
 			for (UInt_t locThrownIndex = 0; locThrownIndex < Get_NumThrown(); ++locThrownIndex) {
 				// Set branch array indices corresponding to this charged-track hypothesis

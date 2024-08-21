@@ -365,6 +365,7 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 
 	//Loop over combos
 	for (UInt_t locComboIndex = 0; locComboIndex < Get_NumCombos(); ++locComboIndex) {
+
 		//Set branch array indices for combo and all combo particles
 		dComboWrapper->Set_ComboIndex(locComboIndex);
 
@@ -376,12 +377,12 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 
 		//Used for tracking uniqueness when filling histograms, and for determining unused particles
 
-		//Step 0
-		const Int_t locBeamID         = dComboBeamWrapper->Get_BeamID();
-		const Int_t locPiPlusTrackID  = dPiPlusWrapper->Get_TrackID();
-		const Int_t locPiMinusTrackID = dPiMinusWrapper->Get_TrackID();
-
-		//Step 1
+		// Step 0
+		const Int_t locBeamID           = dComboBeamWrapper->Get_BeamID();
+		// Step 1
+		const Int_t locPiPlusTrackID    = dPiPlusWrapper->Get_TrackID();
+		const Int_t locPiMinusTrackID   = dPiMinusWrapper->Get_TrackID();
+		// Step 2
 		const Int_t locPhoton1NeutralID = dPhoton1Wrapper->Get_NeutralID();
 		const Int_t locPhoton2NeutralID = dPhoton2Wrapper->Get_NeutralID();
 
@@ -392,20 +393,27 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 		// dTargetP4 is target p4
 		// Step 0
 		const TLorentzVector locBeamP4          = dComboBeamWrapper->Get_P4();
-		const TLorentzVector locDecayingPi0P4   = dDecayingPi0Wrapper->Get_P4();
+		const TLorentzVector locMissingProtonP4 = dMissingProtonWrapper->Get_P4();
+		// Step 1
 		const TLorentzVector locPiPlusP4        = dPiPlusWrapper->Get_P4();
 		const TLorentzVector locPiMinusP4       = dPiMinusWrapper->Get_P4();
-		const TLorentzVector locThreePiP4       = locDecayingPi0P4 + locPiPlusP4 + locPiMinusP4;
-		const TLorentzVector locMissingProtonP4 = dMissingProtonWrapper->Get_P4();
+		// Step 2
+		const TLorentzVector locDecayingPi0P4   = dDecayingPi0Wrapper->Get_P4();
+		const TLorentzVector locPhoton1P4       = dPhoton1Wrapper->Get_P4();
+		const TLorentzVector locPhoton2P4       = dPhoton2Wrapper->Get_P4();
+		// Get P4's of intermediate particles
+		const TLorentzVector locDecayingOmegaP4 = locDecayingPi0P4 + locPiPlusP4 + locPiMinusP4;
 
 		// Get Measured P4's:
-		// Step 0
 		const TLorentzVector locBeamP4_Measured          = dComboBeamWrapper->Get_P4_Measured();
-		const TLorentzVector locDecayingPi0P4_Measured   = dDecayingPi0Wrapper->Get_P4_Measured();  //TODO does this work?
 		const TLorentzVector locPiPlusP4_Measured        = dPiPlusWrapper->Get_P4_Measured();
 		const TLorentzVector locPiMinusP4_Measured       = dPiMinusWrapper->Get_P4_Measured();
-		const TLorentzVector locThreePiP4_Measured       = locDecayingPi0P4_Measured + locPiPlusP4_Measured + locPiMinusP4_Measured;
-		const TLorentzVector locMissingProtonP4_Measured = locBeamP4_Measured + dTargetP4 - locThreePiP4_Measured;
+		const TLorentzVector locPhoton1P4_Measured       = dPhoton1Wrapper->Get_P4_Measured();
+		const TLorentzVector locPhoton2P4_Measured       = dPhoton2Wrapper->Get_P4_Measured();
+		// Get P4's of intermediate particles
+		const TLorentzVector locDecayingPi0P4_Measured   = locPhoton1P4_Measured + locPhoton2P4_Measured;
+		const TLorentzVector locDecayingOmegaP4_Measured = locDecayingPi0P4_Measured + locPiPlusP4_Measured + locPiMinusP4_Measured;
+		const TLorentzVector locMissingProtonP4_Measured = locBeamP4_Measured + dTargetP4 - locDecayingOmegaP4_Measured;
 
 		/********************************************* GET COMBO RF TIMING INFO *****************************************/
 
@@ -435,8 +443,8 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 		// measured values
 		const double locMissingMassSquared_Measured = locMissingProtonP4_Measured.M2();
 
-		const double locThreePiMass          = locThreePiP4.M();
-		const double locThreePiMass_Measured = locThreePiP4_Measured.M();
+		const double locThreePiMass          = locDecayingOmegaP4.M();
+		const double locThreePiMass_Measured = locDecayingOmegaP4_Measured.M();
 
 		/******************************************** EXECUTE ANALYSIS ACTIONS *******************************************/
 
@@ -563,6 +571,7 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 
 			dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", (locUnusedTrackExists) ? 1 : 0);  // indicate whether there was an unused track in the event or not
 			// fill tree variables for truth track
+			//TODO check for correct signal topology
 			int locNmbTruthTracks = 0;
 			for (UInt_t locThrownIndex = 0; locThrownIndex < Get_NumThrown(); ++locThrownIndex) {
 				// Set branch array indices corresponding to this charged-track hypothesis
