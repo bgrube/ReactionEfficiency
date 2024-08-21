@@ -260,14 +260,17 @@ def plotEfficiencies2DColzText(
     effInfo for effInfo in efficiencies
     if (binningVars[0] in effInfo.binInfo.varNames) and (binningVars[1] in effInfo.binInfo.varNames) and (len(effInfo.binInfo.varNames) == 2)
   )
+  #TODO add code that converts 2D graph with equidistant bins into 2D histogram
   # TGraph2D always performs interpolation when drawn with COLZ -> construct TH2 with matching binning
   # create histogram
+  #TODO do not name canvas and move name to histogram
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}mm2_eff_{binningVars[0]}_{binningVars[1]}{pdfFileNameSuffix}", "")
+  #TODO move code to create histograms from binning into BinningInfo class
   binningVarLabels: list[str] = [""] * len(binningVars)
   binningVarUnits:  list[str] = [""] * len(binningVars)
   for index, binningVar in enumerate(binningVars):
     _, binningVarLabels[index], binningVarUnits[index] = getAxisInfoForBinningVar(binningVar)
-  efficiencyHist = ROOT.TH2D(
+  hist = ROOT.TH2D(
     f"h{canv.GetName()}",
     f";{binningVarLabels[0]} ({binningVarUnits[0]})"
     f";{binningVarLabels[1]} ({binningVarUnits[1]})",
@@ -276,14 +279,13 @@ def plotEfficiencies2DColzText(
   )
   # fill histogram
   for effInfo in effInfos:
-    efficiencyHist.SetBinContent(efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])),
-                                 effInfo.value.nominal_value)
+    hist.SetBinContent(hist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])), effInfo.value.nominal_value)
   # draw histogram
-  efficiencyHist.SetMinimum(1e-9) # if set to exactly 0, zero entries are printed
-  efficiencyHist.SetMaximum(1)
+  hist.SetMinimum(1e-9) # if set to exactly 0, zero entries are printed
+  hist.SetMaximum(1)
   ROOT.gStyle.SetPaintTextFormat("1.3f")
-  efficiencyHist.Draw("COLZ TEXT")
-  efficiencyHist.SetStats(False)
+  hist.Draw("COLZ TEXT")
+  hist.SetStats(False)
   redrawFrame(canv)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
 
