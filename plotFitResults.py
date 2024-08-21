@@ -345,7 +345,7 @@ def acceptFitResult(fitResult: ROOT.RooFitResult) -> bool:
     return False
   sigYield = fitPars[sigYieldIndex]
   #TODO Use different thresholds for 'Found' and 'Missing' yields?
-  if sigYield.getVal() < 100 or sigYield.getError() / sigYield.getVal() > 1:
+  if sigYield.getVal() < 100 or sigYield.getError() > sigYield.getVal():
     print(f"Disregarding fit result because the signal yield {sigYield.getVal()} +- {sigYield.getError()} is too small or its relative uncertainty too large")
     return False
   # remove fits with suspicious background yields
