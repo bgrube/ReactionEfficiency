@@ -36,17 +36,18 @@ void DSelector_omegapmiss::Init(TTree *locTree)
 	dFlatTreeName = baseName;  // if blank, default name will be chosen
 	dSaveDefaultFlatBranches = false;  // False: don't save default branches, reduce disk footprint.
 	// dSaveTLorentzVectorsAsFundamentaFlatTree = false;  // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
-
-	cout << "histogram output file name = '" << dOutputFileName << "'" << endl
-	     << "flat tree output file name = '" << dFlatTreeFileName << "'" << endl
-	     << "flat tree name = '"             << dFlatTreeName << "'" << endl
-	     << "accidental subtraction = "      << dSidebandSubtractAcc << endl;
-
 	//Because this function gets called for each TTree in the TChain, we must be careful:
 		//We need to re-initialize the tree interface & branch wrappers, but don't want to recreate histograms
 	bool locInitializedPriorFlag = dInitializedFlag; //save whether have been initialized previously
 	DSelector::Init(locTree); //This must be called to initialize wrappers for each new TTree
 	//gDirectory now points to the output file with name dOutputFileName (if any)
+
+	cout << "DSelector_omegapmiss::Init() parameters:" << endl
+	     << "histogram output file name = '" << dOutputFileName << "'" << endl
+	     << "flat tree output file name = '" << dFlatTreeFileName << "'" << endl
+	     << "flat tree name = '"             << dFlatTreeName << "'" << endl
+	     << "accidental subtraction = "      << dSidebandSubtractAcc << endl;
+
 	if(locInitializedPriorFlag)
 		return; //have already created histograms, etc. below: exit
 
@@ -570,8 +571,7 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 			dHist_MissingMassSquaredVsBeamEnergySideband->Fill(locBeamEnergy, locMissingMassSquared_Measured, 1 - locHistAccidWeightFactor);
 
 			dFlatTreeInterface->Fill_Fundamental<Int_t>("NmbUnusedTracks", (locUnusedTrackExists) ? 1 : 0);  // indicate whether there was an unused track in the event or not
-			// fill tree variables for truth track
-			//TODO check for correct signal topology
+			// fill tree variables for truth track for all generated topologies
 			int locNmbTruthTracks = 0;
 			for (UInt_t locThrownIndex = 0; locThrownIndex < Get_NumThrown(); ++locThrownIndex) {
 				// Set branch array indices corresponding to this charged-track hypothesis
@@ -612,7 +612,7 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 		const double locBeamEnergy_Truth = dThrownBeam->Get_P4().E();
 
 		// plot truth distributions for signal process
-		if (locThrownTopology == "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]p") {  //TODO check
+		if (locThrownTopology == "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]") {
 			TLorentzVector         locProtonP4_Truth;
 			vector<TLorentzVector> locPionsP4_Truth;
 			// Loop over throwns
