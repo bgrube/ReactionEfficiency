@@ -17,7 +17,16 @@ print = functools.partial(print, flush = True)
 
 
 # load required libraries
-ROOT.gSystem.Load("libDSelector.so")
+# ROOT.gSystem.Load("libDSelector.so")
+#FIXME when DSelector is compiled inside Python environment, ACLiC also links some libraries from Python packages
+#      this makes PROOF jobs fail complaining that they cannot find `libopenblas64_p-r0-0cf96a72.3.23.dev.so`
+#      this is a library from the user-installed numpy package
+# print(f" GetLibraries() = {ROOT.gSystem.GetLibraries()}")
+# workaround is to add the numpy directory to the library path
+# ROOT.gSystem.AddDynamicPath(f"{os.path.expanduser('~')}/.local/lib/python3.9/site-packages/numpy.libs")  # has no effect
+# print(f" GetDynamicPath() = {ROOT.gSystem.GetDynamicPath()}")
+libraryPath = os.environ.get("LD_LIBRARY_PATH", "")
+os.environ["LD_LIBRARY_PATH"] = f"{os.path.expanduser('~')}/.local/lib/python3.9/site-packages/numpy.libs" + (f":{libraryPath}" if libraryPath else "")
 ROOT.gROOT.ProcessLine(".x $(ROOT_ANALYSIS_HOME)/scripts/Load_DSelector.C")
 
 
@@ -34,10 +43,8 @@ def runSelector(
   # create TChain with input data
   chain = ROOT.TChain(treeName)
   chain.Add(fileNamePattern)
-  #TODO when compiled inside Python environment, ACLiC also links some libraries from Python packages
-  # this makes PROOF crash
   selector = selectorFileName.rstrip("+") + "+"  # ensure that selector is always compiled
-                                                 # don't use "++", otherwise each proof job compiles the script and speed is much reduced
+                                                 # don't use "++", otherwise each PROOF job compiles the script and speed is much reduced
   print(f"processing tree '{treeName}' in file(s) '{fileNamePattern}' using selector '{selector}'")
   # process TChain
   if runPROOF:
