@@ -9,7 +9,7 @@ import os
 
 import ROOT
 
-import makeBruFitTree
+from makeBruFitTree import makeBruFitTree
 
 
 # always flush print() to reduce garbling of log files due to buffering
@@ -73,29 +73,31 @@ if __name__ == "__main__":
   # pi+pi+pi-pi-(p)
   channel = "pippippimpimpmiss"  # used for output tree and file names
   treeName = "pippippimpimmissprot__B1_T1_U1_Effic"
-  # pi+pi-(p)
+  # # omega(p)
+  # channel = "omegapmiss"
+  # treeName = "omegamissprot__B1_T1_U1_Effic"
+  # # pi+pi-(p)
   # channel = "pippimpmiss"
   # treeName = "pippimpmiss__B1_T1_U1_Effic"
   selectorFileName = f"./DSelector_{channel}.C"
 
   # define input files
   dataPeriods = [
-    # "2017_01-ver03",
+    "2017_01-ver03",
     # "2018_01-ver02",
     # "2018_08-ver02",
     # "2019_11-ver01",
-    "2017_01-ver03_goodToF",
+    # "2017_01-ver03_goodToF",
     # "2018_01-ver02_goodToF",
     # "2018_08-ver02_goodToF",
   ]
-  # for dataType in ("MCbggen", "RD"):
-  for dataType in ("MCbggen",):
+  for dataType in ("MCbggen", "RD"):
     for dataPeriod in dataPeriods:
       dataDir = f"./data/{dataType}/{dataPeriod}"
       inFileNamePattern = f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"
       print(f"Running DSelector over files '{inFileNamePattern}'")
       inFileNames = sorted(glob.glob(inFileNamePattern))
-      assert inFileNames, f"Did not find any files matching the name pattern"
+      assert inFileNames, f"Did not find any files matching the name pattern {inFileNamePattern}"
 
       # run selector and create flat-tree files
       flatTreeFileNames: list[str] = []
@@ -105,13 +107,13 @@ if __name__ == "__main__":
           runNumber = None
         runSelector(inFileName, f"{treeName}_Tree", selectorFileName, nmbProofThreads, runPROOF)
         # rename output files
-        histFileName = f"{dataDir}/{channel}.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
-        print(f"Moving histogram file to '{histFileName}'")
-        os.replace(f"{channel}.root", histFileName)
-        flatTreeFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
-        print(f"Moving flat-tree file to '{flatTreeFileName}'")
-        os.replace(f"{channel}_flatTree.root", flatTreeFileName)
-        flatTreeFileNames.append(flatTreeFileName)
+        histOutFileName = f"{dataDir}/{channel}.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
+        print(f"Moving histogram file to '{histOutFileName}'")
+        os.replace(f"{channel}.root", histOutFileName)
+        flatTreeOutFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
+        print(f"Moving flat-tree file to '{flatTreeOutFileName}'")
+        os.replace(f"{channel}_flatTree.root", flatTreeOutFileName)
+        flatTreeFileNames.append(flatTreeOutFileName)
         print()
 
       if createBruFitTree:
