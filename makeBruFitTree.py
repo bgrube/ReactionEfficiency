@@ -20,6 +20,7 @@ def makeBruFitTree(
   inputFileNames: Sequence[str],
   outputFileName: str,
   treeName:       str = "pippippimpimpmiss",
+  trueTopology:   str = "2#pi^{#plus}2#pi^{#minus}p",
 ) -> None:
   """Reads given files and writes out tree in BruFit format"""
   print(f"Converting tree '{treeName}' to BruFit format merging the data from {len(inputFileNames)} files: {inputFileNames}")
@@ -48,7 +49,7 @@ def makeBruFitTree(
   rdf = ROOT.RDataFrame(treeName, inputFileNames) \
             .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION) \
             .Define("ComboID", "(double)rdfentry_") \
-            .Define("IsSignal", 'ThrownTopology.GetString() == "2#pi^{#plus}2#pi^{#minus}p"') \
+            .Define("IsSignal", f'ThrownTopology.GetString() == "{trueTopology}"') \
             .Snapshot(treeName, outputFileName, ROOT.std.vector[ROOT.std.string](branchesToWrite + ["TrackFound", "ComboID", "IsSignal"])) \
             # .Range(0, 100000)
   print(f"Read {rdf.Count().GetValue()} entries from input tree")
@@ -64,11 +65,21 @@ def makeBruFitTree(
 if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
 
-  treeName   = "pippippimpimpmiss"
-  dataPeriod = "2018_01-ver02"
-  # dataPeriod = "2018_08-ver02"
+  # treeName     = "pippippimpimpmiss"
+  # trueTopology = "2#pi^{#plus}2#pi^{#minus}p"
+  treeName     = "omegapmiss"
+  trueTopology = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
+  dataPeriod   = "2017_01-ver03"
+  # dataPeriod   = "2018_01-ver02"
+  # dataPeriod   = "2018_08-ver02"
+
   inputFileNames = sorted(glob.glob(f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}*.root"))
 
   # for inputFileName in inputFileNames:
   #   makeBruFitTree(inputFileName, outputFileName = f"{inputFileName}.brufit")
-  makeBruFitTree(inputFileNames, outputFileName = f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}.root.brufit")
+  makeBruFitTree(
+    inputFileNames = inputFileNames,
+    outputFileName = f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}.root.brufit",
+    treeName       = treeName,
+    trueTopology   = trueTopology,
+  )
