@@ -19,12 +19,13 @@ print = functools.partial(print, flush = True)
 # load required libraries
 # ROOT.gSystem.Load("libDSelector.so")
 #FIXME when DSelector is compiled inside Python environment, ACLiC also links some libraries from Python packages
-#      this makes PROOF jobs fail complaining that they cannot find `libopenblas64_p-r0-0cf96a72.3.23.dev.so`
+#      this makes PROOF jobs fail complaining that they cannot find `libopenblas64_p-r0-0cf96a72.3.23.dev.so` (on ifarm)
 #      this is a library from the user-installed numpy package
 # print(f" GetLibraries() = {ROOT.gSystem.GetLibraries()}")
-# workaround is to add the numpy directory to the library path
-# ROOT.gSystem.AddDynamicPath(f"{os.path.expanduser('~')}/.local/lib/python3.9/site-packages/numpy.libs")  # has no effect
+# adding the numpy directory to the dynamic library path has no effect
+# ROOT.gSystem.AddDynamicPath(f"{os.path.expanduser('~')}/.local/lib/python3.9/site-packages/numpy.libs")
 # print(f" GetDynamicPath() = {ROOT.gSystem.GetDynamicPath()}")
+# workaround is to add the numpy directory to LD_LIBRARY_PATH
 libraryPath = os.environ.get("LD_LIBRARY_PATH", "")
 os.environ["LD_LIBRARY_PATH"] = f"{os.path.expanduser('~')}/.local/lib/python3.9/site-packages/numpy.libs" + (f":{libraryPath}" if libraryPath else "")
 ROOT.gROOT.ProcessLine(".x $(ROOT_ANALYSIS_HOME)/scripts/Load_DSelector.C")
@@ -65,20 +66,23 @@ if __name__ == "__main__":
 
   runPROOF = True
   nmbProofThreads = 20
-  createBruFitTree = False
+  createBruFitTree = True
   deleteFlatTreeFiles = False
   writeBruFitFilesForAllInputFiles = False
 
   # define channel
-  # pi+pi+pi-pi-(p)
-  channel = "pippippimpimpmiss"  # used for output tree and file names
-  treeName = "pippippimpimmissprot__B1_T1_U1_Effic"
-  # # omega(p)
-  # channel = "omegapmiss"
-  # treeName = "omegamissprot__B1_T1_U1_Effic"
+  # # pi+pi+pi-pi-(p)
+  # channel      = "pippippimpimpmiss"  # used for output tree and file names
+  # treeName     = "pippippimpimmissprot__B1_T1_U1_Effic"
+  # trueTopology = "2#pi^{#plus}2#pi^{#minus}p"
+  # omega(p)
+  channel      = "omegapmiss"
+  treeName     = "omegamissprot__B1_T1_U1_Effic"
+  trueTopology = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
   # # pi+pi-(p)
-  # channel = "pippimpmiss"
-  # treeName = "pippimpmiss__B1_T1_U1_Effic"
+  # channel      = "pippimpmiss"
+  # treeName     = "pippimpmiss__B1_T1_U1_Effic"
+  # trueTopology = "#pi^{#plus}#pi^{#minus}p"
   selectorFileName = f"./DSelector_{channel}.C"
 
   # define input files
@@ -118,7 +122,12 @@ if __name__ == "__main__":
 
       if createBruFitTree:
         # merge all flat-tree files into single BruFit file
-        makeBruFitTree(flatTreeFileNames, outputFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}.root.brufit")
+        makeBruFitTree(
+          inputFileNames = flatTreeFileNames,
+          outputFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}.root.brufit",
+          treeName       = channel,
+          trueTopology   = trueTopology,
+        )
         if writeBruFitFilesForAllInputFiles and len(flatTreeFileNames) > 1:
           # write BruFit-tree file for each flat-tree file
           for flatTreeFileName in flatTreeFileNames:
