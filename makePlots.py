@@ -769,18 +769,23 @@ if __name__ == "__main__":
     # "2018_08-ver02",
     # "2019_11-ver01",
   ]
+
+  # # pi+pi+pi-pi-(p)
   # treeName                    = "pippippimpimpmiss"
   # trueTopology                = "2#pi^{#plus}2#pi^{#minus}p"
   # mesonSystemMassVarName      = "FourPionMass"
   # mesonSystemMassVarAxisTitle = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}^{truth} (GeV/#it{c}^{2})"
+  # omega(p)
   treeName                    = "omegapmiss"
   trueTopology                = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
   mesonSystemMassVarName      = "ThreePionMass"
   mesonSystemMassVarAxisTitle = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{0}}^{truth} (GeV/#it{c}^{2})"
-  pdfBaseDirName              = "./plots"
-  maxNmbTopologies            = 10
 
-  # plot generated MC truth for signal process
+  pdfBaseDirName        = "./plots"
+  maxNmbTopologies      = 10
+  maxNmbEventsToProcess = 0  # maximum number of events to process; 0 means all events
+
+  # plot generated MC truth histograms for signal process
   if True:
     # open input files with histograms
     dataSamplesToOverlay: dict[str, dict[str, Any]] = {}
@@ -814,11 +819,11 @@ if __name__ == "__main__":
         "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
         "histTitle"         : histInfo["histTitle"],
       }
-      # overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{        histInfo['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
-      # overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{           histInfo['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
-      # overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{       histInfo['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
-      # overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{         histInfo['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
-      # overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruth{mesonSystemMassVarName}{histInfo['histNameSuffix']}", axisTitles = mesonSystemMassVarAxisTitle,                  **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{              histInfo['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{                 histInfo['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{             histInfo['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{               histInfo['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruth{mesonSystemMassVarName}{histInfo['histNameSuffix']}", axisTitles = mesonSystemMassVarAxisTitle,            **kwargs)
 
   # open input files with trees
   inputData: dict[str, dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # dict[<data period>][<data type>]
@@ -830,6 +835,7 @@ if __name__ == "__main__":
     print(f"Reading tree '{treeName}' from files {inputFileNames}")
     for dataType, inputFileName in inputFileNames.items():
       inputData[dataPeriod][dataType] = ROOT.RDataFrame(treeName, inputFileName) \
+                                            .Range(maxNmbEventsToProcess) \
                                             .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
                                             .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
 
@@ -877,7 +883,7 @@ if __name__ == "__main__":
           "pdfDirName"            : makeDirPath(f"./plots/{dataType}"),
           "additionalFilter"      : "(NmbUnusedShowers == 0) && (NmbUnusedTracks == 1)",
           "diffVariableAxisTitle" : diffVariableAxisTitle,
-          "pdfFileNameSuffix"     : "_unused",
+          "pdfFileNameSuffix"     : "_noUnusedShowers",
         }
         overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
         overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
