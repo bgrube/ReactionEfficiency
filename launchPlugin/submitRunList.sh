@@ -6,7 +6,11 @@ PERIOD="2017_01-ver03"
 
 RUN_LIST="../data/RD/${PERIOD}/${PERIOD}.part.runList"
 
-swif2 create "ReactionEfficiency_RD_${PERIOD}"
+if ! swif2 create "ReactionEfficiency_RD_${PERIOD}"
+then
+  echo "Failed to create workflow. Aborting."
+  exit 1
+fi
 
 while read RUN_NMB
 do
