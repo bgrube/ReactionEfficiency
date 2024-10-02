@@ -77,8 +77,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	//dAnalysisActions.push_back(new DCutAction_EachPIDFOM(dComboWrapper, 0.1));
 
 	//MASSES
-	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiMinus}, 200, 0, 3, "TwoPi"));
-	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiPlus, PiMinus, PiMinus}, 200, 0, 5, "FourPi"));
+	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiMinus}, 200, 0, 3, "TwoPion"));
+	dAnalysisActions.push_back(new DHistogramAction_InvariantMass(dComboWrapper, false, 0, {PiPlus, PiPlus, PiMinus, PiMinus}, 200, 0, 5, "FourPion"));
 	dAnalysisActions.push_back(new DHistogramAction_MissingMass       (dComboWrapper, false, 5000, -0.5,  4.5));
 	dAnalysisActions.push_back(new DHistogramAction_MissingMassSquared(dComboWrapper, false, 5000, -0.5,  4.5));
 	dAnalysisActions.push_back(new DHistogramAction_MissingP4(dComboWrapper, false, ""));
@@ -167,8 +167,8 @@ void DSelector_pippippimpimpmiss::Init(TTree *locTree)
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonP_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonTheta_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("MissingProtonPhi_Measured");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("FourPiMass");
-	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("FourPiMass_Measured");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("FourPionMass");
+	dFlatTreeInterface->Create_Branch_Fundamental<Double_t>       ("FourPionMass_Measured");
 	dFlatTreeInterface->Create_Branch_Fundamental<UChar_t>        ("NmbUnusedShowers");
 	dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("EnergyUnusedShowers");
 	// dFlatTreeInterface->Create_Branch_Fundamental<Float_t>        ("BestMissingMatchDistTOF");
@@ -396,7 +396,7 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		const TLorentzVector locPiPlus2P4       = dPiPlus2Wrapper->Get_P4();
 		const TLorentzVector locPiMinus1P4      = dPiMinus1Wrapper->Get_P4();
 		const TLorentzVector locPiMinus2P4      = dPiMinus2Wrapper->Get_P4();
-		const TLorentzVector locFourPiP4        = locPiPlus1P4 + locPiPlus2P4 + locPiMinus1P4 + locPiMinus2P4;
+		const TLorentzVector locFourPionP4      = locPiPlus1P4 + locPiPlus2P4 + locPiMinus1P4 + locPiMinus2P4;
 		const TLorentzVector locMissingProtonP4 = dMissingProtonWrapper->Get_P4();
 
 		// Get Measured P4's:
@@ -406,8 +406,8 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		const TLorentzVector locPiPlus2P4_Measured       = dPiPlus2Wrapper->Get_P4_Measured();
 		const TLorentzVector locPiMinus1P4_Measured      = dPiMinus1Wrapper->Get_P4_Measured();
 		const TLorentzVector locPiMinus2P4_Measured      = dPiMinus2Wrapper->Get_P4_Measured();
-		const TLorentzVector locFourPiP4_Measured        = locPiPlus1P4_Measured + locPiPlus2P4_Measured + locPiMinus1P4_Measured + locPiMinus2P4_Measured;
-		const TLorentzVector locMissingProtonP4_Measured = locBeamP4_Measured + dTargetP4 - locFourPiP4_Measured;
+		const TLorentzVector locFourPionP4_Measured      = locPiPlus1P4_Measured + locPiPlus2P4_Measured + locPiMinus1P4_Measured + locPiMinus2P4_Measured;
+		const TLorentzVector locMissingProtonP4_Measured = locBeamP4_Measured + dTargetP4 - locFourPionP4_Measured;
 
 		/********************************************* GET COMBO RF TIMING INFO *****************************************/
 
@@ -437,8 +437,8 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		// measured values
 		const double locMissingMassSquared_Measured = locMissingProtonP4_Measured.M2();
 
-		const double locFourPiMass          = locFourPiP4.M();
-		const double locFourPiMass_Measured = locFourPiP4_Measured.M();
+		const double locFourPionMass          = locFourPionP4.M();
+		const double locFourPionMass_Measured = locFourPionP4_Measured.M();
 
 		/******************************************** EXECUTE ANALYSIS ACTIONS *******************************************/
 
@@ -500,8 +500,8 @@ Bool_t DSelector_pippippimpimpmiss::Process(Long64_t locEntry)
 		setTreeKinematics(locMissingProtonP4, "MissingProton");
 		dFlatTreeInterface->Fill_Fundamental<Double_t>("MissingMassSquared_Measured", locMissingMassSquared_Measured);
 		setTreeKinematics(locMissingProtonP4_Measured, "MissingProton", "_Measured");
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPiMass",                  locFourPiMass);
-		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPiMass_Measured",         locFourPiMass_Measured);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPionMass",                locFourPionMass);
+		dFlatTreeInterface->Fill_Fundamental<Double_t>("FourPionMass_Measured",       locFourPionMass_Measured);
 		dFlatTreeInterface->Fill_Fundamental<UChar_t> ("NmbUnusedShowers",            locNmbUnusedShowers);
 		dFlatTreeInterface->Fill_Fundamental<Float_t> ("EnergyUnusedShowers",         locEnergyUnusedShowers);
 		// dFlatTreeInterface->Fill_Fundamental<Float_t> ("BestMissingMatchDistTOF",     locBestMissingMatchDistTOF);
