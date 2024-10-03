@@ -222,7 +222,14 @@ def plot1D(
   additionalFilter:  str | None                   = None,
 ) -> None:
   """Plots 1D distribution for given variable, applying optional weighting and filtering"""
-  hist: ROOT.TH1D = getHistND(inputData, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable, filterExpression = additionalFilter)
+  hist: ROOT.TH1D = getHistND(
+    inputData        = inputData,
+    variables        = (variable,),
+    axisTitles       = setDefaultYAxisTitle(axisTitles),
+    binning          = binning,
+    weightVariable   = weightVariable,
+    filterExpression = additionalFilter,
+  )
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("HIST")
@@ -243,7 +250,14 @@ def plot2D(
   additionalFilter:  str | None                   = None,
 ) -> None:
   """Plots 2D distribution for given x and y variables, applying optional weighting and filtering"""
-  hist: ROOT.TH2D = getHistND(inputData, (xVariable, yVariable), axisTitles, binning, weightVariable, filterExpression = additionalFilter)
+  hist: ROOT.TH2D = getHistND(
+    inputData        = inputData,
+    variables        = (xVariable, yVariable),
+    axisTitles       = axisTitles,
+    binning          = binning,
+    weightVariable   = weightVariable,
+    filterExpression = additionalFilter,
+  )
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
@@ -263,8 +277,14 @@ def getResolutionGraph(
 ) -> ROOT.TGraphErrors:
   """Plots resolution of given variable in the in bins of `resBinningVariable`"""
   # !Note! resolution variables are arrays with length NmbTruthTracks, need to define dummy column for first element
-  hist: ROOT.TH2D = getHistND(inputData, ((f"{diffVariable}_", f"{diffVariable}[0]"), resBinningVariable), axisTitles = "",
-                              binning = (*diffVariableBinning, *resBinning), weightVariable = weightVariable, filterExpression = additionalFilter)
+  hist: ROOT.TH2D = getHistND(
+    inputData        = inputData,
+    variables        = ((f"{diffVariable}_", f"{diffVariable}[0]"), resBinningVariable),
+    axisTitles       = "",
+    binning          = (*diffVariableBinning, *resBinning),
+    weightVariable   = weightVariable,
+    filterExpression = additionalFilter,
+  )
   # draw distributions
   if histPdfFileName is not None:
     canv = ROOT.TCanvas(histPdfFileName)
@@ -350,8 +370,16 @@ def overlayCases(
   hStack = ROOT.THStack(f"{variable}", ";" + setDefaultYAxisTitle(axisTitles))
   hists = []
   for case, caseFilter in FILTER_CASES.items():
-    hist: ROOT.TH1D = getHistND(data, (variable,), setDefaultYAxisTitle(axisTitles), binning, weightVariable,
-                                filterExpression = caseFilter, histNameSuffix = case, histTitle = case)
+    hist: ROOT.TH1D = getHistND(
+      inputData        = data,
+      variables        = (variable,),
+      axisTitles       = setDefaultYAxisTitle(axisTitles),
+      binning          = binning,
+      weightVariable   = weightVariable,
+      filterExpression = caseFilter,
+      histNameSuffix   = case,
+      histTitle        = case,
+    )
     hist.SetLineColor(COLOR_CASES[case])
     if case == "Total":
       hist.SetFillColor(COLOR_CASES[case])
@@ -480,7 +508,12 @@ def plotTopologyHist(
   topoHists: dict[str, ROOT.TH1F] = {}  # dictionary of topology histograms { case : topologyHist }
   for case, caseFilter in FILTER_CASES.items():
     caseData = inputData.Filter(caseFilter)
-    topoNames[case], topoHists[case] = getTopologyHist(caseData, weightVariable = "AccidWeightFactor", filterExpression = additionalFilter, histNameSuffix = case + ("_norm" if normalize else ""))
+    topoNames[case], topoHists[case] = getTopologyHist(
+      inputData        = caseData,
+      weightVariable   = "AccidWeightFactor",
+      filterExpression = additionalFilter,
+      histNameSuffix   = case + ("_norm" if normalize else ""),
+    )
   # overlay distributions for cases
   hStack = ROOT.THStack(f"topologies",  ";;" + ("Fraction" if normalize else "Number") + " of Combos (RF-subtracted)" + (" [%]" if normalize else ""))
   topoLabels = topoNames["Total"]
@@ -542,8 +575,16 @@ def overlayTopologies(
     hists = []
     # overlay distributions for topologies
     for index, topo in enumerate(toposToPlot[case]):
-      hist: ROOT.TH1D = getHistND(caseData, (variable,), setDefaultYAxisTitle(axisTitles), binning, "AccidWeightFactor",
-                                  filterExpression = (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"), histNameSuffix = f"{case}_{topo}", histTitle = topo)
+      hist: ROOT.TH1D = getHistND(
+        inputData        = caseData,
+        variables        = (variable,),
+        axisTitles       = setDefaultYAxisTitle(axisTitles),
+        binning          = binning,
+        weightVariable   = "AccidWeightFactor",
+        filterExpression = (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
+        histNameSuffix   = f"{case}_{topo}",
+        histTitle        = topo,
+      )
       if topo == "Total":
         hist.SetLineColor(ROOT.kGray)
         hist.SetFillColor(ROOT.kGray)
