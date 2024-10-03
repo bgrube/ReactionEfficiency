@@ -58,67 +58,6 @@ COLOR_CASES = {
 }
 
 
-def overlayDataSamples1D(
-  dataSamples:       dict[str, dict[str, Any]],  # TFile or RDataFrame and style definitions for each data-set label
-  histName:          str | None                      = None,  # name of histogram to plot; required for TFile
-  variable:          str | tuple[str, str] | None    = None,  # variable to plot; may be column name, or tuple with new column definition; required for RDataFrame
-  axisTitles:        str | None                      = None,  # semicolon-separated list; required for RDataFrame
-  binning:           tuple[int, float, float] | None = None,  # tuple with binning definition; required for RDataFrame
-  weightVariable:    str | tuple[str, str] | None    = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str                             = "Proton_4pi_",
-  pdfFileNameSuffix: str                             = "",
-  pdfDirName:        str                             = "./",
-  additionalFilter:  str | None                      = None,
-  histTitle:         str | None                      = None,
-) -> None:
-  """Overlays 1D histograms generated from given trees or read from given files"""
-  print("Overlaying " + (f"histograms '{histName}'" if histName else f"distributions for '{variable}'") + f" for data samples '{', '.join(dataSamples.keys())}'")
-  pdfFileBaseName = histName if histName is not None else variable
-  hStack = ROOT.THStack(pdfFileBaseName, ("" if histTitle is None else histTitle) + f";{setDefaultYAxisTitle(axisTitles)}")
-  hists: list[ROOT.TH1D] = []  # keep histograms in memory
-  normIntegral = None  # index of histogram to normalize to
-  for dataLabel, dataSample in dataSamples.items():
-    hist: ROOT.TH1D | None = None
-    if "TFile" in dataSample:
-      # read histogram from file
-      assert histName is not None, f"Name of histogram to read from file '{dataSample['TFile'].GetPath()}' required."
-      hist = dataSample["TFile"].Get(histName)
-      hist.SetTitle(dataLabel)
-    elif "RDataFrame" in dataSample:
-      assert variable is not None and axisTitles is not None and binning is not None, f"Need variable name (={variable}), axis titles (={axisTitles}), and binning (={binning})."
-      hist = getHistND(
-        inputData        = dataSample["RDataFrame"],
-        variables        = (variable,),
-        axisTitles       = setDefaultYAxisTitle(axisTitles),
-        binning          = binning,
-        weightVariable   = weightVariable,
-        filterExpression = additionalFilter,
-        histNameSuffix   = dataLabel,
-        histTitle        = dataLabel,
-      ).GetPtr()
-    else:
-      raise KeyError(f"Data sample must contain either 'TFile' or 'RDataFrame' key: {dataSample}")
-    assert hist is not None, "Could not create histogram"
-    callMemberFunctionsWithArgs(hist, dataSample)
-    if dataSample.get("normToThis", False):
-      print(f"Normalizing all histograms to '{dataLabel}'")
-      normIntegral = hist.Integral()
-    hists.append(hist)
-    hStack.Add(hist)
-  # normalize histograms
-  if normIntegral is not None:
-    for hist in hists:
-      hist.Scale(normIntegral / hist.Integral())
-  # draw distributions
-  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{pdfFileBaseName}_overlay_{'_'.join(dataSamples.keys())}{pdfFileNameSuffix}")
-  hStack.Draw("NOSTACK HIST")
-  # add legend
-  # canv.BuildLegend()  # automatic placement with width 0.3 and height 0.21
-  canv.BuildLegend(0.3, 0.15, 0.3, 0.15)  # automatic placement with width 0.3 and height 0.15
-  # canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
-  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
-
-
 def drawHistogram(
   inFileName:        str,
   histName:          str,
@@ -261,6 +200,67 @@ def plot2D(
   # draw distributions
   canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{hist.GetName()}{pdfFileNameSuffix}")
   hist.Draw("COLZ")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
+
+
+def overlayDataSamples1D(
+  dataSamples:       dict[str, dict[str, Any]],  # TFile or RDataFrame and style definitions for each data-set label
+  histName:          str | None                      = None,  # name of histogram to plot; required for TFile
+  variable:          str | tuple[str, str] | None    = None,  # variable to plot; may be column name, or tuple with new column definition; required for RDataFrame
+  axisTitles:        str | None                      = None,  # semicolon-separated list; required for RDataFrame
+  binning:           tuple[int, float, float] | None = None,  # tuple with binning definition; required for RDataFrame
+  weightVariable:    str | tuple[str, str] | None    = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
+  pdfFileNamePrefix: str                             = "Proton_4pi_",
+  pdfFileNameSuffix: str                             = "",
+  pdfDirName:        str                             = "./",
+  additionalFilter:  str | None                      = None,
+  histTitle:         str | None                      = None,
+) -> None:
+  """Overlays 1D histograms generated from given trees or read from given files"""
+  print("Overlaying " + (f"histograms '{histName}'" if histName else f"distributions for '{variable}'") + f" for data samples '{', '.join(dataSamples.keys())}'")
+  pdfFileBaseName = histName if histName is not None else variable
+  hStack = ROOT.THStack(pdfFileBaseName, ("" if histTitle is None else histTitle) + f";{setDefaultYAxisTitle(axisTitles)}")
+  hists: list[ROOT.TH1D] = []  # keep histograms in memory
+  normIntegral = None  # index of histogram to normalize to
+  for dataLabel, dataSample in dataSamples.items():
+    hist: ROOT.TH1D | None = None
+    if "TFile" in dataSample:
+      # read histogram from file
+      assert histName is not None, f"Name of histogram to read from file '{dataSample['TFile'].GetPath()}' required."
+      hist = dataSample["TFile"].Get(histName)
+      hist.SetTitle(dataLabel)
+    elif "RDataFrame" in dataSample:
+      assert variable is not None and axisTitles is not None and binning is not None, f"Need variable name (={variable}), axis titles (={axisTitles}), and binning (={binning})."
+      hist = getHistND(
+        inputData        = dataSample["RDataFrame"],
+        variables        = (variable,),
+        axisTitles       = setDefaultYAxisTitle(axisTitles),
+        binning          = binning,
+        weightVariable   = weightVariable,
+        filterExpression = additionalFilter,
+        histNameSuffix   = dataLabel,
+        histTitle        = dataLabel,
+      ).GetPtr()
+    else:
+      raise KeyError(f"Data sample must contain either 'TFile' or 'RDataFrame' key: {dataSample}")
+    assert hist is not None, "Could not create histogram"
+    callMemberFunctionsWithArgs(hist, dataSample)
+    if dataSample.get("normToThis", False):
+      print(f"Normalizing all histograms to '{dataLabel}'")
+      normIntegral = hist.Integral()
+    hists.append(hist)
+    hStack.Add(hist)
+  # normalize histograms
+  if normIntegral is not None:
+    for hist in hists:
+      hist.Scale(normIntegral / hist.Integral())
+  # draw distributions
+  canv = ROOT.TCanvas(f"{pdfFileNamePrefix}{pdfFileBaseName}_overlay_{'_'.join(dataSamples.keys())}{pdfFileNameSuffix}")
+  hStack.Draw("NOSTACK HIST")
+  # add legend
+  # canv.BuildLegend()  # automatic placement with width 0.3 and height 0.21
+  canv.BuildLegend(0.3, 0.15, 0.3, 0.15)  # automatic placement with width 0.3 and height 0.15
+  # canv.BuildLegend(0.7, 0.65, 0.99, 0.99)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
