@@ -359,7 +359,7 @@ def overlayCases(
   axisTitles:        str,                       # semicolon-separated list
   binning:           tuple[int, float, float],  # tuple with binning definition
   weightVariable:    str | tuple[str, str] | None = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str                          = "Proton_4pi_",
+  pdfFileNamePrefix: str                          = "",
   pdfFileNameSuffix: str                          = "",
   pdfDirName:        str                          = "./",
   additionalFilter:  str | None                   = None,
@@ -498,7 +498,7 @@ def plotTopologyHist(
   normalize:         bool       = False,
   maxNmbTopologies:  int        = 10,
   additionalFilter:  str | None = None,
-  pdfFileNamePrefix: str        = "Proton_4pi_",
+  pdfFileNamePrefix: str        = "",
   pdfFileNameSuffix: str        = "",
   pdfDirName:        str        = "./",
 ) -> None:
@@ -562,7 +562,7 @@ def overlayTopologies(
   binning:           tuple[int, float, float],  # tuple with binning definition
   toposToPlot:       dict[str, list[str]],      # topologies to plot for each case
   additionalFilter:  str | None = None,
-  pdfFileNamePrefix: str        = "Proton_4pi_",
+  pdfFileNamePrefix: str        = "",
   pdfFileNameSuffix: str        = "_MCbggen_topologies",
   pdfDirName:        str        = "./",
 ) -> None:
@@ -650,19 +650,21 @@ def makeKinematicPlotsOverlays(
 
 def makeKinematicPlotsMc(
   dataSample:   ROOT.RDataFrame,
-  isMcBggen:    bool,
-  trueTopology: str,
+  channel:      str,   # label for the reaction channel
+  isMcBggen:    bool,  # indicates whether MC data are from bggen
+  trueTopology: str,   # reaction string for true reaction
   pdfDirName:   str = "./",
 ) -> None:
   """Plots kinematic distributions for given Monte Carlo data"""
   filterTopologies = {
-    ""      : None,
-    "__sig" : f'(ThrownTopology.GetString() == "{trueTopology}")',
-    "__bkg" : f'(ThrownTopology.GetString() != "{trueTopology}")',
+    ""     : None,
+    "_sig" : f'(ThrownTopology.GetString() == "{trueTopology}")',
+    "_bkg" : f'(ThrownTopology.GetString() != "{trueTopology}")',
   }
   for suffix, filter in filterTopologies.items():
     kwargs = {
       "additionalFilter"  : "(NmbTruthTracks == 1)" + ("" if filter is None else f" && {filter}"),
+      "pdfFileNamePrefix" : f"{channel}_",
       "pdfFileNameSuffix" : suffix,
       "pdfDirName"        : pdfDirName,
     }
@@ -679,8 +681,10 @@ def makeKinematicPlotsMc(
       # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : f"_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
     ]
     for kwargs in cutsArgs:
-      plotTopologyHist(dataSample, normalize = False, pdfDirName = pdfDirName, **kwargs)
-      plotTopologyHist(dataSample, normalize = True,  pdfDirName = pdfDirName, **kwargs)
+      kwargs.update({"pdfDirName"        : pdfDirName})
+      kwargs.update({"pdfFileNamePrefix" : f"{channel}_"})
+      plotTopologyHist(dataSample, normalize = False, **kwargs)
+      plotTopologyHist(dataSample, normalize = True,  **kwargs)
 
     cutsArgs = [
       {},  # no extra cut
@@ -691,24 +695,27 @@ def makeKinematicPlotsMc(
       # {"additionalFilter" : "((NmbUnusedShowers == 0) and (BestMissingMatchDistTOF < 40))", "pdfFileNameSuffix" : "_noUnusedShowersMatchToF"},  # no unused showers and ToF hit within certain distance
     ]
     for kwargs in cutsArgs:
-      kwargs.update({"pdfDirName" : pdfDirName})
+      kwargs.update({"pdfDirName"        : pdfDirName})
+      kwargs.update({"pdfFileNamePrefix" : f"{channel}_"})
       # get topologies with the largest number of combos for given case
       toposToPlot: dict[str, list[str]] = {}
       for case, caseFilter in FILTER_CASES.items():
         caseData = dataSample.Filter(caseFilter)
+        # get all topology strings
         toposToPlot[case], _ = getTopologyHist(caseData, filterExpression = kwargs.get("additionalFilter", None))
+        # take first, i.e. largest, maxNmbTopologies topologies and add "Total" topology
         toposToPlot[case] = ["Total"] + toposToPlot[case][:maxNmbTopologies]
-      overlayTopologies(dataSample, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                       binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                     binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",               binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
+      overlayTopologies(dataSample, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                            binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                          binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                     binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",                    binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
       # overlayTopologies(dataSample, "MissingMassSquared",          axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
-      overlayTopologies(dataSample, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+      overlayTopologies(dataSample, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",    binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
 
 
 def makeKinematicPlotsData(
   dataSample:               ROOT.RDataFrame,
-  channel:                  str,
+  channel:                  str,  # label for the reaction channel
   mesonSystemMassVarName:   str,  # name of mass variable of meson system recoiling against the missing proton
   mesonSystemMassVarTLatex: str,  # TLatex string for mass variable of meson system recoiling against the missing proton
   pdfDirName:               str = "./",
@@ -982,6 +989,7 @@ if __name__ == "__main__":
     for dataPeriod in inputData.keys():
       makeKinematicPlotsMc(
         dataSample   = inputData[dataPeriod]["MCbggen"],
+        channel      = treeName,
         isMcBggen    = True,
         trueTopology = trueTopology,
         pdfDirName   = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"),
