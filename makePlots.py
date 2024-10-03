@@ -63,7 +63,7 @@ def drawHistogram(
   histName:          str,
   rebinFactor:       int | Sequence[int] = 1,  # if integer -> rebin x axis; if sequence of 2 integers -> rebin x and y axes
   drawOption:        str                 = "HIST",
-  pdfFileNamePrefix: str                 = "Proton_4pi_",
+  pdfFileNamePrefix: str                 = "",
   pdfFileNameSuffix: str                 = "",
   pdfDirName:        str                 = "./",
 ) -> None:
@@ -314,7 +314,7 @@ def overlayResolutions(
   resBinningVariable:    str | tuple[str, str],     # variable to bin resolution in; may be a column name, or a tuple with new column definition
   resBinning:            tuple[int, float, float],  # tuple with binning definition for resBinningVariable
   weightVariable:        str | tuple[str, str] | None      = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix:     str                               = "Proton_4pi_",
+  pdfFileNamePrefix:     str                               = "",
   pdfFileNameSuffix:     str                               = "",
   pdfDirName:            str                               = "./",
   diffVariableAxisTitle: str | None                        = None,
@@ -871,6 +871,7 @@ if __name__ == "__main__":
     )
     for histInfo in histInfos:
       kwargs = {
+        "pdfFileNamePrefix" : f"{treeName}_",
         "pdfFileNameSuffix" : "_SigMcTruth",
         "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
         "histTitle"         : histInfo["histTitle"],
@@ -914,6 +915,7 @@ if __name__ == "__main__":
         "pdfDirName"            : makeDirPath("./plots/MCbggen"),
         "additionalFilter"      : f'(NmbUnusedShowers == 0) && (NmbTruthTracks == 1) && (ThrownTopology.GetString() == "{trueTopology}")',
         "diffVariableAxisTitle" : diffVariableAxisTitle,
+        "pdfFileNamePrefix"     : f"{treeName}_",
       }
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
       overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonP",     resBinning = (100,    0,    5  ), resPlotRange = resPlotRange, **kwargs)
@@ -939,6 +941,7 @@ if __name__ == "__main__":
           "pdfDirName"            : makeDirPath(f"./plots/{dataType}"),
           "additionalFilter"      : "(NmbUnusedShowers == 0) && (NmbUnusedTracks == 1)",
           "diffVariableAxisTitle" : diffVariableAxisTitle,
+          "pdfFileNamePrefix"     : f"{treeName}_",
           "pdfFileNameSuffix"     : "_noUnusedShowers",
         }
         overlayResolutions(dataToOverlay, *args, resBinningVariable = "BeamEnergy",         resBinning = ( 90,    2.9, 11.9), resPlotRange = resPlotRange, **kwargs)
