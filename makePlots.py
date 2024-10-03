@@ -210,7 +210,7 @@ def overlayDataSamples1D(
   axisTitles:        str | None                      = None,  # semicolon-separated list; required for RDataFrame
   binning:           tuple[int, float, float] | None = None,  # tuple with binning definition; required for RDataFrame
   weightVariable:    str | tuple[str, str] | None    = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str                             = "Proton_4pi_",
+  pdfFileNamePrefix: str                             = "",
   pdfFileNameSuffix: str                             = "",
   pdfDirName:        str                             = "./",
   additionalFilter:  str | None                      = None,
@@ -603,6 +603,7 @@ def overlayTopologies(
 
 def makeKinematicPlotsOverlays(
   dataSamples:              dict[str, dict[str, Any]],  # RDataFrame and style definitions for each data-set label
+  channel:                  str,   # label for the reaction channel
   mesonSystemMassVarName:   str,  # name of mass variable of meson system recoiling against the missing proton
   mesonSystemMassVarTLatex: str,  # TLatex string for mass variable of meson system recoiling against the missing proton
   pdfDirName:               str = "./",
@@ -613,26 +614,27 @@ def makeKinematicPlotsOverlays(
     {
       "additionalFilter"  : "(NmbUnusedShowers == 0)",
       "pdfFileNameSuffix" : "_noUnusedShowers",
-      "pdfDirName"        : pdfDirName,
     },
     {
       "additionalFilter"  : "(NmbUnusedShowers == 0) && ((5.5 < BeamEnergy) && (BeamEnergy < 11.0))",
       "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_5.5_11.0",
-      "pdfDirName"        : pdfDirName,
     },
     {
       "additionalFilter"  : "(NmbUnusedShowers == 0) && ((7.5 < BeamEnergy) && (BeamEnergy < 9.0))",
       "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_7.5_9.0",
-      "pdfDirName"        : pdfDirName,
     },
   )
+  for kwargs in kwargss:
+    kwargs.update({"pdfDirName"        : pdfDirName})
+    kwargs.update({"pdfFileNamePrefix" : f"{channel}_"})
+
   for kwargs in kwargss:
     overlayDataSamples1D(dataSamples, variable = "BeamEnergy",           axisTitles = "#it{E}_{beam} (GeV)",                                     binning = (180,    3,  12), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "KinFitPVal",           axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value",                   binning = (150,    0,   1), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonP",       axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})",                   binning = (250,    0,   5), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",                     binning = (200,    0, 100), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",     axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",                       binning = (180, -180, 180), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,    0,   5), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (400,    0,   5), **kwargs)
   # unused track
   overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargss[0])
   overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargss[0])
@@ -641,6 +643,7 @@ def makeKinematicPlotsOverlays(
   for case, caseFilter in FILTER_CASES.items():
     kwargs = {
       "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
+      "pdfFileNamePrefix" : f"{channel}_",
       "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
       "pdfDirName"        : pdfDirName,
     }
@@ -735,7 +738,7 @@ def makeKinematicPlotsData(
     plot1D(dataSample, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                                     binning = (180,   3,    12),   **kwargs)
     # plot1D(dataSample, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",                         binning = (25,    0,   250),   **kwargs)
     # plot1D(dataSample, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",                        binning = (20,    0,   200),   **kwargs)
-    plot1D(dataSample, mesonSystemMassVarName,     axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,   0,     5),   **kwargs)
+    plot1D(dataSample, mesonSystemMassVarName,     axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (400,   0,     5),   **kwargs)
 
     sideBandYTitle = "Number of Combos (RF-Sideband)"
     # sideBandArgs: dict[str, Any] = {
@@ -959,6 +962,7 @@ if __name__ == "__main__":
           }
         makeKinematicPlotsOverlays(
           dataSamples              = dataSamplesToOverlay,
+          channel                  = treeName,
           mesonSystemMassVarName   = mesonSystemMassVarName,
           mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
           pdfDirName               = makeDirPath(f"{pdfBaseDirName}/{dataType}"),
@@ -979,6 +983,7 @@ if __name__ == "__main__":
       }
       makeKinematicPlotsOverlays(
         dataSamples              = dataSamplesToOverlay,
+        channel                  = treeName,
         mesonSystemMassVarName   = mesonSystemMassVarName,
         mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
         pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"),
