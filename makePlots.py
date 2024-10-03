@@ -561,10 +561,10 @@ def overlayTopologies(
 
 
 def makeKinematicPlotsOverlays(
-  dataSamples:                 dict[str, dict[str, Any]],  # RDataFrame and style definitions for each data-set label
-  mesonSystemMassVarName:      str,  # name of mass variable of meson system recoiling against the missing proton
-  mesonSystemMassVarAxisTitle: str,  # axis title for mass variable of meson system recoiling against the missing proton
-  pdfDirName:                  str = "./",
+  dataSamples:              dict[str, dict[str, Any]],  # RDataFrame and style definitions for each data-set label
+  mesonSystemMassVarName:   str,  # name of mass variable of meson system recoiling against the missing proton
+  mesonSystemMassVarTLatex: str,  # TLatex string for mass variable of meson system recoiling against the missing proton
+  pdfDirName:               str = "./",
 ) -> None:
   """Overlays kinematic distributions of given data samples"""
   # overlayDataSamples1D(dataSamples, variable = "NmbUnusedShowers", axisTitles = "Number of Unused Showers", binning = (11, -0.5, 10.5), pdfDirName = pdfDirName)
@@ -586,12 +586,12 @@ def makeKinematicPlotsOverlays(
     },
   )
   for kwargs in kwargss:
-    overlayDataSamples1D(dataSamples, variable = "BeamEnergy",           axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,    3,  12), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = "KinFitPVal",           axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value", binning = (150,    0,   1), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = "MissingProtonP",       axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (250,    0,   5), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200,    0, 100), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",     axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",     binning = (180, -180, 180), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarAxisTitle,             binning = (200,    0,   5), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "BeamEnergy",           axisTitles = "#it{E}_{beam} (GeV)",                                     binning = (180,    3,  12), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "KinFitPVal",           axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value",                   binning = (150,    0,   1), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "MissingProtonP",       axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})",                   binning = (250,    0,   5), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",                     binning = (200,    0, 100), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",     axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",                       binning = (180, -180, 180), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,    0,   5), **kwargs)
   # unused track
   overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargss[0])
   overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargss[0])
@@ -666,10 +666,10 @@ def makeKinematicPlotsMc(
 
 
 def makeKinematicPlotsData(
-  dataSample:                  ROOT.RDataFrame,
-  mesonSystemMassVarName:      str,  # name of mass variable of meson system recoiling against the missing proton
-  mesonSystemMassVarAxisTitle: str,  # axis title for mass variable of meson system recoiling against the missing proton
-  pdfDirName:                  str = "./",
+  dataSample:               ROOT.RDataFrame,
+  mesonSystemMassVarName:   str,  # name of mass variable of meson system recoiling against the missing proton
+  mesonSystemMassVarTLatex: str,  # TLatex string for mass variable of meson system recoiling against the missing proton
+  pdfDirName:               str = "./",
 ) -> None:
   """Plots kinematic distributions for given Monte Carlo data"""
   cutsArgs: list[dict[str, Any]] = [
@@ -679,13 +679,13 @@ def makeKinematicPlotsData(
   for kwargs in cutsArgs:
     kwargs.update({"pdfDirName" : pdfDirName})
 
-    plot1D(dataSample, "AccidWeightFactor",        axisTitles = "RF Weight",                             binning = (1000, -2,     2),   **kwargs, weightVariable = None)
-    plot1D(dataSample, "KinFitPVal",               axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value", binning = (150,   0,     1),   **kwargs)
-    plot1D(dataSample, "NmbUnusedShowers",         axisTitles = "Number of Unused Showers",              binning = (11,   -0.5,  10.5), **kwargs)
-    plot1D(dataSample, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                   binning = (180,   3,    12),   **kwargs)
-    # plot1D(dataSample, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",       binning = (25,    0,   250),   **kwargs)
-    # plot1D(dataSample, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",      binning = (20,    0,   200),   **kwargs)
-    plot1D(dataSample, mesonSystemMassVarName,     axisTitles = mesonSystemMassVarAxisTitle,             binning = (200,   0,     5),   **kwargs)
+    plot1D(dataSample, "AccidWeightFactor",        axisTitles = "RF Weight",                                               binning = (1000, -2,     2),   **kwargs, weightVariable = None)
+    plot1D(dataSample, "KinFitPVal",               axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value",                   binning = (150,   0,     1),   **kwargs)
+    plot1D(dataSample, "NmbUnusedShowers",         axisTitles = "Number of Unused Showers",                                binning = (11,   -0.5,  10.5), **kwargs)
+    plot1D(dataSample, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                                     binning = (180,   3,    12),   **kwargs)
+    # plot1D(dataSample, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",                         binning = (25,    0,   250),   **kwargs)
+    # plot1D(dataSample, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",                        binning = (20,    0,   200),   **kwargs)
+    plot1D(dataSample, mesonSystemMassVarName,     axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,   0,     5),   **kwargs)
 
     sideBandYTitle = "Number of Combos (RF-Sideband)"
     # sideBandArgs: dict[str, Any] = {
@@ -771,15 +771,15 @@ if __name__ == "__main__":
   ]
 
   # # pi+pi+pi-pi-(p)
-  # treeName                    = "pippippimpimpmiss"
-  # trueTopology                = "2#pi^{#plus}2#pi^{#minus}p"
-  # mesonSystemMassVarName      = "FourPionMass"
-  # mesonSystemMassVarAxisTitle = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}^{truth} (GeV/#it{c}^{2})"
+  # treeName                 = "pippippimpimpmiss"
+  # trueTopology             = "2#pi^{#plus}2#pi^{#minus}p"
+  # mesonSystemMassVarName   = "FourPionMass"
+  # mesonSystemMassVarTLatex = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}"
   # omega(p)
-  treeName                    = "omegapmiss"
-  trueTopology                = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
-  mesonSystemMassVarName      = "ThreePionMass"
-  mesonSystemMassVarAxisTitle = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{0}}^{truth} (GeV/#it{c}^{2})"
+  treeName                 = "omegapmiss"
+  trueTopology             = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
+  mesonSystemMassVarName   = "ThreePionMass"
+  mesonSystemMassVarTLatex = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{0}}"
 
   pdfBaseDirName        = "./plots"
   maxNmbTopologies      = 10
@@ -819,11 +819,11 @@ if __name__ == "__main__":
         "pdfDirName"        : makeDirPath(f"{pdfBaseDirName}/MCbggen"),
         "histTitle"         : histInfo["histTitle"],
       }
-      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{              histInfo['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",          **kwargs)
-      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{                 histInfo['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})", **kwargs)
-      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{             histInfo['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",   **kwargs)
-      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{               histInfo['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",     **kwargs)
-      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruth{mesonSystemMassVarName}{histInfo['histNameSuffix']}", axisTitles = mesonSystemMassVarAxisTitle,            **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthBeamEnergy{              histInfo['histNameSuffix']}", axisTitles = "#it{E}_{beam}^{truth} (GeV)",                          **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonP{                 histInfo['histNameSuffix']}", axisTitles = "#it{p}_{#it{p}}^{truth} (GeV/#it{c})",                 **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonTheta{             histInfo['histNameSuffix']}", axisTitles = "#it{#theta}_{#it{p}}^{truth} (deg)",                   **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruthProtonPhi{               histInfo['histNameSuffix']}", axisTitles = "#it{#phi}_{#it{p}}^{truth} (deg)",                     **kwargs)
+      overlayDataSamples1D(dataSamplesToOverlay, histName = f"SignalTruth{mesonSystemMassVarName}{histInfo['histNameSuffix']}", axisTitles = mesonSystemMassVarTLatex + "^{truth} (GeV/#it{c}^{2})", **kwargs)
 
   # open input files with trees
   inputData: dict[str, dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # dict[<data period>][<data type>]
@@ -905,10 +905,10 @@ if __name__ == "__main__":
             "SetLineWidth" : 2,
           }
         makeKinematicPlotsOverlays(
-          dataSamples                 = dataSamplesToOverlay,
-          mesonSystemMassVarName      = mesonSystemMassVarName,
-          mesonSystemMassVarAxisTitle = mesonSystemMassVarAxisTitle,
-          pdfDirName                  = makeDirPath(f"{pdfBaseDirName}/{dataType}"),
+          dataSamples              = dataSamplesToOverlay,
+          mesonSystemMassVarName   = mesonSystemMassVarName,
+          mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
+          pdfDirName               = makeDirPath(f"{pdfBaseDirName}/{dataType}"),
         )
     # overlay bggen MC and real data for each period
     for dataPeriod in inputData.keys():
@@ -925,9 +925,9 @@ if __name__ == "__main__":
         },
       }
       makeKinematicPlotsOverlays(
-        dataSamples                 = dataSamplesToOverlay,
-        mesonSystemMassVarName      = mesonSystemMassVarName,
-        mesonSystemMassVarAxisTitle = mesonSystemMassVarAxisTitle,
+        dataSamples              = dataSamplesToOverlay,
+        mesonSystemMassVarName   = mesonSystemMassVarName,
+        mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
         pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"),
       )
 
@@ -946,8 +946,9 @@ if __name__ == "__main__":
     for dataType in ("MCbggen", "RD"):
       for dataPeriod in inputData.keys():
         makeKinematicPlotsData(
-          dataSample                  = inputData[dataPeriod][dataType],
-          mesonSystemMassVarName      = mesonSystemMassVarName,
-          mesonSystemMassVarAxisTitle = mesonSystemMassVarAxisTitle,
-          pdfDirName                  = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"),
+          dataSample               = inputData[dataPeriod][dataType],
+          channel                  = treeName,
+          mesonSystemMassVarName   = mesonSystemMassVarName,
+          mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
+          pdfDirName               = makeDirPath(f"{pdfBaseDirName}/{dataType}/{dataPeriod}"),
         )
