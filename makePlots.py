@@ -155,7 +155,7 @@ def plot1D(
   axisTitles:        str,                       # semicolon-separated list
   binning:           tuple[int, float, float],  # tuple with binning definition
   weightVariable:    str | tuple[str, str] | None = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str                          = "Proton_4pi_",
+  pdfFileNamePrefix: str                          = "",
   pdfFileNameSuffix: str                          = "",
   pdfDirName:        str                          = "./",
   additionalFilter:  str | None                   = None,
@@ -183,7 +183,7 @@ def plot2D(
   axisTitles:        str,                    # semicolon-separated list
   binning:           tuple[int, float, float, int, float, float],  # tuple with binning definition
   weightVariable:    str | tuple[str, str] | None = "AccidWeightFactor",  # may be None (= no weighting), string with column name, or tuple with new column definition
-  pdfFileNamePrefix: str                          = "Proton_4pi_",
+  pdfFileNamePrefix: str                          = "",
   pdfFileNameSuffix: str                          = "",
   pdfDirName:        str                          = "./",
   additionalFilter:  str | None                   = None,
@@ -708,6 +708,7 @@ def makeKinematicPlotsMc(
 
 def makeKinematicPlotsData(
   dataSample:               ROOT.RDataFrame,
+  channel:                  str,
   mesonSystemMassVarName:   str,  # name of mass variable of meson system recoiling against the missing proton
   mesonSystemMassVarTLatex: str,  # TLatex string for mass variable of meson system recoiling against the missing proton
   pdfDirName:               str = "./",
@@ -718,7 +719,8 @@ def makeKinematicPlotsData(
     {"additionalFilter" : "(NmbUnusedShowers == 0)", "pdfFileNameSuffix" : "_noUnusedShowers"},
   ]
   for kwargs in cutsArgs:
-    kwargs.update({"pdfDirName" : pdfDirName})
+    kwargs.update({"pdfDirName"        : pdfDirName})
+    kwargs.update({"pdfFileNamePrefix" : f"{channel}_"})
 
     plot1D(dataSample, "AccidWeightFactor",        axisTitles = "RF Weight",                                               binning = (1000, -2,     2),   **kwargs, weightVariable = None)
     plot1D(dataSample, "KinFitPVal",               axisTitles = "#it{#chi}^{2}_{kin. fit} #it{P}-value",                   binning = (150,   0,     1),   **kwargs)
@@ -732,6 +734,7 @@ def makeKinematicPlotsData(
     # sideBandArgs: dict[str, Any] = {
     #   "weightVariable"    : ("AccidWeightFactorSb", "1 - AccidWeightFactor"),
     #   "additionalFilter"  : kwargs.get("additionalFilter", None),
+    #   "pdfFileNamePrefix" : f"{channel}_",
     #   "pdfFileNameSuffix" : "_Sb" + kwargs.get("pdfFileNameSuffix", ""),
     #   "pdfDirName"        : pdfDirName,
     # }
@@ -745,13 +748,15 @@ def makeKinematicPlotsData(
     # missing-mass squared distributions
     mm2HistDef:         dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",                   "binning" : (125, -0.5, 4.5)}
     mm2HistDefSideBand: dict[str, Any] = {"variable" : "MissingMassSquared_Measured", "axisTitles" : "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2};" + sideBandYTitle, "binning" : (125, -0.5, 4.5), "weightVariable" : ("AccidWeightFactorSb", "1 - AccidWeightFactor")}
+    kwargsNoSuffix = dict(kwargs)
+    kwargsNoSuffix.pop("pdfFileNameSuffix", None)
     overlayCases(dataSample, **mm2HistDef, **kwargs)
-    overlayCases(dataSample, **mm2HistDefSideBand, pdfFileNameSuffix = f"_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+    overlayCases(dataSample, **mm2HistDefSideBand, pdfFileNameSuffix = f"_Sb" + kwargs.get("pdfFileNameSuffix", ""), **kwargsNoSuffix)
     # plot overall distributions for each case
     for case, caseFilter in FILTER_CASES.items():
       caseData = dataSample.Filter(caseFilter)
-      plot1D(caseData, **mm2HistDef,         pdfFileNameSuffix = f"_{case}"    + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
-      plot1D(caseData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_{case}_Sb" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+      plot1D(caseData, **mm2HistDef,         pdfFileNameSuffix = f"_{case}"    + kwargs.get("pdfFileNameSuffix", ""), **kwargsNoSuffix)
+      plot1D(caseData, **mm2HistDefSideBand, pdfFileNameSuffix = f"_{case}_Sb" + kwargs.get("pdfFileNameSuffix", ""), **kwargsNoSuffix)
     # kinematicBinnings  = [
     #   # beam energy
     #   # {"variable" : "BeamEnergy",         "label" : "Beam Energy",                   "unit" : "GeV",   "nmbBins" :  9, "range" : (3.0, 12.0)},  # spring 2017
@@ -774,7 +779,7 @@ def makeKinematicPlotsData(
     #     kinBinMax = kinBinMin + kinBinWidth
     #     kinBinFilter = f"(({kinBinMin} < {kinBinVariable}) and ({kinBinVariable} < {kinBinMax}))"
     #     kinBinData = dataSample.Filter(kinBinFilter)
-    #     overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}" + kwargs.get("pdfFileNameSuffix", ""), additionalFilter = kwargs.get("additionalFilter", None), pdfDirName = pdfDirName)
+    #     overlayCases(kinBinData, **mm2HistDef, pdfFileNameSuffix = f"_{kinBinVariable}_{kinBinMin}_{kinBinMax}" + kwargs.get("pdfFileNameSuffix", ""), **kwargsNoSuffix)
 
     plot1D(dataSample, "MissingProtonP",     axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})", binning = (250, 0, 5),      **kwargs)
     plot1D(dataSample, "MissingProtonTheta", axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",   binning = (200, 0, 100),    **kwargs)
