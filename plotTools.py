@@ -205,7 +205,7 @@ def redrawFrame(pad: ROOT.TVirtualPad) -> None:
 
 def callMemberFunctionsWithArgs(
   instance:          Any,             # instance for which member functions will be called
-  functionsWithArgs: dict[str, Any],  # member-function names with argments
+  functionsWithArgs: dict[str, Any],  # member-function names with arguments
 ) -> None:
   """Calls member functions of given object with given arguments"""
   for functionName, argument in functionsWithArgs.items():

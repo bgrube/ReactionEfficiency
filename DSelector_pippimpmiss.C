@@ -14,7 +14,7 @@ void DSelector_pippimpmiss::Init(TTree *locTree)
 	dFlatTreeFileName = ""; //output flat tree (one combo per tree entry), "" for none
 	dFlatTreeName = ""; //if blank, default name will be chosen
 	//dSaveDefaultFlatBranches = true; // False: don't save default branches, reduce disk footprint.
-	//dSaveTLorentzVectorsAsFundamentaFlatTree = false; // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
+	//dSaveTLorentzVectorsAsFundamentalFlatTree = false; // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
 
 	cout << "output file name = '" << dOutputFileName << "'" << endl
 	     << "accidental subtraction = " << dSidebandSubtractAcc << endl;

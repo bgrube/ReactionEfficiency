@@ -35,7 +35,7 @@ void DSelector_omegapmiss::Init(TTree *locTree)
 	dFlatTreeFileName = baseName + "_flatTree.root";  // output flat tree (one combo per tree entry), "" for none
 	dFlatTreeName = baseName;  // if blank, default name will be chosen
 	dSaveDefaultFlatBranches = false;  // False: don't save default branches, reduce disk footprint.
-	// dSaveTLorentzVectorsAsFundamentaFlatTree = false;  // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
+	// dSaveTLorentzVectorsAsFundamentalFlatTree = false;  // Default (or false): save particles as TLorentzVector objects. True: save as four doubles instead.
 	//Because this function gets called for each TTree in the TChain, we must be careful:
 		//We need to re-initialize the tree interface & branch wrappers, but don't want to recreate histograms
 	bool locInitializedPriorFlag = dInitializedFlag; //save whether have been initialized previously
