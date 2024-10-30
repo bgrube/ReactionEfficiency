@@ -255,6 +255,27 @@ class BinningInfo:
     return self.isSameBinningAs(other)
 
 
+def makeEquidistantBinning(binningDefs: list[tuple[str, int, float, float]]) -> BinningInfo:
+  """Creates binning info for equidistant n-dimensional binning defined by (<variable name>, <# of bins>, <min value>, <max value>) tuples"""
+  binningIndexRanges = tuple(range(0, binningDef[1]) for binningDef in binningDefs)
+  binInfos: list[BinInfo] = []
+  for binIndices in itertools.product(*binningIndexRanges):  # loop over all tuples of bin indices
+    binCenters: list[float] = []
+    binWidths:  list[float] = []
+    for axisIndex, binIndex in enumerate(binIndices):
+      _, nmbBins, minVal, maxVal = binningDefs[axisIndex]
+      binCenter = minVal + binIndex * (maxVal - minVal) / float(nmbBins)
+      binWidth  = (maxVal - minVal) / float(nmbBins)
+      binCenters.append(binCenter)
+      binWidths.append (binWidth)
+    binInfos.append(BinInfo(
+      name    = "",
+      binDefs = {binningDefs[axisIndex][0] : binDef for axisIndex, binDef in enumerate(zip(binCenters, binWidths))},
+      dirName = "",
+    ))
+  return BinningInfo(binInfos, dirName = "")
+
+
 def getBinningFromDir(fitResultDirName: str) -> BinningInfo | None:
   """Reads binning info from given directory"""
   binningFileName = f"{fitResultDirName}/DataBinsConfig.root"
@@ -270,11 +291,10 @@ def getBinningFromDir(fitResultDirName: str) -> BinningInfo | None:
   axisBinIndexRanges = tuple(range(1, axis.GetNbins() + 1) for axis in axes)
   binInfos: list[BinInfo] = []
   for axisBinIndices in itertools.product(*axisBinIndexRanges):  # loop over all tuples of bin indices for the axes
-    #TODO simplify code by moving this into dict comprehension below
     axisBinCenters = tuple(axes[axisIndex].GetBinCenter(axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
     axisBinWidths  = tuple(axes[axisIndex].GetBinWidth (axisBinIndex) for axisIndex, axisBinIndex in enumerate(axisBinIndices))
-    binIndex = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only for up to 6 binning dimensions
-    binName = binNames[binIndex]
+    binIndex       = bins.FindBin(*axisBinCenters)  #!Note! the unpacking works only for up to 6 binning dimensions
+    binName        = binNames[binIndex]
     binInfos.append(BinInfo(
       name    = binName,
       binDefs = {binVarNames[axisIndex] : (axisBinCenter, axisBinWidth)
