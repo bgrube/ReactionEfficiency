@@ -843,6 +843,7 @@ if __name__ == "__main__":
 
   # plot generated MC truth histograms for signal process
   if True:
+  # if False:
     # open input files with histograms
     dataSamplesToOverlay: dict[str, dict[str, Any]] = {}
     for index, dataPeriod in enumerate(dataPeriods):
@@ -899,6 +900,7 @@ if __name__ == "__main__":
   # overlay resolutions of kinematic variables estimated using MC truth
   diffVariableInfos: tuple[tuple[str, str, tuple[int, float, float], tuple[float, float], str], ...] = ()
   if True:
+  # if False:
     diffVariableInfos = (
       ("MissingProtonP",     "TruthDeltaP",     (400,   -4,   +4), (0,  0.7), "#it{p}_{miss}^{truth} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
       ("MissingProtonTheta", "TruthDeltaTheta", (200,  -60,  +60), (0, 20  ), "#it{#theta}_{miss}^{truth} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
@@ -924,6 +926,7 @@ if __name__ == "__main__":
 
   # overlay resolutions of kinematic variables estimated using unused tracks
   if True:
+  # if False:
     diffVariableInfos = (
       ("MissingProtonP",     "UnusedDeltaP",     (400,   -4,   +4), (0,   1), "#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit} (GeV/#it{c})"),
       ("MissingProtonTheta", "UnusedDeltaTheta", (200,  -60,  +60), (0,  30), "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)"),
@@ -950,6 +953,7 @@ if __name__ == "__main__":
         overlayResolutions(dataToOverlay, *args, resBinningVariable = "MissingProtonPhi",   resBinning = ( 72, -180, +180  ), resPlotRange = resPlotRange, **kwargs)
 
   if True:
+  # if False:
     # overlay all periods for bggen MC and real data
     dataSamplesToOverlay: dict[str, dict[str, Any]] = {}
     if len(inputData) > 1:
@@ -994,6 +998,7 @@ if __name__ == "__main__":
 
   # make Monte Carlo plots for each period
   if True:
+  # if False:
     for dataPeriod in inputData.keys():
       makeKinematicPlotsMc(
         dataSample   = inputData[dataPeriod]["MCbggen"],
@@ -1005,6 +1010,7 @@ if __name__ == "__main__":
 
   # make general plots for each data type and period
   if True:
+  # if False:
     for dataType in ("MCbggen", "RD"):
       for dataPeriod in inputData.keys():
         makeKinematicPlotsData(
