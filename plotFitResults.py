@@ -217,9 +217,9 @@ class BinningInfo:
   ) -> int:
     """Returns number of bins for given binning variable"""
     # ensure equidistant bins
-    widths = set(self.varBinWidths(varName))
-    assert len(widths) == 1, f"Binning is not equidistant: '{varName}' bin widths = {widths}"
-    width = next(iter(widths))  # get the only element
+    widths = self.varBinWidths(varName)
+    width = next(widths)  # get first bin width
+    assert all(math.isclose(w, width, rel_tol = 1e-14) for w in widths), f"Binning is not equidistant: '{varName}' bin widths = {widths}"
     varRange = self.varRange(varName)
     return int((varRange[1] - varRange[0]) / width)
 
