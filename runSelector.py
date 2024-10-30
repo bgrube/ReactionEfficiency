@@ -65,24 +65,27 @@ if __name__ == "__main__":
   ROOT.gROOT.SetBatch(True)
 
   runPROOF = True
-  nmbProofThreads = 20
+  nmbProofThreads = 10
   createBruFitTree = True
   deleteFlatTreeFiles = False
   writeBruFitFilesForAllInputFiles = False
 
   # define channel
   # # pi+pi+pi-pi-(p)
-  # channel      = "pippippimpimpmiss"  # used for output tree and file names
-  # treeName     = "pippippimpimmissprot__B1_T1_U1_Effic"
-  # trueTopology = "2#pi^{#plus}2#pi^{#minus}p"
+  # channel          = "pippippimpimpmiss"  # used for output tree and file names
+  # treeName         = "pippippimpimmissprot__B1_T1_U1_Effic"
+  # trueTopology     = "2#pi^{#plus}2#pi^{#minus}p"
+  # cutVariableNames = ("NmbUnusedShowers",)
   # omega(p)
-  channel      = "omegapmiss"
-  treeName     = "omegamissprot__B1_T1_U1_Effic"
-  trueTopology = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
+  channel          = "omegapmiss"
+  treeName         = "omegamissprot__B1_T1_U1_Effic"
+  trueTopology     = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
+  cutVariableNames = ("NmbUnusedShowers", "ThreePionMass")
   # # pi+pi-(p)
-  # channel      = "pippimpmiss"
-  # treeName     = "pippimpmiss__B1_T1_U1_Effic"
-  # trueTopology = "#pi^{#plus}#pi^{#minus}p"
+  # channel          = "pippimpmiss"
+  # treeName         = "pippimpmiss__B1_T1_U1_Effic"
+  # trueTopology     = "#pi^{#plus}#pi^{#minus}p"
+  # cutVariableNames = ("NmbUnusedShowers",)
   selectorFileName = f"./DSelector_{channel}.C"
 
   # define input files
@@ -123,16 +126,23 @@ if __name__ == "__main__":
       if createBruFitTree:
         # merge all flat-tree files into single BruFit file
         makeBruFitTree(
-          inputFileNames = flatTreeFileNames,
-          outputFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}.root.brufit",
-          treeName       = channel,
-          trueTopology   = trueTopology,
+          inputFileNames   = flatTreeFileNames,
+          outputFileName   = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}.root.brufit",
+          treeName         = channel,
+          trueTopology     = trueTopology,
+          cutVariableNames = cutVariableNames,
         )
         if writeBruFitFilesForAllInputFiles and len(flatTreeFileNames) > 1:
           # write BruFit-tree file for each flat-tree file
           for flatTreeFileName in flatTreeFileNames:
             bruFitTreeFileName = f"{flatTreeFileName}.brufit"
-            makeBruFitTree(flatTreeFileName, outputFileName = bruFitTreeFileName)
+            makeBruFitTree(
+              inputFileNames   = flatTreeFileName,
+              outputFileName   = bruFitTreeFileName,
+              treeName         = channel,
+              trueTopology     = trueTopology,
+              cutVariableNames = cutVariableNames,
+            )
         if deleteFlatTreeFiles:
           for flatTreeFileName in flatTreeFileNames:
             print(f"Removing flat-tree file '{flatTreeFileName}'")
