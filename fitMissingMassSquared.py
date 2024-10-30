@@ -459,8 +459,9 @@ def performFit(cfg: FitConfig) -> None:
   if cfg.kinematicBinnings:
     # write results into separate subdirectory for each binning
     #TODO check type of cfg.kinematicBinnings
-    binningVars    = [binning[0] for binning in cfg.kinematicBinnings]
-    binningDirName = "_".join(binningVars)
+    binningVars = [binning[0] for binning in cfg.kinematicBinnings]
+    assert isinstance(binningVars, list) and all(isinstance(var, str) for var in binningVars), "`binningVars` must be a list of strings"
+    binningDirName = "_".join(binningVars)  # type: ignore
     cfg            = replace(cfg, outputDirName = f"{cfg.outputDirName}/{binningDirName}")
   print(f"Fitting data in '{cfg.dataFileName}'" + ("" if not cfg.commonCut else f" applying cut '{cfg.commonCut}' to data and template histograms")
     + ("" if not cfg.dataCut else f" and additional cut '{cfg.dataCut}' to data")
