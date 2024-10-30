@@ -33,6 +33,7 @@ from plotTools import (
 print = functools.partial(print, flush = True)
 
 
+#TODO create separate instances for the different channels
 @dataclass
 class FitConfig:
   """Stores information to run a fit"""
@@ -44,7 +45,8 @@ class FitConfig:
   pdfTypeBkg:        str       = "Histogram"                    # type of background PDF
   fixParsBkg:        list[str] = field(default_factory = list)  # fit-parameter names of background function to fix
   cleanupRootFiles:  bool      = True                           # if True, intermediate ROOT files in output directory are deleted when not needed anymore
-  commonCut:         str       = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"  # optional additional cut(s) applied to data and template histograms
+  # commonCut:         str       = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"  # optional additional cut(s) applied to data and template histograms
+  commonCut:         str       = "(NmbUnusedShowers == 0) && ((0.7 < ThreePionMass) && (ThreePionMass < 0.9))"
   # commonCut:         str       = "(NmbUnusedShowers == 0)"
   # commonCut:         str       = ""
   dataCut:           str       = ""                             # optional selection cut(s) applied to data only (in addition to commonCut)
@@ -53,16 +55,17 @@ class FitConfig:
   kinematicBinnings: list[tuple[str, int, float, float]] | list[list[tuple[str, int, float, float]]] = field(default_factory = lambda: [
     # a binning has one tuple per dimension: [ (<variable>, <nmb of bins>, <min value>, <max value>), ... ]
     [],  # no binning -> fit overall distribution
+    # pippippimpimpmiss
     # # 1D binnings
     # [("BeamEnergy",          90,    2.9,   11.9)],  # [GeV]
     # [("MissingProtonP",     100,    0,      5)],    # [GeV/c]
     # [("MissingProtonTheta",  72,    0,     90)],    # [deg]
     # [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
     # 2D binnings
-    [
-      ("MissingProtonTheta", 16, 0,   80),    # [deg]
-      ("MissingProtonP",     12, 0.5,  6.5),  # [GeV/c]
-    ],  # nominal binning
+    # [
+    #   ("MissingProtonTheta", 16, 0,   80),    # [deg]
+    #   ("MissingProtonP",     12, 0.5,  6.5),  # [GeV/c]
+    # ],  # nominal binning
     # [
     #   ("MissingProtonTheta", 10, 0, 20),  # [deg]
     #   ("MissingProtonP",      9, 0,  9),  # [GeV/c]  #NOTE first bin is affected by p > 0.5 GeV/c condition in `additionalCut``
@@ -71,6 +74,13 @@ class FitConfig:
     #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
     #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
     # ],  # dummy 2D binning with minimal number of bins
+
+    # omegapmiss
+    # 2D binnings
+    [
+      ("MissingProtonTheta", 12, 50, 80),    # [deg]
+      ("MissingProtonP",     10,  0,  1.2),  # [GeV/c]
+    ],  # nominal binning
   ])  # single kinematic binning or list of kinematic binnings
   dataSets: dict[str, str] = field(default_factory = lambda: {
     "Total"   : "",
@@ -86,6 +96,7 @@ class FitConfig:
   nmbProofJobs:            int  = 100                            # number of PROOF jobs to run in parallel  #TODO? automatically determine number of PROOF jobs
   nmbBootstrapSamples:     int  = 0                              # number of bootstrap samples to generate; 0 means no bootstrapping
   # nmbBootstrapSamples:     int  = 100                            # number of bootstrap samples to generate; 0 means no bootstrapping
+  #TODO are different tree names really needed?
   dataTreeName:            str  = "pippippimpimpmiss"            # name of tree that holds the data to fit
   pdfNameSig:              str  = "SigPdf"                       # name of signal PDF
   templateDataSigTreeName: str  = "pippippimpimpmiss"            # name of tree from which signal histogram is filled
