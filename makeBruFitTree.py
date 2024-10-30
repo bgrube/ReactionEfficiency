@@ -17,10 +17,12 @@ print = functools.partial(print, flush = True)
 
 
 def makeBruFitTree(
-  inputFileNames: Sequence[str],
-  outputFileName: str,
-  treeName:       str = "pippippimpimpmiss",
-  trueTopology:   str = "2#pi^{#plus}2#pi^{#minus}p",
+  inputFileNames:       Sequence[str],
+  outputFileName:       str,
+  treeName:             str = "pippippimpimpmiss",
+  trueTopology:         str = "2#pi^{#plus}2#pi^{#minus}p",
+  cutVariableNames:     Sequence[str] = ("NmbUnusedShowers",),
+  binningVariableNames: Sequence[str] = ("BeamEnergy", "MissingProtonP", "MissingProtonTheta", "MissingProtonPhi"),
 ) -> None:
   """Reads given files and writes out tree in BruFit format"""
   print(f"Converting tree '{treeName}' to BruFit format merging the data from {len(inputFileNames)} files: {inputFileNames}")
@@ -29,13 +31,9 @@ def makeBruFitTree(
     "MissingMassSquared_Measured",  # fit variable
     "AccidWeightFactor",  # weight for removal of RF accidentals
     # cut variables
-    "NmbUnusedShowers",
-    # "BestMissingMatchDistTOF",
+    *cutVariableNames,
     # binning variables
-    "BeamEnergy",
-    "MissingProtonP",
-    "MissingProtonTheta",
-    "MissingProtonPhi",
+    *binningVariableNames,
   ]
   # add columns with
   #   track-found flag
