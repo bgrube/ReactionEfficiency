@@ -634,29 +634,33 @@ def makeKinematicPlotsOverlays(
     overlayDataSamples1D(dataSamples, variable = "MissingProtonP",       axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})",                   binning = (250,    0,   5), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",                     binning = (200,    0, 100), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",     axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",                       binning = (180, -180, 180), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (400,    0,   5), **kwargs)
-  # unused track
-  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargss[0])
-  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargss[0])
-  overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (200, -100, +100), **kwargss[0])
-  # missing mass squared
-  for case, caseFilter in FILTER_CASES.items():
-    kwargs = {
-      "additionalFilter"  : f"((NmbUnusedShowers == 0) and {caseFilter})",
-      "pdfFileNamePrefix" : f"{channel}_",
-      "pdfFileNameSuffix" : f"_{case}_noUnusedShowers",
-      "pdfDirName"        : pdfDirName,
-    }
-    overlayDataSamples1D(dataSamples, variable = "MissingMassSquared_Measured",
-                          axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,  0.4, 1.4), **kwargs)
+    # unused track
+    overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargs)
+    overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPhi",    axisTitles = "#it{#phi}_{miss}^{unused} #minus #it{#phi}_{miss}^{kin. fit} (deg)",                  binning = (200, -100, +100), **kwargs)
+    # missing mass squared
+    for case, caseFilter in FILTER_CASES.items():
+      overlayDataSamples1D(
+        dataSamples        = dataSamples,
+        variable           = "MissingMassSquared_Measured",
+        axisTitles         = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",
+        binning            = (125, -0.5, 4.5),
+        additionalFilter  = f"({kwargs['additionalFilter']} and {caseFilter})",
+        pdfFileNamePrefix = f"{channel}_",
+        pdfFileNameSuffix = f"_{case}{kwargs['pdfFileNameSuffix']}",
+        pdfDirName        = pdfDirName,
+      )
 
 
 def makeKinematicPlotsMc(
-  dataSample:   ROOT.RDataFrame,
-  channel:      str,   # label for the reaction channel
-  isMcBggen:    bool,  # indicates whether MC data are from bggen
-  trueTopology: str,   # reaction string for true reaction
-  pdfDirName:   str = "./",
+  dataSample:               ROOT.RDataFrame,
+  channel:                  str,   # label for the reaction channel
+  mesonSystemMassVarName:   str,   # name of mass variable of meson system recoiling against the missing proton
+  mesonSystemMassVarTLatex: str,   # TLatex string for mass variable of meson system recoiling against the missing proton
+  isMcBggen:                bool,  # indicates whether MC data are from bggen
+  trueTopology:             str,   # reaction string for true reaction
+  pdfDirName:               str = "./",
 ) -> None:
   """Plots kinematic distributions for given Monte Carlo data"""
   filterTopologies = {
@@ -708,12 +712,13 @@ def makeKinematicPlotsMc(
         toposToPlot[case], _ = getTopologyHist(caseData, filterExpression = kwargs.get("additionalFilter", None))
         # take first, i.e. largest, maxNmbTopologies topologies and add "Total" topology
         toposToPlot[case] = ["Total"] + toposToPlot[case][:maxNmbTopologies]
-      overlayTopologies(dataSample, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                            binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                          binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                     binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",                    binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
-      # overlayTopologies(dataSample, "MissingMassSquared",          axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}", binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
-      overlayTopologies(dataSample, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",    binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+      overlayTopologies(dataSample, "NmbUnusedShowers",            axisTitles = "Number of Unused Showers",                                binning = (11, -0.5, 10.5), toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "EnergyUnusedShowers",         axisTitles = "Unused Shower Energy (GeV)",                              binning = (60, 0, 6),       toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "BestMissingMatchDistTOF",     axisTitles = "Distance to best ToF match (cm)",                         binning = (25, 0, 250),     toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "BestMissingMatchDistBCAL",    axisTitles = "Distance to best BCAL match (cm)",                        binning = (20, 0, 200),     toposToPlot = toposToPlot, **kwargs)
+      # overlayTopologies(dataSample, "MissingMassSquared",          axisTitles = "(#it{m}_{miss}^{kin. fit})^{2} (GeV/#it{c}^{2})^{2}",     binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+      overlayTopologies(dataSample, "MissingMassSquared_Measured", axisTitles = "(#it{m}_{miss}^{meas.})^{2} (GeV/#it{c}^{2})^{2}",        binning = (125, -0.5, 4.5), toposToPlot = toposToPlot, **kwargs)
+      overlayTopologies(dataSample, mesonSystemMassVarName,        axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,  0.4, 1.4), toposToPlot = toposToPlot, **kwargs)
 
 
 def makeKinematicPlotsData(
@@ -738,7 +743,7 @@ def makeKinematicPlotsData(
     plot1D(dataSample, "BeamEnergy",               axisTitles = "#it{E}_{beam} (GeV)",                                     binning = (180,   3,    12),   **kwargs)
     # plot1D(dataSample, "BestMissingMatchDistTOF",  axisTitles = "Distance to best ToF match (cm)",                         binning = (25,    0,   250),   **kwargs)
     # plot1D(dataSample, "BestMissingMatchDistBCAL", axisTitles = "Distance to best BCAL match (cm)",                        binning = (20,    0,   200),   **kwargs)
-    plot1D(dataSample, mesonSystemMassVarName,     axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (400,   0,     5),   **kwargs)
+    plot1D(dataSample, mesonSystemMassVarName,     axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200, 0.4,   1.4),   **kwargs)
 
     sideBandYTitle = "Number of Combos (RF-Sideband)"
     # sideBandArgs: dict[str, Any] = {
@@ -993,7 +998,7 @@ if __name__ == "__main__":
         channel                  = treeName,
         mesonSystemMassVarName   = mesonSystemMassVarName,
         mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
-        pdfDirName = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"),
+        pdfDirName               = makeDirPath(f"{pdfBaseDirName}/{dataPeriod}"),
       )
 
   # make Monte Carlo plots for each period
@@ -1001,11 +1006,13 @@ if __name__ == "__main__":
   # if False:
     for dataPeriod in inputData.keys():
       makeKinematicPlotsMc(
-        dataSample   = inputData[dataPeriod]["MCbggen"],
-        channel      = treeName,
-        isMcBggen    = True,
-        trueTopology = trueTopology,
-        pdfDirName   = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"),
+        dataSample               = inputData[dataPeriod]["MCbggen"],
+        channel                  = treeName,
+        mesonSystemMassVarName   = mesonSystemMassVarName,
+        mesonSystemMassVarTLatex = mesonSystemMassVarTLatex,
+        isMcBggen                = True,
+        trueTopology             = trueTopology,
+        pdfDirName               = makeDirPath(f"{pdfBaseDirName}/MCbggen/{dataPeriod}"),
       )
 
   # make general plots for each data type and period
