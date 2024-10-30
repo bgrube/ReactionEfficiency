@@ -35,6 +35,8 @@ if __name__ == "__main__":
   fitRootDir = "./fits"
   # fitRootDir = "./fits.pionComparison"
   # fitRootDir = "./fits.pionComparison.R6.28"
+  # channel = "pippippimpimpmiss"
+  channel = "omegapmiss"
   dataPeriods = (
     "2017_01-ver03",
     # "2018_01-ver02",
@@ -52,13 +54,13 @@ if __name__ == "__main__":
     dataSamples += [
       { # bggen MC
         **dict.fromkeys(["dataFileName", "bggenFileName"],
-                        f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # "dataFileName" and "bggenFileName" are set to identical values
+                        f"./data/MCbggen/{dataPeriod}/{channel}_flatTree.MCbggen_{dataPeriod}.root.brufit"),  # "dataFileName" and "bggenFileName" are set to identical values
         "dataPeriod" : dataPeriod,
         "dataLabel"  : f"bggen_{dataPeriod}",
       },
       { # real data
-        "dataFileName"  : f"./data/RD/{dataPeriod}/pippippimpimpmiss_flatTree.RD_{dataPeriod}.root.brufit",
-        "bggenFileName" : f"./data/MCbggen/{dataPeriod}/pippippimpimpmiss_flatTree.MCbggen_{dataPeriod}.root.brufit",
+        "dataFileName"  : f"./data/RD/{dataPeriod}/{channel}_flatTree.RD_{dataPeriod}.root.brufit",
+        "bggenFileName" : f"./data/MCbggen/{dataPeriod}/{channel}_flatTree.MCbggen_{dataPeriod}.root.brufit",
         "dataPeriod"    : dataPeriod,
         "dataLabel"     : f"data_{dataPeriod}",
       },
@@ -209,7 +211,13 @@ if __name__ == "__main__":
       print(f"Created directory '{fitDirectory}'")
       print(f"Starting fits ...")
       with open(f"{fitDirectory}/fitMissingMassSquared.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
-        fitConfig = FitConfig(outputDirName = fitDirectory, **fit["kwargs"])
+        fitConfig = FitConfig(
+          outputDirName           = fitDirectory,
+          dataTreeName            = channel,
+          templateDataSigTreeName = channel,
+          templateDataBkgTreeName = channel,
+          **fit["kwargs"],
+        )
         fitMissingMassSquared(fitConfig)
       print("Plotting fit results...")
       #TODO pass FitConfig object also to plotFitResults() and plotEfficiencies()
