@@ -288,6 +288,7 @@ def plotEfficiencies2DColzText(
   hist.SetStats(False)
   redrawFrame(canv)
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
+  canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.root")
 
 
 def plotEfficiencies(
