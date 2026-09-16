@@ -168,10 +168,9 @@ def getHist2DFromEfficiencies(
   )
   # fill histogram
   for effInfo in effInfos:
-    efficiencyHist.SetBinContent(
-      efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1])),
-      effInfo.value.nominal_value
-    )
+    bin = efficiencyHist.FindBin(effInfo.binInfo.center(binningVars[0]), effInfo.binInfo.center(binningVars[1]))
+    efficiencyHist.SetBinContent(bin, effInfo.value.nominal_value)
+    efficiencyHist.SetBinError  (bin, effInfo.value.std_dev)
   return efficiencyHist
 
 
@@ -211,6 +210,7 @@ def overlayEfficiencyRatios2DColzText(
     ratioHist2D.SetStats(False)
     redrawFrame(canv)
     canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.pdf")
+    canv.SaveAs(f"{pdfDirName}/{canv.GetName()}_ColzText.root")
 
 
 if __name__ == "__main__":
