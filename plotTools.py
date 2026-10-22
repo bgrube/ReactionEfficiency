@@ -119,13 +119,13 @@ def setCbFriendlyStyle(
 
 def setupPlotStyle(rootLogonPath: str = "./rootlogon.C") -> None:
   """Defines ROOT plot style"""
-  ROOT.gROOT.LoadMacro(rootLogonPath)
+  assert ROOT.gROOT.LoadMacro(rootLogonPath) == 0, f"Error loading '{rootLogonPath}'"
   ROOT.gROOT.ForceStyle()
   ROOT.gStyle.SetCanvasDefW(600)
   ROOT.gStyle.SetCanvasDefH(600)
-  ROOT.gStyle.SetPalette(ROOT.kBird)
+  # ROOT.gStyle.SetPalette(ROOT.kBird)
   # ROOT.gStyle.SetPalette(ROOT.kViridis)
-  ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
+  # ROOT.gStyle.SetLegendFillColor(ROOT.kWhite)
   ROOT.gStyle.SetLegendBorderSize(1)
   # ROOT.gStyle.SetOptStat("ni")  # show only name and integral
   ROOT.gStyle.SetOptStat("i")  # show only integral
