@@ -1,3 +1,5 @@
+// See https://halldweb.jlab.org/wiki/index.php/DSelector
+
 #ifndef DSelector_pippippimpimpmiss_h
 #define DSelector_pippippimpimpmiss_h
 

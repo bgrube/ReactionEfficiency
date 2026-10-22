@@ -313,11 +313,11 @@ Bool_t DSelector_pippimpmiss::Process(Long64_t locEntry)
 		double locMissingMassSquared = locMissingP4_Measured.M2();
 
 		//Uniqueness tracking: Build the map of particles used for the missing mass
-			//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
+			//For beam: Don't want to group with final-state photons. Instead use "UnknownParticle" PID (not ideal, but it's easy).
 		map<Particle_t, set<Int_t> > locUsedThisCombo_MissingMass;
-		locUsedThisCombo_MissingMass[Unknown].insert(locBeamID); //beam
-		locUsedThisCombo_MissingMass[PiPlus].insert(locPiPlusTrackID);
-		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinusTrackID);
+		locUsedThisCombo_MissingMass[UnknownParticle].insert(locBeamID); //beam
+		locUsedThisCombo_MissingMass[PiPlus         ].insert(locPiPlusTrackID);
+		locUsedThisCombo_MissingMass[PiMinus        ].insert(locPiMinusTrackID);
 
 		//compare to what's been used so far
 		if(locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end())

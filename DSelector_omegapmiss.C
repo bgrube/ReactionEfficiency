@@ -534,14 +534,14 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 			++nmbUnusedTracks;
 
 			//Uniqueness tracking: Build the map of particles used for the unused track
-				//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
+				//For beam: Don't want to group with final-state photons. Instead use "UnknownParticle" PID (not ideal, but it's easy).
 			map<Particle_t, set<Int_t> > locUsedThisCombo_UnusedTrack;
-			locUsedThisCombo_UnusedTrack[Unknown].insert(locBeamID); //beam
-			locUsedThisCombo_UnusedTrack[PiPlus ].insert(locPiPlusTrackID);
-			locUsedThisCombo_UnusedTrack[PiMinus].insert(locPiMinusTrackID);
-			locUsedThisCombo_UnusedTrack[Gamma  ].insert(locPhoton1NeutralID);
-			locUsedThisCombo_UnusedTrack[Gamma  ].insert(locPhoton2NeutralID);
-			locUsedThisCombo_UnusedTrack[Proton ].insert(dChargedHypoWrapper->Get_TrackID());
+			locUsedThisCombo_UnusedTrack[UnknownParticle].insert(locBeamID); //beam
+			locUsedThisCombo_UnusedTrack[PiPlus         ].insert(locPiPlusTrackID);
+			locUsedThisCombo_UnusedTrack[PiMinus        ].insert(locPiMinusTrackID);
+			locUsedThisCombo_UnusedTrack[Gamma          ].insert(locPhoton1NeutralID);
+			locUsedThisCombo_UnusedTrack[Gamma          ].insert(locPhoton2NeutralID);
+			locUsedThisCombo_UnusedTrack[Proton         ].insert(dChargedHypoWrapper->Get_TrackID());
 			//compare to what's been used so far
 			if (locUsedSoFar_UnusedTrack.find(locUsedThisCombo_UnusedTrack) == locUsedSoFar_UnusedTrack.end()) {
 				// 4-vector of unused track
@@ -557,13 +557,13 @@ Bool_t DSelector_omegapmiss::Process(Long64_t locEntry)
 		assert(nmbUnusedTracks <= 1);
 
 		//Uniqueness tracking: Build the map of particles used for the missing mass
-			//For beam: Don't want to group with final-state photons. Instead use "Unknown" PID (not ideal, but it's easy).
+			//For beam: Don't want to group with final-state photons. Instead use "UnknownParticle" PID (not ideal, but it's easy).
 		map<Particle_t, set<Int_t> > locUsedThisCombo_MissingMass;
-		locUsedThisCombo_MissingMass[Unknown].insert(locBeamID); //beam
-		locUsedThisCombo_MissingMass[PiPlus ].insert(locPiPlusTrackID);
-		locUsedThisCombo_MissingMass[PiMinus].insert(locPiMinusTrackID);
-		locUsedThisCombo_MissingMass[Gamma  ].insert(locPhoton1NeutralID);
-		locUsedThisCombo_MissingMass[Gamma  ].insert(locPhoton2NeutralID);
+		locUsedThisCombo_MissingMass[UnknownParticle].insert(locBeamID); //beam
+		locUsedThisCombo_MissingMass[PiPlus         ].insert(locPiPlusTrackID);
+		locUsedThisCombo_MissingMass[PiMinus        ].insert(locPiMinusTrackID);
+		locUsedThisCombo_MissingMass[Gamma          ].insert(locPhoton1NeutralID);
+		locUsedThisCombo_MissingMass[Gamma          ].insert(locPhoton2NeutralID);
 		//compare to what's been used so far
 		if (locUsedSoFar_MissingMass.find(locUsedThisCombo_MissingMass) == locUsedSoFar_MissingMass.end()) {
 			//unique missing mass combo: histogram it, and register this combo of particles
