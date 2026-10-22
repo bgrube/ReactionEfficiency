@@ -555,8 +555,15 @@ def plotTopologyHist(
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
-#!NOTE! this works only with ROOT version 6.24.04
-# see https://github.com/root-project/root/issues/23790
+#!NOTE! this works only with ROOT version below 6.25.02
+# see <https://github.com/root-project/root/issues/23790>
+#!NOTE! ROOT version 6.24.04 produces error messages like
+# `Error in <TList::Clear>: A list is accessing an object (0x55ba8f5d3a00) already deleted (list name = TList)`
+# `Error in <THashList::Delete>: A list is accessing an object (0x55feaf647030) already deleted (list name = THashList)`
+# when reading trees written by ROOT version 6.30+
+# (see <https://root-forum.cern.ch/t/error-in-tlist-clear-a-list-is-accessing-an-object-already-deleted-list-name-tlist-when-opening-a-file-created-by-root-6-30-using-root-6-14-09/57588>)
+# a patch was added to the `v6-24-00-patches` branch but was never released
+# <https://github.com/root-project/root/commit/27b1cd21869f1b02685f3d8f9e4011efe0b20b55>
 def overlayTopologies(
   inputData:         ROOT.RDataFrame,
   variable:          str | tuple[str, str],     # variable to plot; may be column name, or tuple with new column definition

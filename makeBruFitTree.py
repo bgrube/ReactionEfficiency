@@ -44,12 +44,14 @@ def makeBruFitTree(
   # see https://root-forum.cern.ch/t/accessing-entry-information-using-rdataframe/52378
   # and https://root.cern/doc/master/df007__snapshot_8C.html
   #TODO convert ThrownTopology only for bggen MC
-  rdf = ROOT.RDataFrame(treeName, inputFileNames) \
-            .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION) \
-            .Define("ComboID", "(double)rdfentry_") \
-            .Define("IsSignal", f'ThrownTopology.GetString() == "{trueTopology}"') \
-            .Snapshot(treeName, outputFileName, ROOT.std.vector[ROOT.std.string](branchesToWrite + ["TrackFound", "ComboID", "IsSignal"])) \
-            # .Range(0, 100000)
+  rdf = (
+    ROOT.RDataFrame(treeName, inputFileNames)
+        .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION)
+        .Define("ComboID", "(double)rdfentry_")
+        .Define("IsSignal", f'ThrownTopology.GetString() == "{trueTopology}"')
+        .Snapshot(treeName, outputFileName, ROOT.std.vector[ROOT.std.string](branchesToWrite + ["TrackFound", "ComboID", "IsSignal"]))
+        # .Range(0, 100000)
+  )
   print(f"Read {rdf.Count().GetValue()} entries from input tree")
 
   # print tree structure
