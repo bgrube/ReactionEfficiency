@@ -64,36 +64,43 @@ if __name__ == "__main__":
   #TODO add command-line interface
   ROOT.gROOT.SetBatch(True)
 
+  doRunSelector = True
   runPROOF = True
-  nmbProofThreads = 10
+  # runPROOF = False
+  nmbProofThreads = 20
   createBruFitTree = True
   deleteFlatTreeFiles = False
   writeBruFitFilesForAllInputFiles = False
 
   # define channel
-  # # pi+pi+pi-pi-(p)
-  # channel          = "pippippimpimpmiss"  # used for output tree and file names
-  # treeName         = "pippippimpimmissprot__B1_T1_U1_Effic"
-  # trueTopology     = "2#pi^{#plus}2#pi^{#minus}p"
-  # cutVariableNames = ("NmbUnusedShowers",)
-  # omega(p)
-  channel          = "omegapmiss"
-  treeName         = "omegamissprot__B1_T1_U1_Effic"
-  trueTopology     = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
-  cutVariableNames = ("NmbUnusedShowers", "ThreePionMass")
+  # pi+pi+pi-pi-(p)
+  channel          = "pippippimpimpmiss"  # used for output tree and file names
+  treeName         = "pippippimpimmissprot__B1_T1_U1_Effic"
+  trueTopology     = "2#pi^{#plus}2#pi^{#minus}p"
+  cutVariableNames = ("NmbUnusedShowers", )
+  # # omega(p)
+  # channel          = "omegapmiss"
+  # treeName         = "omegamissprot__B1_T1_U1_Effic"
+  # trueTopology     = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
+  # cutVariableNames = ("NmbUnusedShowers", "ThreePionMass")
   # # pi+pi-(p)
   # channel          = "pippimpmiss"
   # treeName         = "pippimpmiss__B1_T1_U1_Effic"
   # trueTopology     = "#pi^{#plus}#pi^{#minus}p"
-  # cutVariableNames = ("NmbUnusedShowers",)
+  # cutVariableNames = ("NmbUnusedShowers", )
   selectorFileName = f"./DSelector_{channel}.C"
 
   # define input files
   dataPeriods = [
-    "2017_01-ver03",
+    # "2017_01-ver03",
     # "2018_01-ver02",
     # "2018_08-ver02",
     # "2019_11-ver01",
+    # "2019_11-ver01_150nA",
+    # "2019_11-ver01_250nA",
+    # "2019_11-ver01_350nA_early",
+    "2019_11-ver01_350nA_late",
+    # "2019_11-ver01_2026",
     # "2017_01-ver03_goodToF",
     # "2018_01-ver02_goodToF",
     # "2018_08-ver02_goodToF",
@@ -101,29 +108,36 @@ if __name__ == "__main__":
   for dataType in ("MCbggen", "RD"):
     for dataPeriod in dataPeriods:
       dataDir = f"./data/{dataType}/{dataPeriod}"
-      inFileNamePattern = f"{dataDir}/tree_{treeName}_{dataType}_{dataPeriod}*.root"
-      print(f"Running DSelector over files '{inFileNamePattern}'")
-      inFileNames = sorted(glob.glob(inFileNamePattern))
-      assert inFileNames, f"Did not find any files matching the name pattern {inFileNamePattern}"
-
-      # run selector and create flat-tree files
       flatTreeFileNames: list[str] = []
-      for inFileName in inFileNames:
-        runNumber = inFileName.split(".")[-2].split("_")[-1]  # extract run number from file name of the form `tree_{treeName}_<run number>.root`
-        if not runNumber.isnumeric():
-          runNumber = None
-        runSelector(inFileName, f"{treeName}_Tree", selectorFileName, nmbProofThreads, runPROOF)
-        # rename output files
-        histOutFileName = f"{dataDir}/{channel}.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
-        print(f"Moving histogram file to '{histOutFileName}'")
-        os.replace(f"{channel}.root", histOutFileName)
-        flatTreeOutFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
-        print(f"Moving flat-tree file to '{flatTreeOutFileName}'")
-        os.replace(f"{channel}_flatTree.root", flatTreeOutFileName)
-        flatTreeFileNames.append(flatTreeOutFileName)
-        print()
+
+      if doRunSelector:
+        # run selector and create flat-tree files
+        inFileNamePattern = f"{dataDir}/tree_{treeName}_*.root"
+        print(f"Running DSelector over files '{inFileNamePattern}'")
+        inFileNames = sorted(glob.glob(inFileNamePattern))
+        assert inFileNames, f"Did not find any files matching the name pattern {inFileNamePattern}"
+        for inFileName in inFileNames:
+          runNumber = os.path.splitext(os.path.basename(inFileName))[0].split("_")[-1]  # extract run number from file name of the form `tree_{treeName}_<run number>.root`
+          if not runNumber.isnumeric():
+            runNumber = None
+          runSelector(inFileName, f"{treeName}_Tree", selectorFileName, nmbProofThreads, runPROOF)
+          # rename output files
+          histOutFileName = f"{dataDir}/{channel}_hist.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
+          print(f"Moving histogram file to '{histOutFileName}'")
+          os.replace(f"{channel}.root", histOutFileName)
+          flatTreeOutFileName = f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}" + ("" if runNumber is None else f"_{runNumber}") + ".root"
+          print(f"Moving flat-tree file to '{flatTreeOutFileName}'")
+          os.replace(f"{channel}_flatTree.root", flatTreeOutFileName)
+          flatTreeFileNames.append(flatTreeOutFileName)
+          print()
+      else:
+        print(f"Looking for flat-tree files that match '{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}*.root'")
+        flatTreeFileNames = glob.glob(f"{dataDir}/{channel}_flatTree.{dataType}_{dataPeriod}*.root")
+      assert flatTreeFileNames, f"Did not find any flat-tree files in {dataDir}"
 
       if createBruFitTree:
+        #!NOTE! this works only with ROOT version 6.24.04
+        # see https://github.com/root-project/root/issues/23790
         # merge all flat-tree files into single BruFit file
         makeBruFitTree(
           inputFileNames   = flatTreeFileNames,
