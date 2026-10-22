@@ -21,7 +21,7 @@ def makeBruFitTree(
   outputFileName:       str,
   treeName:             str = "pippippimpimpmiss",
   trueTopology:         str = "2#pi^{#plus}2#pi^{#minus}p",
-  cutVariableNames:     Sequence[str] = ("NmbUnusedShowers",),
+  cutVariableNames:     Sequence[str] = ("NmbUnusedShowers", ),
   binningVariableNames: Sequence[str] = ("BeamEnergy", "MissingProtonP", "MissingProtonTheta", "MissingProtonPhi"),
 ) -> None:
   """Reads given files and writes out tree in BruFit format"""

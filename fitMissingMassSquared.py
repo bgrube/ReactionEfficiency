@@ -21,7 +21,7 @@ import subprocess
 import sys
 
 import ROOT
-assert ROOT.gROOT.GetVersionInt() >= 62800, "ROOT version >= 6.28.0 is required"
+# assert ROOT.gROOT.GetVersionInt() >= 62800, "ROOT version >= 6.28.0 is required"
 
 from plotTools import (
   printGitInfo,
@@ -45,10 +45,10 @@ class FitConfig:
   pdfTypeBkg:        str       = "Histogram"                    # type of background PDF
   fixParsBkg:        list[str] = field(default_factory = list)  # fit-parameter names of background function to fix
   cleanupRootFiles:  bool      = True                           # if True, intermediate ROOT files in output directory are deleted when not needed anymore
-  # commonCut:         str       = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"  # optional additional cut(s) applied to data and template histograms
-  commonCut:         str       = "(NmbUnusedShowers == 0) && ((0.7 < ThreePionMass) && (ThreePionMass < 0.9))"
+  # commonCut:         str       = ""                             # optional additional cut(s) applied to data and template histograms
+  commonCut:         str       = "(NmbUnusedShowers == 0) && (MissingProtonP > 0.5)"  # nominal cut for pi+pi-pi+pi- channel
+  # commonCut:         str       = "(NmbUnusedShowers == 0) && ((0.7 < ThreePionMass) && (ThreePionMass < 0.9))"  # omega channel
   # commonCut:         str       = "(NmbUnusedShowers == 0)"
-  # commonCut:         str       = ""
   dataCut:           str       = ""                             # optional selection cut(s) applied to data only (in addition to commonCut)
   # dataCut:           str       = "(IsSignal == 1)"  # fit bggen signal data
   # dataCut:           str       = "(IsSignal == 0)"  # fit bggen background data
@@ -62,25 +62,25 @@ class FitConfig:
     # [("MissingProtonTheta",  72,    0,     90)],    # [deg]
     # [("MissingProtonPhi",    72, -180,   +180)],    # [deg]
     # 2D binnings
-    # [
-    #   ("MissingProtonTheta", 16, 0,   80),    # [deg]
-    #   ("MissingProtonP",     12, 0.5,  6.5),  # [GeV/c]
-    # ],  # nominal binning
-    # [
+    [  # nominal binning
+      ("MissingProtonTheta", 16, 0,   80),    # [deg]
+      ("MissingProtonP",     12, 0.5,  6.5),  # [GeV/c]
+    ],
+    # [  # binning for comparison with pi+- efficiencies
     #   ("MissingProtonTheta", 10, 0, 20),  # [deg]
     #   ("MissingProtonP",      9, 0,  9),  # [GeV/c]  #NOTE first bin is affected by p > 0.5 GeV/c condition in `additionalCut``
-    # ],  # binning for comparison with pi+- efficiencies
-    # [
+    # ],
+    # [  # dummy 2D binning with minimal number of bins
     #   ("MissingProtonTheta", 2, 0, 20),  # [deg]
     #   ("MissingProtonP",     2, 0,  8),  # [GeV/c]
-    # ],  # dummy 2D binning with minimal number of bins
+    # ],
 
-    # omegapmiss
-    # 2D binnings
-    [
-      ("MissingProtonTheta", 12, 50, 80),    # [deg]
-      ("MissingProtonP",     10,  0,  1.2),  # [GeV/c]
-    ],  # nominal binning
+    # # omegapmiss
+    # # 2D binnings
+    # [  # nominal binning
+    #   ("MissingProtonTheta", 12, 50, 80),    # [deg]
+    #   ("MissingProtonP",     10,  0,  1.2),  # [GeV/c]
+    # ],
   ])  # single kinematic binning or list of kinematic binnings
   dataSets: dict[str, str] = field(default_factory = lambda: {
     "Total"   : "",

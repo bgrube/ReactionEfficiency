@@ -35,13 +35,17 @@ if __name__ == "__main__":
   fitRootDir = "./fits"
   # fitRootDir = "./fits.pionComparison"
   # fitRootDir = "./fits.pionComparison.R6.28"
-  # channel = "pippippimpimpmiss"
-  channel = "omegapmiss"
+  channel = "pippippimpimpmiss"
+  # channel = "omegapmiss"
   dataPeriods = (
-    "2017_01-ver03",
+    # "2017_01-ver03",
     # "2018_01-ver02",
     # "2018_08-ver02",
     # "2019_11-ver01",
+    "2019_11-ver01_150nA",
+    "2019_11-ver01_250nA",
+    "2019_11-ver01_350nA_early",
+    "2019_11-ver01_350nA_late",
     # "2017_01-ver03_goodToF",
     # "2018_01-ver02_goodToF",
     # "2018_08-ver02_goodToF",
@@ -205,11 +209,11 @@ if __name__ == "__main__":
   for fitsForDataSample in fits:
     for fit in fitsForDataSample:
       fitDirectory = f"{fitRootDir}/{fit['dataPeriod']}/{fit['fitDirectory']}"
-      # recreate fit directories if already existing
-      shutil.rmtree(fitDirectory, ignore_errors = True)
+      # # recreate fit directories if already existing
+      # shutil.rmtree(fitDirectory, ignore_errors = True)
       os.makedirs(fitDirectory, exist_ok = True)
       print(f"Created directory '{fitDirectory}'")
-      print(f"Starting fits ...")
+      print(f"Starting fits; redirecting output to '{fitDirectory}/fitMissingMassSquared.log'")
       with open(f"{fitDirectory}/fitMissingMassSquared.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
         fitConfig = FitConfig(
           outputDirName           = fitDirectory,
@@ -219,11 +223,11 @@ if __name__ == "__main__":
           **fit["kwargs"],
         )
         fitMissingMassSquared(fitConfig)
-      print("Plotting fit results...")
+      print(f"Plotting fit results; redirecting output to '{fitDirectory}/plotFitResults.log'")
       #TODO pass FitConfig object also to plotFitResults() and plotEfficiencies()
       with open(f"{fitDirectory}/plotFitResults.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
         plotFitResults(fitDirName = fitDirectory)
-      print("Plotting efficiencies...")
+      print(f"Plotting efficiencies; redirecting output to '{fitDirectory}/plotEfficiencies.log'")
       with open(f"{fitDirectory}/plotEfficiencies.log", "w") as logFile, pipes(logFile, stderr = STDOUT):  # write separate log file for each fit
         plotEfficiencies(fitDirName = fitDirectory, useMissing = useMissing)
   ROOT.gBenchmark.Show("Total processing time")
