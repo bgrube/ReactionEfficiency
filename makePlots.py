@@ -129,7 +129,7 @@ def getHistND(
   elif isinstance(weightVariable, Sequence):
     # use new weight column
     hist = HistoND(histDef, *columnNames, weightVariable[0])
-  assert hist is not None, f"failed to create histogram for weight variable '{weightVariable}'"
+  assert hist is not None, f"failed to create histogram for column name(s) '{columnNames}' and weight variable '{weightVariable}'"
   return hist
 
 
@@ -163,7 +163,7 @@ def plot1D(
   """Plots 1D distribution for given variable, applying optional weighting and filtering"""
   hist: ROOT.TH1D = getHistND(
     inputData        = inputData,
-    variables        = (variable,),
+    variables        = (variable, ),
     axisTitles       = setDefaultYAxisTitle(axisTitles),
     binning          = binning,
     weightVariable   = weightVariable,
@@ -221,7 +221,7 @@ def overlayDataSamples1D(
   pdfFileBaseName = histName if histName is not None else variable
   hStack = ROOT.THStack(pdfFileBaseName, ("" if histTitle is None else histTitle) + f";{setDefaultYAxisTitle(axisTitles)}")
   hists: list[ROOT.TH1D] = []  # keep histograms in memory
-  normIntegral = None  # index of histogram to normalize to
+  normIntegral = None  # integral of histogram to normalize to
   for dataLabel, dataSample in dataSamples.items():
     hist: ROOT.TH1D | None = None
     if "TFile" in dataSample:
@@ -233,7 +233,7 @@ def overlayDataSamples1D(
       assert variable is not None and axisTitles is not None and binning is not None, f"Need variable name (={variable}), axis titles (={axisTitles}), and binning (={binning})."
       hist = getHistND(
         inputData        = dataSample["RDataFrame"],
-        variables        = (variable,),
+        variables        = (variable, ),
         axisTitles       = setDefaultYAxisTitle(axisTitles),
         binning          = binning,
         weightVariable   = weightVariable,
@@ -301,8 +301,8 @@ def getResolutionGraph(
   yErrs = np.array([], dtype = np.float64)
   for resBinIndex in range(1, resBinningAxis.GetNbins() + 1):
     proj = hist.ProjectionX("_px", resBinIndex, resBinIndex, "E")
-    yVals = np.append(yVals, (proj.GetStdDev(),))
-    yErrs = np.append(yErrs, (proj.GetStdDevError(),))
+    yVals = np.append(yVals, (proj.GetStdDev(), ))
+    yErrs = np.append(yErrs, (proj.GetStdDevError(), ))
   return ROOT.TGraphErrors(len(xVals), xVals, yVals, xErrs, yErrs)
 
 
@@ -372,7 +372,7 @@ def overlayCases(
   for case, caseFilter in FILTER_CASES.items():
     hist: ROOT.TH1D = getHistND(
       inputData        = data,
-      variables        = (variable,),
+      variables        = (variable, ),
       axisTitles       = setDefaultYAxisTitle(axisTitles),
       binning          = binning,
       weightVariable   = weightVariable,
@@ -555,6 +555,8 @@ def plotTopologyHist(
   canv.SaveAs(f"{pdfDirName}/{canv.GetName()}.pdf")
 
 
+#!NOTE! this works only with ROOT version 6.24.04
+# see https://github.com/root-project/root/issues/23790
 def overlayTopologies(
   inputData:         ROOT.RDataFrame,
   variable:          str | tuple[str, str],     # variable to plot; may be column name, or tuple with new column definition
@@ -577,11 +579,11 @@ def overlayTopologies(
     for index, topo in enumerate(toposToPlot[case]):
       hist: ROOT.TH1D = getHistND(
         inputData        = caseData,
-        variables        = (variable,),
+        variables        = (variable, ),
         axisTitles       = setDefaultYAxisTitle(axisTitles),
         binning          = binning,
         weightVariable   = "AccidWeightFactor",
-        filterExpression = (f'ThrownTopology.GetString() == "{topo}"' if topo != "Total" else "true"),
+        filterExpression = ("true" if topo == "Total" else f'(ThrownTopology.GetString() == "{topo}")'),
         histNameSuffix   = f"{case}_{topo}",
         histTitle        = topo,
       )
@@ -615,14 +617,18 @@ def makeKinematicPlotsOverlays(
       "additionalFilter"  : "(NmbUnusedShowers == 0)",
       "pdfFileNameSuffix" : "_noUnusedShowers",
     },
-    {
-      "additionalFilter"  : "(NmbUnusedShowers == 0) && ((5.5 < BeamEnergy) && (BeamEnergy < 11.0))",
-      "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_5.5_11.0",
-    },
-    {
-      "additionalFilter"  : "(NmbUnusedShowers == 0) && ((7.5 < BeamEnergy) && (BeamEnergy < 9.0))",
-      "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_7.5_9.0",
-    },
+    # {
+    #   "additionalFilter"  : "(NmbUnusedShowers == 0) and ((5.5 < BeamEnergy) and (BeamEnergy < 11.0))",
+    #   "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_5.5_11.0",
+    # },
+    # {
+    #   "additionalFilter"  : "(NmbUnusedShowers == 0) and ((7.5 < BeamEnergy) and (BeamEnergy < 9.0))",
+    #   "pdfFileNameSuffix" : "_noUnusedShowers_beamEnergy_7.5_9.0",
+    # },
+    # {
+    #   "additionalFilter"  : "(NmbUnusedShowers == 0) and ((0.7 < ThreePionMass) and (ThreePionMass < 0.9))",
+    #   "pdfFileNameSuffix" : "_noUnusedShowers_omegaMass",
+    # },
   )
   for kwargs in kwargss:
     kwargs.update({"pdfDirName"        : pdfDirName})
@@ -634,7 +640,8 @@ def makeKinematicPlotsOverlays(
     overlayDataSamples1D(dataSamples, variable = "MissingProtonP",       axisTitles = "#it{p}_{miss}^{kin. fit} (GeV/#it{c})",                   binning = (250,    0,   5), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonTheta",   axisTitles = "#it{#theta}_{miss}^{kin. fit} (deg)",                     binning = (200,    0, 100), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "MissingProtonPhi",     axisTitles = "#it{#phi}_{miss}^{kin. fit} (deg)",                       binning = (180, -180, 180), **kwargs)
-    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,  0.4, 1.4), **kwargs)
+    overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,    0,   5), **kwargs)
+    # overlayDataSamples1D(dataSamples, variable = mesonSystemMassVarName, axisTitles = mesonSystemMassVarTLatex + "^{kin. fit} (GeV/#it{c}^{2})", binning = (200,  0.4, 1.4), **kwargs)  # omega
     # unused track
     overlayDataSamples1D(dataSamples, variable = "UnusedDeltaPOverP", axisTitles = "(#it{p}_{miss}^{unused} #minus #it{p}_{miss}^{kin. fit}) / #it{p}_{miss}^{kin. fit}", binning = (375, -1.5, +1.5), **kwargs)
     overlayDataSamples1D(dataSamples, variable = "UnusedDeltaTheta",  axisTitles = "#it{#theta}_{miss}^{unused} #minus #it{#theta}_{miss}^{kin. fit} (deg)",              binning = (100, -50,  +50),  **kwargs)
@@ -670,7 +677,7 @@ def makeKinematicPlotsMc(
   }
   for suffix, filter in filterTopologies.items():
     kwargs = {
-      "additionalFilter"  : "(NmbTruthTracks == 1)" + ("" if filter is None else f" && {filter}"),
+      "additionalFilter"  : "(NmbTruthTracks == 1)" + ("" if filter is None else f" and {filter}"),
       "pdfFileNamePrefix" : f"{channel}_",
       "pdfFileNameSuffix" : suffix,
       "pdfDirName"        : pdfDirName,
@@ -822,25 +829,30 @@ def makeKinematicPlotsData(
 if __name__ == "__main__":
   printGitInfo()
   ROOT.gROOT.SetBatch(True)
+  # ROOT.EnableImplicitMT()
   setupPlotStyle()
 
   dataPeriods = [
-    "2017_01-ver03",
+    # "2017_01-ver03",
     # "2018_01-ver02",
     # "2018_08-ver02",
     # "2019_11-ver01",
+    "2019_11-ver01_150nA",
+    # "2019_11-ver01_250nA",
+    # "2019_11-ver01_350nA_early",
+    # "2019_11-ver01_350nA_late",
   ]
 
-  # # pi+pi+pi-pi-(p)
-  # treeName                 = "pippippimpimpmiss"
-  # trueTopology             = "2#pi^{#plus}2#pi^{#minus}p"
-  # mesonSystemMassVarName   = "FourPionMass"
-  # mesonSystemMassVarTLatex = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}"
-  # omega(p)
-  treeName                 = "omegapmiss"
-  trueTopology             = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
-  mesonSystemMassVarName   = "ThreePionMass"
-  mesonSystemMassVarTLatex = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{0}}"
+  # pi+pi+pi-pi-(p)
+  treeName                 = "pippippimpimpmiss"
+  trueTopology             = "2#pi^{#plus}2#pi^{#minus}p"
+  mesonSystemMassVarName   = "FourPionMass"
+  mesonSystemMassVarTLatex = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{#plus}#it{#pi}^{#minus}}"
+  # # omega(p)
+  # treeName                 = "omegapmiss"
+  # trueTopology             = "2#gamma#pi^{#plus}#pi^{#minus}p[#pi^{0},#omega]"
+  # mesonSystemMassVarName   = "ThreePionMass"
+  # mesonSystemMassVarTLatex = "#it{m}_{#it{#pi}^{#plus}#it{#pi}^{#minus}#it{#pi}^{0}}"
 
   pdfBaseDirName        = "./plots"
   maxNmbTopologies      = 10
@@ -892,15 +904,19 @@ if __name__ == "__main__":
   inputData: dict[str, dict[str, ROOT.RDataFrame]] = defaultdict(dict)  # dict[<data period>][<data type>]
   for dataPeriod in dataPeriods:
     inputFileNames = {
-      "MCbggen" : f"./data/MCbggen/{dataPeriod}/{treeName}_flatTree.MCbggen_{dataPeriod}.root",
-      "RD"      : f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}_*.root",
+      "MCbggen" : f"./data/MCbggen/{dataPeriod}/{treeName}_flatTree.MCbggen_{dataPeriod}*.root",
+      "RD"      : f"./data/RD/{dataPeriod}/{treeName}_flatTree.RD_{dataPeriod}*.root",
     }
     print(f"Reading tree '{treeName}' from files {inputFileNames}")
     for dataType, inputFileName in inputFileNames.items():
-      inputData[dataPeriod][dataType] = ROOT.RDataFrame(treeName, inputFileName) \
-                                            .Range(maxNmbEventsToProcess) \
-                                            .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION) \
-                                            .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+      data = (
+        ROOT.RDataFrame(treeName, inputFileName)
+            .Define("TrackFound", UNUSED_TRACK_FOUND_CONDITION)
+            .Filter("(-0.25 < MissingMassSquared_Measured) and (MissingMassSquared_Measured < 3.75)")  # limit data to fit range
+      )
+      if maxNmbEventsToProcess > 0:
+        data = data.Range(maxNmbEventsToProcess)  # does not work together with ROOT.EnableImplicitMT()
+      inputData[dataPeriod][dataType] = data
 
   # overlay resolutions of kinematic variables estimated using MC truth
   diffVariableInfos: tuple[tuple[str, str, tuple[int, float, float], tuple[float, float], str], ...] = ()
@@ -920,7 +936,7 @@ if __name__ == "__main__":
         dataToOverlay.append((dataPeriod, data["MCbggen"]))
       kwargs = {
         "pdfDirName"            : makeDirPath("./plots/MCbggen"),
-        "additionalFilter"      : f'(NmbUnusedShowers == 0) && (NmbTruthTracks == 1) && (ThrownTopology.GetString() == "{trueTopology}")',
+        "additionalFilter"      : f'(NmbUnusedShowers == 0) and (NmbTruthTracks == 1) and (ThrownTopology.GetString() == "{trueTopology}")',
         "diffVariableAxisTitle" : diffVariableAxisTitle,
         "pdfFileNamePrefix"     : f"{treeName}_",
       }
@@ -947,7 +963,7 @@ if __name__ == "__main__":
           dataToOverlay.append((dataPeriod, data[dataType]))
         kwargs = {
           "pdfDirName"            : makeDirPath(f"./plots/{dataType}"),
-          "additionalFilter"      : "(NmbUnusedShowers == 0) && (NmbUnusedTracks == 1)",
+          "additionalFilter"      : "(NmbUnusedShowers == 0) and (NmbUnusedTracks == 1)",
           "diffVariableAxisTitle" : diffVariableAxisTitle,
           "pdfFileNamePrefix"     : f"{treeName}_",
           "pdfFileNameSuffix"     : "_noUnusedShowers",
@@ -1005,6 +1021,7 @@ if __name__ == "__main__":
   if True:
   # if False:
     for dataPeriod in inputData.keys():
+      #!NOTE! does not work together with ROOT.EnableImplicitMT()
       makeKinematicPlotsMc(
         dataSample               = inputData[dataPeriod]["MCbggen"],
         channel                  = treeName,
