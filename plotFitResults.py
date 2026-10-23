@@ -609,7 +609,7 @@ def plotParValue1D(
     pdfFileBaseName   = parName,
     pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    graphTitle        = f"Fit parameter {parName})",
+    graphTitle        = f"Fit parameter {parName}",
     skipBlack         = False,
   )
 

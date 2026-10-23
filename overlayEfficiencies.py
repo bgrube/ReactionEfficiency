@@ -104,7 +104,7 @@ def overlayEfficiencies1D(
     pdfFileBaseName   = "mm2_eff",
     pdfFileNamePrefix = pdfFileNamePrefix,
     pdfFileNameSuffix = pdfFileNameSuffix,
-    graphTitle        = f"Track-Finding Efficiency" if graphTitle is None else graphTitle,
+    graphTitle        = f"Proton Track-Finding Efficiency" if graphTitle is None else graphTitle,
     graphMinimum      = 0.0,
     graphMaximum      = 1.0,
     skipBlack         = skipBlack,
@@ -172,6 +172,7 @@ if __name__ == "__main__":
   pdfDirName = makeDirPath("./overlays")
   # fitRootDir = "./fits.pionComparison"
   # pdfDirName = makeDirPath("./overlays.pionComparison")
+  pdfFileNamePrefix = "Proton_4pi_"
   skipBlack  = True
   # skipBlack  = False
 
@@ -218,7 +219,21 @@ if __name__ == "__main__":
       for binningInfo in binningInfos:
         if binningInfo:
           if len(binningInfo.varNames) == 1:
-            overlayEfficiencies1D(effInfos, binningInfo, pdfDirName, f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+            overlayEfficiencies1D(
+              effInfos          = effInfos,
+              binningInfo       = binningInfo,
+              pdfDirName        = pdfDirName,
+              pdfFileNamePrefix = pdfFileNamePrefix,
+              pdfFileNameSuffix = f"_{pdfFileNameSuffix}",
+              skipBlack         = skipBlack,
+            )
           elif len(binningInfo.varNames) == 2:
-            overlayEfficiencies2DSlices(effInfos, binningInfo, steppingVar = binningInfo.varNames[1],
-              pdfDirName = pdfDirName, pdfFileNameSuffix = f"_{pdfFileNameSuffix}", skipBlack = skipBlack)
+            overlayEfficiencies2DSlices(
+              effInfos          = effInfos,
+              binningInfo       = binningInfo,
+              steppingVar       = binningInfo.varNames[1],
+              pdfFileNamePrefix = pdfFileNamePrefix,
+              pdfDirName        = pdfDirName,
+              pdfFileNameSuffix = f"_{pdfFileNameSuffix}",
+              skipBlack         = skipBlack,
+            )
