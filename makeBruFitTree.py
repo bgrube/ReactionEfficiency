@@ -16,13 +16,38 @@ import makePlots  # defines helper functions to generate histograms from data tr
 print = functools.partial(print, flush = True)
 
 
+#!NOTE! ROOT version 6.25.02 introduced a bug in the parsing of
+#       RDataFrame expressions: string literals containing
+#       `#<something>` are wrongly expanded to `R_rdf_sizeof_<something>`
+#       See <https://github.com/root-project/root/issues/23790>.
+#       A fix will be backported to 6.32.26.
+#
+# Meanwhile, The code below defines a helper functions to remove all
+# `#` characters from a string literal, which can be used to avoid the
+# parsing bug in RDataFrame expressions.
+CPP_CODE = """
+TString
+removeAllHashesFrom(const TObjString& s)
+{
+  TString result = s.GetString();
+  result.ReplaceAll("#", "");
+  return result;
+}
+"""
+ROOT.gInterpreter.Declare(CPP_CODE)
+
+def removeAllHashesFrom(s: str) -> str:
+  """Removes all `#` characters from the given string"""
+  return s.replace("#", "")
+
+
 def makeBruFitTree(
   inputFileNames:       Sequence[str],
   outputFileName:       str,
   treeName:             str = "pippippimpimpmiss",
   trueTopology:         str = "2#pi^{#plus}2#pi^{#minus}p",
-  cutVariableNames:     Sequence[str] = ("NmbUnusedShowers", ),
-  binningVariableNames: Sequence[str] = ("BeamEnergy", "MissingProtonP", "MissingProtonTheta", "MissingProtonPhi"),
+  cutVariableNames:     Sequence[str] = ("NmbUnusedShowers", ),                                                      # branches to write to BruFit tree
+  binningVariableNames: Sequence[str] = ("BeamEnergy", "MissingProtonP", "MissingProtonTheta", "MissingProtonPhi"),  # branches to write to BruFit tree
 ) -> None:
   """Reads given files and writes out tree in BruFit format"""
   print(f"Converting tree '{treeName}' to BruFit format merging the data from {len(inputFileNames)} files: {inputFileNames}")
@@ -48,7 +73,7 @@ def makeBruFitTree(
     ROOT.RDataFrame(treeName, inputFileNames)
         .Define("TrackFound", makePlots.UNUSED_TRACK_FOUND_CONDITION)
         .Define("ComboID", "(double)rdfentry_")
-        .Define("IsSignal", f'ThrownTopology.GetString() == "{trueTopology}"')
+        .Define("IsSignal", f'removeAllHashesFrom(ThrownTopology) == "{removeAllHashesFrom(trueTopology)}"')
         .Snapshot(treeName, outputFileName, ROOT.std.vector[ROOT.std.string](branchesToWrite + ["TrackFound", "ComboID", "IsSignal"]))
         # .Range(0, 100000)
   )
