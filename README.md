@@ -1,4 +1,4 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bgrube/ReactionEfficiency)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-0A66C2?style=flat-square)](https://deepwiki.com/bgrube/ReactionEfficiency)
 
 # Measuring GlueX proton-track reconstruction efficiencies using missing-proton events
 
